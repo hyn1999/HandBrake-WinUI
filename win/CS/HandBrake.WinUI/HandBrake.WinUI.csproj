@@ -26,4 +26,19 @@
     <ProjectReference Include="..\HandBrake.App.Core\HandBrake.App.Core.csproj" />
     <ProjectReference Include="..\HandBrake.Interop\HandBrake.Interop.csproj" />
   </ItemGroup>
+
+  <!-- Work around the Windows App SDK unpackaged dotnet publish issue:
+       the generated app-specific .pri is produced during build but is not
+       copied to the published output, so XAML initialization can crash. -->
+  <Target Name="IncludeAppPriInUnpackagedPublish"
+          BeforeTargets="ComputeResolvedFilesToPublishList"
+          DependsOnTargets="$(GenerateProjectPriFile)">
+    <ItemGroup>
+      <ResolvedFileToPublish Include="$(ProjectPriFullPath)"
+                             Condition="'$(WindowsPackageType)' == 'None' and Exists('$(ProjectPriFullPath)')">
+        <RelativePath>$(ProjectPriFileName)</RelativePath>
+        <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      </ResolvedFileToPublish>
+    </ItemGroup>
+  </Target>
 </Project>

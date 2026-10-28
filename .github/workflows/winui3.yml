@@ -50,6 +50,19 @@ jobs:
             -p:WindowsAppSDKSelfContained=true `
             --output "$env:RUNNER_TEMP/HandBrake-WinUI3"
 
+      - name: Verify app-specific WinUI XAML resources are included
+        shell: pwsh
+        run: |
+          $publishDir = Join-Path $env:RUNNER_TEMP "HandBrake-WinUI3"
+          $requiredFiles = @("HandBrake.WinUI.exe", "HandBrake.WinUI.pri", "Microsoft.ui.xaml.dll")
+          foreach ($file in $requiredFiles) {
+            $fullPath = Join-Path $publishDir $file
+            if (-not (Test-Path -LiteralPath $fullPath)) {
+              throw "Published output is missing required file: $file. XAML may fail on startup."
+            }
+            Write-Host "OK: $file"
+          }
+
       - name: Upload preview folder
         uses: actions/upload-artifact@v4
         with:
