@@ -1,0 +1,51 @@
+name: WinUI 3 Preview
+
+on:
+  push:
+    paths:
+      - 'win/CS/HandBrake.WinUI/**'
+      - 'win/CS/HandBrake.App.Core/**'
+      - 'win/CS/HandBrake.Interop/**'
+      - '.github/workflows/winui3.yml'
+  pull_request:
+    paths:
+      - 'win/CS/HandBrake.WinUI/**'
+      - 'win/CS/HandBrake.App.Core/**'
+      - 'win/CS/HandBrake.Interop/**'
+      - '.github/workflows/winui3.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  publish-winui-x64:
+    name: Publish WinUI 3 x64 shell
+    runs-on: windows-2025
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish unpackaged preview
+        shell: pwsh
+        run: |
+          dotnet publish win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:Platform=x64 `
+            -p:WindowsAppSDKSelfContained=true `
+            --output "$env:RUNNER_TEMP/HandBrake-WinUI3"
+
+      - name: Upload preview folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: HandBrake-WinUI3-Shell-x64
+          path: ${{ runner.temp }}/HandBrake-WinUI3/
+          if-no-files-found: error
