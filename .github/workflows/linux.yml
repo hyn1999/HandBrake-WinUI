@@ -1,6 +1,9 @@
 name: Linux Build
 
-on: [push, pull_request]
+# HandBrake's legacy cross-platform build is opt-in for this Windows 11 WinUI fork.
+# Run manually from Actions only when native binaries or legacy platforms are needed.
+on:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
