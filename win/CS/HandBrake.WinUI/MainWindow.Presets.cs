@@ -112,17 +112,20 @@ public sealed partial class MainWindow
             updatingVideoEditor = false;
             ApplyNativePreset();
             PresetStatusText.Text = $"{choices.Count} real built-in presets and {nativeVideoEncoders.Count} encoder definitions loaded from libhb.";
+            UpdateQueueUi();
         }
         catch (Exception ex)
         {
             updatingVideoEditor = false;
             activePreset = null;
+            nativePresetChoices.Clear();
             PresetPicker.IsEnabled = false;
             VideoEncoderPicker.IsEnabled = false;
             VideoRateModePicker.IsEnabled = false;
             VideoQualitySlider.IsEnabled = false;
             VideoBitrateBox.IsEnabled = false;
             PresetStatusText.Text = "Could not load presets from the matching native HandBrake engine: " + ex.Message;
+            UpdateQueueUi();
         }
     }
 
