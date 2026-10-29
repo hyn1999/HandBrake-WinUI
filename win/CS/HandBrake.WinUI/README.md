@@ -2,10 +2,10 @@
 
 A new **WinUI 3** frontend alongside HandBrake's unchanged WPF application.
 
-## Current preview (UI milestone 0.3 — source intake)
+## Current preview (UI milestone 0.5 — Preferences and queue staging)
 
 - **Modern Professional** Windows 11 layout using Mica and WinUI 3 **Compact** density.
-- LeftCompact navigation for Workspace, Queue, and Settings.
+- LeftCompact navigation for Workspace, Queue, and Preferences.
 - Editor with Summary, Dimensions, Filters, Video, Audio, Subtitles, Chapters, and Metadata tabs.
 - **Fixed preview panel on the right** on wider windows. On narrow windows, use the **Preview / Editor** toggle to switch between the two areas without squashing controls.
 - Persistent destination and Start Encode bar.
@@ -13,16 +13,16 @@ A new **WinUI 3** frontend alongside HandBrake's unchanged WPF application.
 - Multiple-file selection and folder selection via Windows App SDK pickers.
 - File Explorer **drag and drop** onto the app window, with a temporary Fluent-style drop indicator.
 - Keyboard accelerators: **Ctrl+O** opens the file picker, **Ctrl+Shift+O** opens the folder picker.
-- Selected filenames, counts, paths, and a *suggested* destination filename are shown. No media decoding or scanning occurs yet.
+- Selected filenames, counts, paths, and a *suggested* destination filename are shown. When a matching native `hb.dll` is available, source selection starts a real HandBrake scan.
 - A compact status line replaces the large permanent InfoBar; the preview frame placeholder uses a fixed, video-like aspect ratio.
 
-**This is a layout preview, not a video converter yet.** Presets, encoder settings, destination editing, queue actions, and Start Encode are deliberately disabled until the HandBrake engine is connected. The preview area is a placeholder, not a decoded video frame. File selection does not scan media. Never interpret example settings or suggested output filenames as actual encoder state.
+**This is not a working video converter yet.** Source scanning is wired to HandBrake.Interop, and a native-enabled manual CI pipeline is configured, but a successful Windows build and scan are not yet verified. Presets, encoder settings and Start Encode remain disabled. The queue currently stores only source drafts, not executable jobs. The preview frame is still a placeholder, and suggested output paths are never written. Never interpret example settings or suggested output filenames as actual encoder state.
 
 ## Native source scanning (integration milestone)
 
 The WinUI Workspace now connects its source intake to the **existing HandBrake.Interop `HandBrakeInstance`** scanner. It subscribes to native scan progress/completion events, updates the progress bar on the UI dispatcher, lists detected titles and displays **actual** duration, resolution, frame rate, source codec, audio/subtitle tracks and chapter count. The scan can be cancelled. Preset/encoder controls remain disabled; video frame previews are still placeholders.
 
-**Native dependency is not shipped in the current artifact.** The Git repository and current WinUI workflow do not build/package `hb.dll`. If a matching native library is absent from the app directory, the UI clearly reports that scanning is unavailable rather than inventing video properties. A `hb.dll` from an unrelated HandBrake release may have an incompatible ABI or missing dependencies; do not mix builds. A separate native packaging milestone is required before end-to-end scanning can be verified on Windows. Scan code has not yet been compiled/tested on Windows.
+**Native-enabled manual CI is configured but not yet verified.** The WinUI workflow now builds `hb.dll` from the matching checkout and places it next to the WinUI executable. If it is missing, the app clearly reports scanning is unavailable rather than inventing properties. Do not mix `hb.dll` from unrelated HandBrake releases. End-to-end scanning still needs a successful build and Windows 11 runtime test.
 
 ## Preview build policy
 
@@ -44,14 +44,15 @@ The project targets Windows App SDK 2.5.1, `WindowsPackageType=None`, and `Windo
 
 The unpackaged EXE embeds `app.manifest` with **PerMonitorV2** DPI awareness. This is intended to prevent Windows bitmap scaling and keep WinUI text crisp at 125%, 150%, and mixed-DPI monitor setups. WinUI controls still use device-independent units; do not multiply font sizes by the Windows scale.
 
-Open **Settings** to see the current WinUI rasterization scale (for example, `125%`). This readout updates when the XAML root scale changes. For a meaningful test, fully exit the app, ensure Windows Compatibility > Change high DPI settings has no forced `System` or `System (Enhanced)` override, and relaunch it after changing Windows Display Scale. A successful build alone does not prove crisp rendering on the user's device.
+Open **Preferences → Advanced** or **About HandBrake** to see the current WinUI rasterization scale (for example, `125%`). This readout updates when the XAML root scale changes. For a meaningful test, fully exit the app, ensure Windows Compatibility > Change high DPI settings has no forced `System` or `System (Enhanced)` override, and relaunch it after changing Windows Display Scale. A successful build alone does not prove crisp rendering on the user's device.
 
 ## Next milestones
 
-1. Connect native `libhb` source scanning and show actual video information.
+1. Validate the manual native-enabled WinUI build and source scanning on Windows 11.
 2. Populate encoder options and presets from HandBrake's existing models.
 3. Display real still preview frames.
-4. Implement output destination, queue, encoding, progress, and cancellation.
+4. Upgrade the draft queue to real encode jobs with editable destinations, progress and cancellation.
+5. Implement queue-completion actions, notifications, localization and updates once their underlying services exist.
 
 The original WPF application and native HandBrake encoder are unchanged. Review original HandBrake and dependency licenses before redistribution.
 
