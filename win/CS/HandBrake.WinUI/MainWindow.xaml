@@ -4,7 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:HandBrake.WinUI"
     Title="HandBrake-WinUI">
-    <Grid x:Name="WindowRoot" AllowDrop="True" DragOver="WindowRoot_DragOver"
+    <Grid x:Name="WindowRoot" KeyboardAcceleratorPlacementMode="Hidden" AllowDrop="True" DragOver="WindowRoot_DragOver"
           DragLeave="WindowRoot_DragLeave" Drop="WindowRoot_Drop">
         <Grid.KeyboardAccelerators>
             <KeyboardAccelerator Key="O" Modifiers="Menu" Invoked="OpenSource_AcceleratorInvoked" />
@@ -74,7 +74,7 @@
                                           MinWidth="220" HorizontalAlignment="Left"
                                           SelectionChanged="SourceTitlePicker_SelectionChanged" />
                             </StackPanel>
-                            <Button Grid.Column="1" Content="Open source" Click="ShowSourcePicker_Click"
+                            <Button Grid.Column="1" Content="Open source" ToolTipService.ToolTip="Open source (Alt+O)" Click="ShowSourcePicker_Click"
                                     VerticalAlignment="Center" Style="{StaticResource AccentButtonStyle}" />
                             <Button x:Name="StageQueueButton" Grid.Column="2" Content="Add to queue"
                                     Click="StageQueue_Click" IsEnabled="False"
