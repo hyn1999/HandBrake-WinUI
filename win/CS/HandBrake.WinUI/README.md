@@ -54,3 +54,10 @@ Open **Settings** to see the current WinUI rasterization scale (for example, `12
 4. Implement output destination, queue, encoding, progress, and cancellation.
 
 The original WPF application and native HandBrake encoder are unchanged. Review original HandBrake and dependency licenses before redistribution.
+
+
+## Native libhb integrated preview workflow
+
+Run **Actions → WinUI 3 Preview → Run workflow** on `feature/winui3-shell` only when a test build is needed. The manual workflow cross-compiles `hb.dll` on Ubuntu from the **same checked-out fork revision** using the upstream HandBrake MinGW toolchain, transfers it as a short-lived internal artifact, then publishes the Windows x64 WinUI application with `hb.dll` in the executable folder. The native library is cached by native and interop source hash. The final ZIP artifact is retained for two days. No automatic per-commit builds are scheduled.
+
+The CI verifies required files and x64 architecture. Actual scanning must still be tested on Windows 11 with a known-good source; the existence of `hb.dll` alone does not prove that all its runtime dependencies or the managed/native ABI are compatible. If scanning fails, inspect the reported error and Actions build logs before shipping.
