@@ -262,8 +262,7 @@
                                                         <TextBlock Text="Subtitle tracks will appear after scanning."
                                                                    TextWrapping="Wrap" />
                                                     </StackPanel>
-                                                    <Button Content="Add subtitle" IsEnabled="False"
-                                                            HorizontalAlignment="Left" />
+                                                    <TextBlock Text="Select internal subtitle tracks to include. Only container-compatible soft subtitles are supported here. Burn-in, external imports and foreign-audio search are pending. Re-stage the queue entry after editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>

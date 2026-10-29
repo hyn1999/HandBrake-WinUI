@@ -203,12 +203,7 @@ public sealed partial class MainWindow
 
         DisplayAudioEditor(title);
 
-        SubtitleTrackList.Children.Clear();
-        if (subtitleCount == 0) AddDetailLine(SubtitleTrackList, "No subtitle tracks detected.");
-        else foreach (var track in title.SubtitleList!)
-            AddDetailLine(SubtitleTrackList,
-                $"{track.TrackNumber}. {track.Language ?? "Unknown language"} · " +
-                $"{track.SourceName ?? track.Format ?? "Subtitle"}");
+        DisplaySubtitleEditor(title);
 
         _ = LoadPreviewAsync(title);
     }
@@ -226,6 +221,7 @@ public sealed partial class MainWindow
 
     private void ResetScanDetails()
     {
+        subtitleEditors.Clear();
         audioEditors.Clear();
         scannedTitles.Clear();
         SourceTitlePicker.Items.Clear();
