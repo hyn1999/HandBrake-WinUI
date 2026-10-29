@@ -16,6 +16,7 @@
     <WindowsAppSDKSelfContained>false</WindowsAppSDKSelfContained>
     <EnableWindowsTargeting>true</EnableWindowsTargeting>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <ApplicationIcon>Assets\HandBrake-WinUI.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -28,6 +29,15 @@
     <ProjectReference Include="..\HandBrake.App.Core\HandBrake.App.Core.csproj" />
     <ProjectReference Include="..\HandBrake.Interop\HandBrake.Interop.csproj" />
   </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\HandBrake-WinUI.ico" Link="HandBrake-WinUI.ico" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <!-- Generate the multi-size Fluent app icon before native resource compilation. -->
+  <Target Name="GenerateHandBrakeWinUIIcon" BeforeTargets="PrepareForBuild">
+    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\New-HandBrakeWinUIIcon.ps1&quot; -OutputPath &quot;$(MSBuildProjectDirectory)\Assets\HandBrake-WinUI.ico&quot;" />
+  </Target>
 
   <!-- Work around the Windows App SDK unpackaged dotnet publish issue:
        the generated app-specific .pri is produced during build but is not
