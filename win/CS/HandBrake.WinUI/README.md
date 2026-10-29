@@ -61,3 +61,14 @@ The original WPF application and native HandBrake encoder are unchanged. Review 
 Run **Actions → WinUI 3 Preview → Run workflow** on `feature/winui3-shell` only when a test build is needed. The manual workflow cross-compiles `hb.dll` on Ubuntu from the **same checked-out fork revision** using the upstream HandBrake MinGW toolchain, transfers it as a short-lived internal artifact, then publishes the Windows x64 WinUI application with `hb.dll` in the executable folder. The native library is cached by native and interop source hash. The final ZIP artifact is retained for two days. No automatic per-commit builds are scheduled.
 
 The CI verifies required files and x64 architecture. Actual scanning must still be tested on Windows 11 with a known-good source; the existence of `hb.dll` alone does not prove that all its runtime dependencies or the managed/native ABI are compatible. If scanning fails, inspect the reported error and Actions build logs before shipping.
+
+
+## Preferences — Windows 11 native experience
+
+The primary navigation retains **Workspace**, **Queue** and **Preferences**. Preferences is a nested, responsive Fluent page with the original HandBrake category names (General, Output Files, When Done, Video, Advanced, Updates, Reset, About HandBrake), but it is **not a WPF port**.
+
+- **Functional, saved immediately:** System/Light/Dark theme (live), show/hide the Workspace preview, default suggested output folder, filename underscore replacement, MP4/M4V suggestion, native scan preview count, minimum title duration and duplicate-title behavior.
+- **Functional after restart:** native scan verbosity (a HandBrakeInstance is initialized once per app session).
+- **Intentionally unavailable until integration:** language/RTL localization, completion actions (shutdown/sleep/notifications), auto-update checks and actual encoding/destination writes. These are visibly described as unavailable, not silently simulated.
+- Preferences are stored at `%LOCALAPPDATA%\\HandBrake\\WinUI3\\preferences.json` to avoid corrupting or overwriting the original WPF `settings.json`. The reset button affects **only** the WinUI frontend.
+- This code is not yet compiled or exercised on a Windows machine; validate UI navigation, persistence after restart, scanner parameter propagation and DPI scaling during the next manual integrated build.

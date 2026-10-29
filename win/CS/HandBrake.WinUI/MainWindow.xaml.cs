@@ -22,6 +22,9 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         SystemBackdrop = new MicaBackdrop();
+        SettingsPanel.HostWindow = this;
+        SettingsPanel.PreferencesChanged += (_, _) => ApplyPreferences();
+        ApplyPreferences();
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
         InitializeSourceScanner();
     }
@@ -40,7 +43,7 @@ public sealed partial class MainWindow : Window
         if (AppNavigation.XamlRoot is not null)
         {
             double scale = AppNavigation.XamlRoot.RasterizationScale * 100;
-            DpiStatusText.Text = $"WinUI rendering scale: {scale:0}% (Windows display scaling)";
+            SettingsPanel.SetDpiScale(scale);
         }
     }
 
@@ -75,6 +78,16 @@ public sealed partial class MainWindow : Window
 
     private void UpdatePreviewLayout()
     {
+        if (!SettingsPanel.Preferences.ShowPreviewPanel)
+        {
+            PreviewToggleButton.Visibility = Visibility.Collapsed;
+            EditorColumn.Width = new GridLength(1, GridUnitType.Star);
+            PreviewColumn.Width = new GridLength(0);
+            EditorPanel.Visibility = Visibility.Visible;
+            PreviewPanel.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         PreviewToggleButton.Visibility = isNarrow ? Visibility.Visible : Visibility.Collapsed;
         if (isNarrow)
         {
@@ -244,13 +257,11 @@ public sealed partial class MainWindow : Window
             ? (isFolder ? first : $"{new FileInfo(first).Length / 1024d / 1024d:N1} MiB · {first}")
             : $"{paths.Count} selected files/folders · {first}";
         PreviewSourceText.Text = SelectedFileText.Text;
-        DestinationText.Text = isFolder
-            ? "Destination will be available after source scanning"
-            : Path.GetFileNameWithoutExtension(first) + ".mp4 (suggested only)";
+        UpdateSuggestedDestination();
 
         SourceStatusText.Text = paths.Count == 1
-            ? "Source selected. Media scanning and encoding are not connected yet."
-            : $"{paths.Count} sources selected. Batch scanning and queue integration are not connected yet.";
+            ? "Source selected. Preparing HandBrake source scan..."
+            : $"{paths.Count} sources selected. Queue and encoding are not connected yet.";
 
         SourcePickerOverlay.Visibility = Visibility.Collapsed;
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];

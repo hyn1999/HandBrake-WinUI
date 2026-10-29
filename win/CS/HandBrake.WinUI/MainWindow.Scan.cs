@@ -66,13 +66,13 @@ public sealed partial class MainWindow
 
             scanInstance.StartScan(
                 paths.ToList(),
-                previewCount: 10,
-                minDuration: TimeSpan.Zero,
+                previewCount: SettingsPanel.Preferences.ScanPreviewCount,
+                minDuration: TimeSpan.FromSeconds(SettingsPanel.Preferences.MinTitleDurationSeconds),
                 maxDuration: TimeSpan.Zero,
                 titleIndex: 0,
                 excludedExtensions: new List<string>(),
                 hwDecode: 0,
-                keepDuplicateTitles: false);
+                keepDuplicateTitles: SettingsPanel.Preferences.KeepDuplicateTitles);
         }
         catch (Exception ex) when (ex is DllNotFoundException
                                     or BadImageFormatException
@@ -90,7 +90,7 @@ public sealed partial class MainWindow
     private HandBrakeInstance CreateScanInstance()
     {
         var instance = new HandBrakeInstance();
-        instance.Initialize(verbosity: 1, noHardware: true);
+        instance.Initialize(verbosity: SettingsPanel.Preferences.ScanVerbosity, noHardware: true);
         instance.ScanProgress += Scanner_ScanProgress;
         instance.ScanCompleted += Scanner_ScanCompleted;
         return instance;
