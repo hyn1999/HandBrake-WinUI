@@ -76,7 +76,7 @@ public sealed partial class MainWindow
         foreach (var choice in selected)
         {
             var track = title.SubtitleList?.FirstOrDefault(track => track.TrackNumber == choice.TrackNumber);
-            if (track is null || container is null || (!choice.Burn && HBFunctions.hb_subtitle_can_pass(track.Source, container.Id) == 0))
+            if (track is null || container is null || (!choice.Burn && HandBrakeSubtitleHelpers.CheckCanPassSubtitle(track.Source, container.Id) == 0))
                 throw new InvalidOperationException("A selected subtitle is missing or cannot be stored in this container. Choose another container or a supported burn-in track.");
             if (choice.Burn && (choice.Default || HandBrakeSubtitleHelpers.CheckCanBurnSubtitle(track.Source) == 0))
                 throw new InvalidOperationException("This subtitle cannot be burned or marked as default while burning.");
