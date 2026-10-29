@@ -31,6 +31,7 @@ public sealed partial class MainWindow : Window
         InitializeDraftQueue();
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
         InitializeSourceScanner();
+        InitializeEncodeRunner();
     }
 
     private void AppNavigation_Loaded(object sender, RoutedEventArgs e)
@@ -276,9 +277,9 @@ public sealed partial class MainWindow : Window
 
     private void AcceptSourcePaths(IEnumerable<string> sourcePaths)
     {
-        if (scanInProgress)
+        if (scanInProgress || encodeRunning)
         {
-            SourceStatusText.Text = "A scan is already running. Cancel it before opening a new source.";
+            SourceStatusText.Text = "A native scan or encode is already running. Stop it before opening a new source.";
             SourcePickerOverlay.Visibility = Visibility.Collapsed;
             return;
         }
