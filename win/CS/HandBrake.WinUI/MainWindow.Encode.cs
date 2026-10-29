@@ -299,9 +299,18 @@ public sealed partial class MainWindow
 
         try
         {
-            if (encodeScanning) encodeInstance?.StopScan();
-            else encodeInstance?.StopEncode();
-            FinishEncodeRun("Encode queue stopped by user.");
+            if (encodeScanning)
+            {
+                encodeInstance?.StopScan();
+                FinishEncodeRun("Encode queue stopped by user.");
+            }
+            else
+            {
+                // Let the native poller report WorkDone before releasing its instance.
+                encodeInstance?.StopEncode();
+                QueueStatusText.Text = "Stop requested. Waiting for the native engine to finish shutting down…";
+                CancelEncodeButton.IsEnabled = false;
+            }
         }
         catch (Exception ex)
         {
@@ -514,8 +523,11 @@ public sealed partial class MainWindow
 
     private void UpdateEncodeControls()
     {
-        StartEncodeButton.IsEnabled = !encodeRunning && draftQueue.Any(item => item.HasVideoConfiguration);
-        StartQueueEncodeButton.IsEnabled = !encodeRunning && draftQueue.Any(item => item.HasVideoConfiguration);
+        bool nativeReady = File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll")) &&
+            nativePresetChoices.Count > 0;
+        bool hasRunnableJobs = draftQueue.Any(item => item.HasVideoConfiguration);
+        StartEncodeButton.IsEnabled = !encodeRunning && nativeReady && hasRunnableJobs;
+        StartQueueEncodeButton.IsEnabled = !encodeRunning && nativeReady && hasRunnableJobs;
         CancelEncodeButton.IsEnabled = encodeRunning;
         RemoveDraftButton.IsEnabled = !encodeRunning && DraftQueueList.SelectedItem is QueueDraft;
         ClearDraftsButton.IsEnabled = !encodeRunning && draftQueue.Count > 0;
