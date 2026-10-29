@@ -182,6 +182,8 @@ public sealed partial class MainWindow
             updatingVideoEditor = false;
         }
 
+        UpdateSuggestedDestination();
+
         var prefs = SettingsPanel.Preferences;
         if (prefs.PreferredPresetKey != choice.Key)
         {

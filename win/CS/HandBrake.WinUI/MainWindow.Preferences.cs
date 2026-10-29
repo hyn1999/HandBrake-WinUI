@@ -21,17 +21,14 @@ public sealed partial class MainWindow
 
     private string? selectedScannedTitleName;
 
-    private void UpdateSuggestedDestination()
+    private string? GetSuggestedOutputPath()
     {
-        if (selectedSourcePaths.Count == 0) return;
+        if (selectedSourcePaths.Count == 0) return null;
 
         string source = selectedSourcePaths[0];
         bool sourceIsFolder = Directory.Exists(source);
         if (sourceIsFolder && string.IsNullOrWhiteSpace(selectedScannedTitleName))
-        {
-            DestinationText.Text = "Choose a detected video title to suggest an output filename";
-            return;
-        }
+            return null;
 
         string originalName = sourceIsFolder ? selectedScannedTitleName! : source;
         string name = Path.GetFileNameWithoutExtension(originalName);
@@ -40,14 +37,30 @@ public sealed partial class MainWindow
         foreach (char invalid in Path.GetInvalidFileNameChars())
             name = name.Replace(invalid, '_');
 
-        string fileName = name + SettingsPanel.Preferences.Mp4Extension;
+        // HandBrake's native preset determines the muxer. Never suggest a
+        // mismatched .mp4 extension for an MKV or WebM preset.
+        string presetFormat = activePreset?.FileFormat ?? "";
+        string extension = presetFormat.Contains("mkv", StringComparison.OrdinalIgnoreCase)
+            ? ".mkv"
+            : presetFormat.Contains("webm", StringComparison.OrdinalIgnoreCase)
+                ? ".webm"
+                : SettingsPanel.Preferences.Mp4Extension;
+
         string preferredFolder = SettingsPanel.Preferences.DefaultOutputFolder;
         string fallbackFolder = sourceIsFolder ? source : Path.GetDirectoryName(source) ?? "";
         string folder = !string.IsNullOrWhiteSpace(preferredFolder) && Directory.Exists(preferredFolder)
             ? preferredFolder
             : fallbackFolder;
 
-        // This is a preview only; the output is never created or overwritten here.
-        DestinationText.Text = Path.Combine(folder, fileName) + " (suggested only)";
+        return Path.Combine(folder, name + extension);
+    }
+
+    private void UpdateSuggestedDestination()
+    {
+        if (selectedSourcePaths.Count == 0) return;
+        string? path = GetSuggestedOutputPath();
+        DestinationText.Text = path is null
+            ? "Choose a detected video title to suggest an output filename"
+            : path + " (suggested only)";
     }
 }
