@@ -14,9 +14,8 @@
                         Loaded="AppNavigation_Loaded"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
-                        PaneDisplayMode="LeftCompact"
-                        CompactPaneLength="48"
-                        OpenPaneLength="180"
+                        PaneDisplayMode="Left"
+                        OpenPaneLength="200"
                         SelectionChanged="AppNavigation_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Workspace" Tag="workspace">
@@ -291,18 +290,47 @@
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <TextBlock Text="Preview" FontSize="17" FontWeight="SemiBold" />
-                                    <Border Grid.Row="1" Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                            CornerRadius="8" Height="190" VerticalAlignment="Top">
-                                        <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                    Spacing="8" Margin="12">
-                                            <SymbolIcon Symbol="Pictures" />
-                                            <TextBlock Text="Video frame preview"
-                                                       HorizontalAlignment="Center" />
-                                            <TextBlock Text="Available after source scanning"
-                                                       TextWrapping="Wrap" TextAlignment="Center"
+                                    <Grid Grid.Row="1" RowSpacing="8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                                CornerRadius="8" Height="220" VerticalAlignment="Top">
+                                            <Grid>
+                                                <Image x:Name="PreviewFrame" Stretch="Uniform"
+                                                       Visibility="Collapsed" />
+                                                <StackPanel x:Name="PreviewPlaceholder"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
+                                                            Spacing="8" Margin="16">
+                                                    <SymbolIcon Symbol="Pictures" />
+                                                    <TextBlock x:Name="PreviewPlaceholderText"
+                                                               Text="Choose a source to decode a real frame"
+                                                               TextWrapping="Wrap" TextAlignment="Center" />
+                                                    <TextBlock Text="Decoded by the native HandBrake engine"
+                                                               TextWrapping="Wrap" TextAlignment="Center"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                        <Grid Grid.Row="1" ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button x:Name="PreviousPreviewButton" Content="Previous frame"
+                                                    IsEnabled="False" Click="PreviousPreview_Click" />
+                                            <TextBlock x:Name="PreviewFrameCounterText" Grid.Column="1"
+                                                       Text="No frame" VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center"
                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                        </StackPanel>
-                                    </Border>
+                                            <Button x:Name="NextPreviewButton" Grid.Column="2"
+                                                    Content="Next frame" IsEnabled="False"
+                                                    Click="NextPreview_Click" />
+                                        </Grid>
+                                    </Grid>
                                     <StackPanel Grid.Row="2" Spacing="6">
                                         <TextBlock Text="Source details" FontWeight="SemiBold" />
                                         <TextBlock x:Name="PreviewSourceText" Text="No source selected"
@@ -310,9 +338,6 @@
                                         <TextBlock x:Name="PreviewMetadataText"
                                                    Text="Scan a video to display its properties."
                                                    TextWrapping="Wrap" />
-                                        <TextBlock Text="Preview is a placeholder; it does not play video yet."
-                                                   FontSize="12" TextWrapping="Wrap"
-                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -335,9 +360,10 @@
                                                TextTrimming="CharacterEllipsis"
                                                x:Name="DestinationText" />
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="Start Encode"
-                                        IsEnabled="False"
-                                        ToolTipService.ToolTip="Encoding will be enabled when the native HandBrake engine is integrated." />
+                                <Button x:Name="StartEncodeButton" Grid.Column="1" Content="Start Encode"
+                                        IsEnabled="False" Click="StartEncode_Click"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        ToolTipService.ToolTip="Encode configured queue items with the native HandBrake engine." />
                             </Grid>
                         </Border>
                     </Grid>
@@ -355,8 +381,8 @@
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
                         <InfoBar Grid.Row="1" IsOpen="True" IsClosable="False"
-                                 Severity="Informational" Title="Draft queue"
-                                 Message="Staged sources can include a scanned title, native preset and video settings. These are configuration drafts, not runnable encode jobs. Start Encode remains disabled until full job construction and validation are implemented." />
+                                 Severity="Informational" Title="Native encode queue"
+                                 Message="Configured items are validated and processed sequentially by the matching HandBrake engine. Scan a title and choose a native preset before staging a job." />
                         <Border Grid.Row="2" CornerRadius="10" Padding="8"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -381,22 +407,34 @@
                                 </ListView.ItemTemplate>
                             </ListView>
                         </Border>
-                        <Grid Grid.Row="3" ColumnSpacing="10">
+                        <Grid Grid.Row="3" ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="QueueStatusText" VerticalAlignment="Center"
-                                       FontSize="12" TextWrapping="Wrap"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       Text="Choose a source in Workspace, then Add to queue." />
+                            <StackPanel Spacing="4" VerticalAlignment="Center">
+                                <TextBlock x:Name="QueueStatusText" FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Choose a scanned title and native preset, then add it to the queue." />
+                                <ProgressBar x:Name="QueueEncodeProgress" Height="4" Minimum="0"
+                                             Maximum="100" Value="0" Visibility="Collapsed" />
+                            </StackPanel>
                             <Button x:Name="RemoveDraftButton" Grid.Column="1"
                                     Content="Remove selected" IsEnabled="False"
                                     Click="RemoveDraft_Click" />
                             <Button x:Name="ClearDraftsButton" Grid.Column="2"
-                                    Content="Clear drafts" IsEnabled="False"
+                                    Content="Clear queue" IsEnabled="False"
                                     Click="ClearDrafts_Click" />
+                            <Button x:Name="CancelEncodeButton" Grid.Column="3"
+                                    Content="Stop" IsEnabled="False"
+                                    Click="CancelEncode_Click" />
+                            <Button x:Name="StartQueueEncodeButton" Grid.Column="4"
+                                    Content="Start Encode" IsEnabled="False"
+                                    Click="StartEncode_Click"
+                                    Style="{StaticResource AccentButtonStyle}" />
                         </Grid>
                     </Grid>
 
@@ -404,62 +442,82 @@
                 </Grid>
             </NavigationView.Content>
         </NavigationView>
-        <!-- Modern source picker: an overlay, not a WPF-style navigation page. -->
+        <!-- Centered Fluent source picker; the workspace remains intact behind the modal surface. -->
         <Grid x:Name="SourcePickerOverlay" Visibility="Collapsed"
-              Background="#77000000">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="340" />
-                <ColumnDefinition Width="*" />
-            </Grid.ColumnDefinitions>
-            <Border Grid.Column="0" Background="{ThemeResource SolidBackgroundFillColorBaseBrush}"
+              Background="#66000000" Padding="24">
+            <Border x:Name="SourcePickerCard" Width="560" MaxWidth="620"
+                    HorizontalAlignment="Center" VerticalAlignment="Center"
+                    CornerRadius="16" Padding="24" BorderThickness="1"
                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="0,0,1,0" Padding="20,24">
-                <StackPanel Spacing="16">
-                    <Grid>
+                    Background="{ThemeResource SolidBackgroundFillColorBaseBrush}">
+                <StackPanel Spacing="20">
+                    <Grid ColumnSpacing="12">
                         <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="Auto" />
                         </Grid.ColumnDefinitions>
-                        <TextBlock Text="Open source" FontSize="23" FontWeight="SemiBold" />
-                        <Button Grid.Column="1" Content="Close"
-                                Click="CloseSourcePicker_Click" />
+                        <Border Width="48" Height="48" CornerRadius="12"
+                                Background="{ThemeResource AccentFillColorSecondaryBrush}"
+                                VerticalAlignment="Center">
+                            <SymbolIcon Symbol="OpenFile" />
+                        </Border>
+                        <StackPanel Grid.Column="1" Spacing="4" VerticalAlignment="Center">
+                            <TextBlock Text="Choose a source" FontSize="24"
+                                       FontWeight="SemiBold" />
+                            <TextBlock Text="Open media to scan and prepare an encode."
+                                       TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="Close"
+                                Click="CloseSourcePicker_Click"
+                                VerticalAlignment="Top" />
                     </Grid>
-                    <TextBlock Text="Choose a source to work with. You can also drag files or folders directly into the window."
-                               TextWrapping="Wrap"
-                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                    <Button Click="OpenFiles_Click" HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Left" Padding="14,12">
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Video file(s)" FontWeight="SemiBold" />
-                            <TextBlock Text="Select one or more files · Ctrl+O"
-                                       FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <Grid ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button Click="OpenFiles_Click" MinHeight="124" Padding="16"
+                                HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Center">
+                            <StackPanel Spacing="10">
+                                <SymbolIcon Symbol="OpenFile" />
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="Video files" FontWeight="SemiBold" />
+                                    <TextBlock Text="Select one or more files · Ctrl+O"
+                                               FontSize="12" TextWrapping="Wrap"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="1" Click="OpenFolder_Click" MinHeight="124"
+                                Padding="16" HorizontalContentAlignment="Stretch"
+                                VerticalContentAlignment="Center">
+                            <StackPanel Spacing="10">
+                                <SymbolIcon Symbol="Folder" />
+                                <StackPanel Spacing="3">
+                                    <TextBlock Text="Folder" FontWeight="SemiBold" />
+                                    <TextBlock Text="Scan a folder · Ctrl+Shift+O"
+                                               FontSize="12" TextWrapping="Wrap"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                </StackPanel>
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <Border CornerRadius="8" Padding="12"
+                            Background="{ThemeResource LayerFillColorDefaultBrush}">
+                        <StackPanel Orientation="Horizontal" Spacing="10">
+                            <SymbolIcon Symbol="Info" />
+                            <TextBlock Text="Tip: You can also drag files or folders directly into the window."
+                                       TextWrapping="Wrap" VerticalAlignment="Center" />
                         </StackPanel>
-                    </Button>
-                    <Button Click="OpenFolder_Click" HorizontalAlignment="Stretch"
-                            HorizontalContentAlignment="Left" Padding="14,12">
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Folder" FontWeight="SemiBold" />
-                            <TextBlock Text="Select a folder · Ctrl+Shift+O"
-                                       FontSize="12"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                    </Button>
-                    <TextBlock Text="Source scanning and batch encoding will be connected to HandBrake in a later milestone."
+                    </Border>
+                    <TextBlock Text="HandBrake scans the selected source with its native engine. No sample media details are fabricated."
                                FontSize="12" TextWrapping="Wrap"
                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                 </StackPanel>
             </Border>
-            <StackPanel Grid.Column="1" VerticalAlignment="Center"
-                        HorizontalAlignment="Center" Spacing="12" Margin="20">
-                <SymbolIcon Symbol="OpenFile" />
-                <TextBlock Text="Drop videos or a folder here"
-                           FontSize="21" TextAlignment="Center"
-                           TextWrapping="Wrap" />
-                <TextBlock Text="Escape this panel with Close; your Workspace stays intact."
-                           Foreground="White" TextAlignment="Center"
-                           TextWrapping="Wrap" />
-            </StackPanel>
         </Grid>
 
         <!-- Hit-test transparent feedback while dragging from File Explorer. -->
