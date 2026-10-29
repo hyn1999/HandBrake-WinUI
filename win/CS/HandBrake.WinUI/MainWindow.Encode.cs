@@ -345,7 +345,22 @@ public sealed partial class MainWindow
                 ? preset.AudioEncoderFallback
                 : "av_aac";
 
-        foreach (var sourceTrack in title.AudioList ?? new List<SourceAudioTrack>())
+        var selectedAudio = SelectAudioTracks(draft, title);
+        if (selectedAudio.Count > 0)
+        {
+            var nativeAudioEncoder = HandBrakeEncoderHelpers.AudioEncoders.FirstOrDefault(encoder => encoder.ShortName == audioEncoder);
+            bool compatible = nativeAudioEncoder is not null && (FormatPresetContainer(preset.FileFormat) switch
+            {
+                "MP4" => nativeAudioEncoder.SupportsMP4,
+                "MKV" => nativeAudioEncoder.SupportsMkv,
+                "WebM" => nativeAudioEncoder.SupportsWebM,
+                _ => false
+            });
+            if (!compatible)
+                throw new InvalidOperationException("The preset audio encoder is unavailable or incompatible with the output container. Choose another preset.");
+        }
+
+        foreach (var sourceTrack in selectedAudio)
         {
             var mixdown = HandBrakeEncoderHelpers.GetMixdown(audioRule?.AudioMixdown ?? "stereo");
             bool audioQuality = audioRule?.AudioTrackQualityEnable ?? false;
@@ -360,7 +375,7 @@ public sealed partial class MainWindow
                 Mixdown = mixdown?.Id ?? -1,
                 NormalizeMixLevel = audioRule?.AudioNormalizeMixLevel ?? false,
                 Samplerate = ResolveSampleRate(audioRule?.AudioSamplerate),
-                Name = sourceTrack.Name,
+                Name = draft.AudioTracks?.FirstOrDefault(track => track.TrackNumber == sourceTrack.TrackNumber)?.Name ?? sourceTrack.Name,
                 FilterList = new List<Filter>()
             });
         }

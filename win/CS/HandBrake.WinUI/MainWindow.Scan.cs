@@ -201,13 +201,7 @@ public sealed partial class MainWindow
             ? $"{chapterCount} chapter(s) detected in the source."
             : "No chapters detected.";
 
-        AudioTrackList.Children.Clear();
-        if (audioCount == 0) AddDetailLine(AudioTrackList, "No audio tracks detected.");
-        else foreach (var track in title.AudioList!)
-            AddDetailLine(AudioTrackList,
-                $"{track.TrackNumber}. {track.Language ?? "Unknown language"} · " +
-                $"{track.CodecName ?? track.Description ?? "Unknown codec"} · " +
-                $"{track.ChannelCount} channels");
+        DisplayAudioEditor(title);
 
         SubtitleTrackList.Children.Clear();
         if (subtitleCount == 0) AddDetailLine(SubtitleTrackList, "No subtitle tracks detected.");
@@ -232,6 +226,7 @@ public sealed partial class MainWindow
 
     private void ResetScanDetails()
     {
+        audioEditors.Clear();
         scannedTitles.Clear();
         SourceTitlePicker.Items.Clear();
         SourceTitlePicker.Visibility = Visibility.Collapsed;

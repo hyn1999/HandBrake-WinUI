@@ -250,8 +250,7 @@
                                                         <TextBlock Text="Tracks will appear after scanning a source."
                                                                    TextWrapping="Wrap" />
                                                     </StackPanel>
-                                                    <Button Content="Add track" IsEnabled="False"
-                                                            HorizontalAlignment="Left" />
+                                                    <TextBlock Text="Checked tracks are included in newly staged jobs, one output per source track. Uncheck all tracks for silent output. Output encoding currently uses the first audio rule of the selected preset; full audio rule editing is pending." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
