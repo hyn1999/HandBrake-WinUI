@@ -191,10 +191,8 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Filters" FontSize="17" FontWeight="SemiBold" />
-                                                    <CheckBox Content="Detelecine" IsEnabled="False" />
-                                                    <CheckBox Content="Deinterlace" IsEnabled="False" />
-                                                    <CheckBox Content="Denoise" IsEnabled="False" />
-                                                    <CheckBox Content="Sharpen" IsEnabled="False" />
+                                                    <TextBlock x:Name="FilterEditorStatus" Text="Filter presets and tunes require the matching native HandBrake engine." TextWrapping="Wrap" />
+                                                    <StackPanel x:Name="FilterEditorPanel" Spacing="24" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>

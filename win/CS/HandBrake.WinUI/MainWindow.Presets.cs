@@ -111,6 +111,7 @@ public sealed partial class MainWindow
             PresetPicker.IsEnabled = true;
             updatingVideoEditor = false;
             ApplyNativePreset();
+            InitializeFilterEditor();
             PresetStatusText.Text = $"{choices.Count} real built-in presets and {nativeVideoEncoders.Count} encoder definitions loaded from libhb.";
             UpdateQueueUi();
         }
@@ -140,6 +141,7 @@ public sealed partial class MainWindow
         var choice = ActivePresetChoice;
         if (choice is null) return;
         activePreset = choice.Preset;
+        foreach (var editor in filterEditors) editor.Enabled.IsChecked = false;
         ChapterMarkersToggle.IsChecked = activePreset.ChapterMarkers;
 
         updatingVideoEditor = true;

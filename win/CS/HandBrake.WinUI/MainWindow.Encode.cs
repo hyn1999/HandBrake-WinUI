@@ -470,7 +470,7 @@ public sealed partial class MainWindow
                     .Select(chapter => new Chapter { Name = chapter.Name })
                     .ToList()
             },
-            Filters = new Filters { FilterList = filters },
+            Filters = new Filters { FilterList = filters.Concat(BuildFilterOverrides(draft.FilterOverrides)).OrderBy(filter => filter.ID).ToList() },
             PAR = new PAR { Num = Math.Max(1, parNum), Den = Math.Max(1, parDen) },
             Metadata = metadata,
             CoverArts = title.CoverArts ?? new List<CoverArt>(),

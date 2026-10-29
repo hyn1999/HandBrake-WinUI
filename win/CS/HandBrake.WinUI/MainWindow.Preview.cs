@@ -176,7 +176,7 @@ public sealed partial class MainWindow
                 AlignAVStart = false,
                 ChapterList = new List<Chapter>()
             },
-            Filters = new Filters { FilterList = filters },
+            Filters = new Filters { FilterList = filters.Concat(BuildFilterOverrides(ReadFilterOverrides())).OrderBy(filter => filter.ID).ToList() },
             PAR = new PAR { Num = Math.Max(1, parNum), Den = Math.Max(1, parDen) },
             Metadata = title.MetaData ?? new Dictionary<string, string>(),
             CoverArts = title.CoverArts ?? new List<CoverArt>(),

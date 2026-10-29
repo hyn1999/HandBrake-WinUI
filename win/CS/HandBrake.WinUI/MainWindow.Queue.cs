@@ -18,6 +18,7 @@ namespace HandBrake.WinUI;
 /// </summary>
 public sealed class QueueDraft
 {
+    public List<FilterOverride>? FilterOverrides { get; set; }
     public GeometryOverride? Geometry { get; set; }
     public bool? ChapterMarkers { get; set; }
     public Dictionary<string, string>? MetadataOverrides { get; set; }
@@ -105,6 +106,10 @@ public sealed partial class MainWindow
 
         // A scanned folder can contain several titles. Preserve the actual
         // selected native title index instead of inventing a title number.
+        draft.FilterOverrides = ReadFilterOverrides();
+        // Validate selected native presets before persisting a configured entry.
+        foreach (var filter in BuildFilterOverrides(draft.FilterOverrides))
+            filter.Settings?.Dispose();
         draft.Geometry = ReadGeometryOverride(title);
         draft.ChapterMarkers = ChapterMarkersToggle.IsChecked == true;
         draft.MetadataOverrides = new Dictionary<string, string>();
