@@ -18,6 +18,7 @@ namespace HandBrake.WinUI;
 /// </summary>
 public sealed class QueueDraft
 {
+    public List<ImportedSubtitle>? SubtitleImports { get; set; }
     public List<SubtitleChoice>? Subtitles { get; set; }
     public List<AudioTrackChoice>? AudioTracks { get; set; }
     public List<FilterOverride>? FilterOverrides { get; set; }
@@ -108,6 +109,8 @@ public sealed partial class MainWindow
 
         // A scanned folder can contain several titles. Preserve the actual
         // selected native title index instead of inventing a title number.
+        draft.SubtitleImports = ReadImportedSubtitles();
+        BuildImportedSubtitles(draft.SubtitleImports, activePreset?.FileFormat ?? "");
         draft.Subtitles = ReadSubtitleChoices();
         BuildSubtitleTracks(draft.Subtitles, title, activePreset?.FileFormat ?? "");
         draft.AudioTracks = ReadAudioChoices();
@@ -150,7 +153,7 @@ public sealed partial class MainWindow
 
             QueueDraft draft;
             try { draft = CreateDraft(path, singleSource); }
-            catch (InvalidOperationException error)
+            catch (Exception error) when (error is InvalidOperationException or IOException or UnauthorizedAccessException or System.Text.DecoderFallbackException)
             {
                 QueueStatusText.Text = error.Message;
                 return;

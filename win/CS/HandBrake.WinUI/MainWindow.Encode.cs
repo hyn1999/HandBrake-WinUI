@@ -505,6 +505,7 @@ public sealed partial class MainWindow
             {
                 Search = new SubtitleSearch { Enable = false, Default = false, Burn = false, Forced = false },
                 SubtitleList = BuildSubtitleTracks(draft.Subtitles, title, preset.FileFormat ?? ContainerToMux(draft.Container))
+                    .Concat(BuildImportedSubtitles(draft.SubtitleImports, preset.FileFormat ?? ContainerToMux(draft.Container))).ToList()
             },
             Video = new Video
             {

@@ -221,6 +221,8 @@ public sealed partial class MainWindow
 
     private void ResetScanDetails()
     {
+        importedSubtitleEditors.Clear();
+        ImportedSubtitleList.Children.Clear();
         subtitleEditors.Clear();
         audioEditors.Clear();
         scannedTitles.Clear();
