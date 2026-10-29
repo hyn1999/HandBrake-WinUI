@@ -63,7 +63,7 @@
                             <Button x:Name="StageQueueButton" Grid.Column="2" Content="Add to queue"
                                     Click="StageQueue_Click" IsEnabled="False"
                                     VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="Stage selected source/title with its preset and video settings. Encoding is not connected yet." />
+                                    ToolTipService.ToolTip="Stage the scanned title and selected native preset for encoding." />
                             <Button x:Name="PreviewToggleButton" Grid.Column="3" Content="Preview"
                                     Click="PreviewToggle_Click" Visibility="Collapsed"
                                     VerticalAlignment="Center" />
@@ -343,7 +343,7 @@
                             </Border>
                         </Grid>
 
-                        <!-- Persistent action bar. Nonfunctional controls are deliberately disabled. -->
+                        <!-- Persistent action bar for the active native encode queue. -->
                         <Border Grid.Row="3" CornerRadius="10" Padding="10"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
