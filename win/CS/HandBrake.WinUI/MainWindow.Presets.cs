@@ -191,6 +191,7 @@ public sealed partial class MainWindow
         }
 
         UpdateSuggestedDestination();
+        UpdateEncodeAvailability();
 
         var prefs = SettingsPanel.Preferences;
         if (prefs.PreferredPresetKey != choice.Key)
