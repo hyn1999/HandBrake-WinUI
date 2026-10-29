@@ -28,6 +28,7 @@ public sealed partial class MainWindow
     private bool updatingVideoEditor;
     private HBPreset? activePreset;
     private readonly List<HBVideoEncoder> nativeVideoEncoders = new();
+    private readonly List<NativePresetChoice> nativePresetChoices = new();
 
     private NativePresetChoice? ActivePresetChoice
         => (PresetPicker.SelectedItem as ComboBoxItem)?.Tag as NativePresetChoice;
@@ -77,6 +78,8 @@ public sealed partial class MainWindow
             if (choices.Count == 0)
                 throw new InvalidOperationException("No usable built-in presets were returned by libhb.");
 
+            nativePresetChoices.Clear();
+            nativePresetChoices.AddRange(choices);
             nativeVideoEncoders.Clear();
             nativeVideoEncoders.AddRange(HandBrakeEncoderHelpers.VideoEncoders);
             if (nativeVideoEncoders.Count == 0)
@@ -290,7 +293,7 @@ public sealed partial class MainWindow
                     ? "This encoder cannot be used with the preset's output container. Select a compatible encoder."
                     : VideoRateModePicker.SelectedIndex < 0
                         ? "Select a supported rate-control mode to configure this draft."
-                        : "Video settings can be staged as a queue draft. Actual encoding is not yet enabled.";
+                        : "Ready to add this native preset and video configuration to the encode queue.";
     }
 
     private static bool IsContainerCompatible(string container, HBVideoEncoder encoder)
