@@ -6,6 +6,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.Windows.Storage.Pickers;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Storage;
@@ -17,10 +18,12 @@ public sealed partial class MainWindow : Window
     private bool isNarrow;
     private bool showPreviewOnNarrow;
     private readonly List<string> selectedSourcePaths = new();
+    private Storyboard? sourcePickerAnimation;
 
     public MainWindow()
     {
         InitializeComponent();
+        AppWindow.Resize(new Windows.Graphics.SizeInt32(1440, 900));
         SystemBackdrop = new MicaBackdrop();
         SettingsPanel.HostWindow = this;
         SettingsPanel.PreferencesChanged += (_, _) => ApplyPreferences();
@@ -56,7 +59,19 @@ public sealed partial class MainWindow : Window
         HomePanel.Visibility = page == "workspace" ? Visibility.Visible : Visibility.Collapsed;
         QueuePanel.Visibility = page == "queue" ? Visibility.Visible : Visibility.Collapsed;
         SettingsPanel.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
-        SourcePickerOverlay.Visibility = Visibility.Collapsed;
+        HideSourcePicker();
+        UIElement? activePanel = page switch
+        {
+            "workspace" => HomePanel,
+            "queue" => QueuePanel,
+            "settings" => SettingsPanel,
+            _ => null
+        };
+        if (activePanel is not null)
+        {
+            activePanel.Opacity = 0;
+            AnimateOpacity(activePanel, 0, 1, 160);
+        }
     }
 
     private void WorkspaceGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -113,11 +128,46 @@ public sealed partial class MainWindow : Window
     private void ShowSourcePicker()
     {
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
+        sourcePickerAnimation?.Stop();
         SourcePickerOverlay.Visibility = Visibility.Visible;
+        SourcePickerOverlay.Opacity = 0;
+        AnimateOpacity(SourcePickerOverlay, 0, 1, 180, storyboard => sourcePickerAnimation = storyboard);
     }
 
-    private void CloseSourcePicker_Click(object sender, RoutedEventArgs e)
-        => SourcePickerOverlay.Visibility = Visibility.Collapsed;
+    private void CloseSourcePicker_Click(object sender, RoutedEventArgs e) => HideSourcePicker();
+
+    private void HideSourcePicker()
+    {
+        if (SourcePickerOverlay.Visibility != Visibility.Visible) return;
+        sourcePickerAnimation?.Stop();
+        AnimateOpacity(SourcePickerOverlay, SourcePickerOverlay.Opacity, 0, 140, storyboard =>
+        {
+            sourcePickerAnimation = storyboard;
+            storyboard.Completed += (_, _) =>
+            {
+                if (SourcePickerOverlay.Opacity <= 0.01)
+                    SourcePickerOverlay.Visibility = Visibility.Collapsed;
+            };
+        });
+    }
+
+    private static void AnimateOpacity(UIElement target, double from, double to, int durationMs,
+        Action<Storyboard>? configure = null)
+    {
+        var animation = new DoubleAnimation
+        {
+            From = from,
+            To = to,
+            Duration = new Duration(TimeSpan.FromMilliseconds(durationMs)),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        var storyboard = new Storyboard();
+        Storyboard.SetTarget(animation, target);
+        Storyboard.SetTargetProperty(animation, "Opacity");
+        storyboard.Children.Add(animation);
+        configure?.Invoke(storyboard);
+        storyboard.Begin();
+    }
 
     private async void OpenFiles_Click(object sender, RoutedEventArgs e) => await PickFilesAsync();
 
