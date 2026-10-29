@@ -163,12 +163,12 @@
                                 <NumberBox x:Name="ScanPreviewCountBox"
                                            Header="Preview samples per title"
                                            Minimum="1" Maximum="60" Value="10"
-                                           SpinButtonPlacementMode="Compact"
+                                           SpinButtonPlacementMode="Inline"
                                            ValueChanged="ScanNumber_ValueChanged" />
                                 <NumberBox x:Name="MinimumDurationBox"
                                            Header="Minimum title duration (seconds)"
                                            Minimum="0" Maximum="3600" Value="0"
-                                           SpinButtonPlacementMode="Compact"
+                                           SpinButtonPlacementMode="Inline"
                                            ValueChanged="ScanNumber_ValueChanged" />
                                 <TextBlock Text="These values are passed directly to the HandBrake source scanner on the next scan."
                                            FontSize="12" TextWrapping="Wrap"
@@ -263,3 +263,4 @@
         </Grid>
     </Grid>
 </UserControl>
+

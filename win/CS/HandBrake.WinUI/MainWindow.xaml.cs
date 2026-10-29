@@ -27,6 +27,9 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+        WindowRoot.ActualThemeChanged += (_, _) => ApplyTitleBarTheme();
         SystemBackdrop = new MicaBackdrop();
         ConfigureInitialWindowBounds();
         SettingsPanel.HostWindow = this;
@@ -38,6 +41,9 @@ public sealed partial class MainWindow : Window
         InitializeSourceScanner();
         InitializeEncodeRunner();
     }
+
+    private void AppTitleBar_PaneToggleRequested(TitleBar sender, object args)
+        => AppNavigation.IsPaneOpen = !AppNavigation.IsPaneOpen;
 
     private void ConfigureInitialWindowBounds()
     {
@@ -72,37 +78,14 @@ public sealed partial class MainWindow : Window
         try
         {
             var titleBar = AppWindow.TitleBar;
-            Color? background = SettingsPanel.Preferences.Theme switch
-            {
-                "Dark" => Color.FromArgb(255, 31, 36, 37),
-                "Light" => Color.FromArgb(255, 239, 246, 248),
-                _ => null
-            };
-            Color? foreground = SettingsPanel.Preferences.Theme switch
-            {
-                "Dark" => Color.FromArgb(255, 245, 247, 248),
-                "Light" => Color.FromArgb(255, 28, 32, 33),
-                _ => null
-            };
-            Color? hover = SettingsPanel.Preferences.Theme switch
-            {
-                "Dark" => Color.FromArgb(255, 55, 62, 63),
-                "Light" => Color.FromArgb(255, 220, 231, 234),
-                _ => null
-            };
-            Color? pressed = SettingsPanel.Preferences.Theme switch
-            {
-                "Dark" => Color.FromArgb(255, 70, 78, 79),
-                "Light" => Color.FromArgb(255, 205, 220, 224),
-                _ => null
-            };
-
-            titleBar.BackgroundColor = background;
-            titleBar.ButtonBackgroundColor = background;
-            titleBar.ForegroundColor = foreground;
-            titleBar.ButtonForegroundColor = foreground;
-            titleBar.ButtonHoverBackgroundColor = hover;
-            titleBar.ButtonPressedBackgroundColor = pressed;
+            bool dark = WindowRoot.ActualTheme == ElementTheme.Dark;
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+            titleBar.ButtonForegroundColor = dark ? Colors.White : Colors.Black;
+            titleBar.ButtonHoverBackgroundColor = dark
+                ? Color.FromArgb(32, 255, 255, 255) : Color.FromArgb(24, 0, 0, 0);
+            titleBar.ButtonPressedBackgroundColor = dark
+                ? Color.FromArgb(48, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0);
 
             string iconPath = Path.Combine(AppContext.BaseDirectory, "HandBrake-WinUI.ico");
             if (File.Exists(iconPath))

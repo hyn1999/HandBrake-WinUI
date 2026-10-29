@@ -10,12 +10,25 @@
             <KeyboardAccelerator Key="O" Modifiers="Control" Invoked="OpenFiles_AcceleratorInvoked" />
             <KeyboardAccelerator Key="O" Modifiers="Control,Shift" Invoked="OpenFolder_AcceleratorInvoked" />
         </Grid.KeyboardAccelerators>
-        <NavigationView x:Name="AppNavigation"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TitleBar x:Name="AppTitleBar" Title="HandBrake"
+                  IsPaneToggleButtonVisible="True"
+                  PaneToggleRequested="AppTitleBar_PaneToggleRequested">
+            <TitleBar.IconSource>
+                <ImageIconSource ImageSource="ms-appx:///Assets/HandBrake.png" />
+            </TitleBar.IconSource>
+        </TitleBar>
+        <NavigationView x:Name="AppNavigation" Grid.Row="1"
                         Loaded="AppNavigation_Loaded"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
-                        PaneDisplayMode="Left"
-                        OpenPaneLength="216"
+                        PaneDisplayMode="Auto"
+                        IsPaneToggleButtonVisible="False"
+                        IsTitleBarAutoPaddingEnabled="False"
+                        OpenPaneLength="240"
                         SelectionChanged="AppNavigation_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Workspace" Tag="workspace">
@@ -139,7 +152,7 @@
                                                                Text="No native preset loaded." TextWrapping="Wrap" />
                                                     <TextBlock Text="Output container (from preset)" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="PresetContainerText" Text="Not available" />
-                                                    <TextBlock Text="Other preset options (audio, filters, dimensions and subtitles) are preserved in the native preset definition but are not yet editable or mapped into an encode job."
+                                                    <TextBlock Text="This frontend is under development. Audio, subtitles, filters and dimensions do not yet reproduce all preset behavior. Review the integration status before encoding."
                                                                TextWrapping="Wrap" FontSize="12"
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
@@ -443,7 +456,7 @@
             </NavigationView.Content>
         </NavigationView>
         <!-- Fluent source dialog: source selection stays in the Workspace context. -->
-        <Grid x:Name="SourcePickerOverlay" Visibility="Collapsed"
+        <Grid x:Name="SourcePickerOverlay" Grid.Row="1" Visibility="Collapsed"
               Background="#77000000" Opacity="1">
             <Grid.Transitions>
                 <TransitionCollection>
@@ -512,7 +525,7 @@
         </Grid>
 
         <!-- Hit-test transparent feedback while dragging from File Explorer. -->
-        <Border x:Name="DropHighlight" Visibility="Collapsed"
+        <Border x:Name="DropHighlight" Grid.Row="1" Visibility="Collapsed"
                 IsHitTestVisible="False" Margin="12" CornerRadius="12"
                 BorderThickness="3" BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
                 Background="#330080C0">

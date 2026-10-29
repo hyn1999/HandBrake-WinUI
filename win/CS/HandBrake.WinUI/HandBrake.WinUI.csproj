@@ -31,13 +31,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Assets\HandBrake-WinUI.ico" Link="HandBrake-WinUI.ico" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Assets\HandBrake.png" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <Content Include="Assets\HandBrake-WinUI.ico" Link="HandBrake-WinUI.ico" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
   </ItemGroup>
-
-  <!-- Generate the multi-size Fluent app icon before native resource compilation. -->
-  <Target Name="GenerateHandBrakeWinUIIcon" BeforeTargets="PrepareForBuild">
-    <Exec Command="powershell.exe -NoProfile -ExecutionPolicy Bypass -File &quot;$(MSBuildProjectDirectory)\scripts\New-HandBrakeWinUIIcon.ps1&quot; -OutputPath &quot;$(MSBuildProjectDirectory)\Assets\HandBrake-WinUI.ico&quot;" />
-  </Target>
 
   <!-- Work around the Windows App SDK unpackaged dotnet publish issue:
        the generated app-specific .pri is produced during build but is not
@@ -54,3 +50,4 @@
     </ItemGroup>
   </Target>
 </Project>
+
