@@ -45,6 +45,7 @@
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Spacing="2" VerticalAlignment="Center">
                                 <TextBlock Text="Workspace" FontSize="23" FontWeight="SemiBold" />
@@ -60,7 +61,11 @@
                             </StackPanel>
                             <Button Grid.Column="1" Content="Open source" Click="ShowSourcePicker_Click"
                                     VerticalAlignment="Center" Style="{StaticResource AccentButtonStyle}" />
-                            <Button x:Name="PreviewToggleButton" Grid.Column="2" Content="Preview"
+                            <Button x:Name="StageQueueButton" Grid.Column="2" Content="Add to queue"
+                                    Click="StageQueue_Click" IsEnabled="False"
+                                    VerticalAlignment="Center"
+                                    ToolTipService.ToolTip="Stage sources as drafts. Encoding is not connected yet." />
+                            <Button x:Name="PreviewToggleButton" Grid.Column="3" Content="Preview"
                                     Click="PreviewToggle_Click" Visibility="Collapsed"
                                     VerticalAlignment="Center" />
                         </Grid>
@@ -314,12 +319,59 @@
                         </Border>
                     </Grid>
 
-                    <StackPanel x:Name="QueuePanel" Visibility="Collapsed" Spacing="14">
-                        <TextBlock Text="Queue" FontSize="23" FontWeight="SemiBold" />
-                        <InfoBar IsOpen="True" IsClosable="False"
-                                 Severity="Informational" Title="Queue preview"
-                                 Message="Queue operations will be connected to the existing HandBrake services in a future milestone." />
-                    </StackPanel>
+                    <Grid x:Name="QueuePanel" Visibility="Collapsed" RowSpacing="12">
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="*" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="Queue" FontSize="23" FontWeight="SemiBold" />
+                            <TextBlock x:Name="QueueCountText" Text="No staged sources"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        </StackPanel>
+                        <InfoBar Grid.Row="1" IsOpen="True" IsClosable="False"
+                                 Severity="Informational" Title="Draft queue"
+                                 Message="Sources can be staged, removed and kept between sessions. These are drafts, not runnable encoding jobs. Encoding will be enabled only after the engine and presets are connected." />
+                        <Border Grid.Row="2" CornerRadius="10" Padding="8"
+                                BorderThickness="1"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                            <ListView x:Name="DraftQueueList" SelectionMode="Single"
+                                      SelectionChanged="DraftQueueList_SelectionChanged">
+                                <ListView.ItemTemplate>
+                                    <DataTemplate>
+                                        <StackPanel Spacing="4" Padding="6">
+                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
+                                            <TextBlock Text="{Binding SourcePath}" FontSize="12"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock Text="Draft · awaiting encoder configuration" FontSize="12"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                        </StackPanel>
+                                    </DataTemplate>
+                                </ListView.ItemTemplate>
+                            </ListView>
+                        </Border>
+                        <Grid Grid.Row="3" ColumnSpacing="10">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock x:Name="QueueStatusText" VerticalAlignment="Center"
+                                       FontSize="12" TextWrapping="Wrap"
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                       Text="Choose a source in Workspace, then Add to queue." />
+                            <Button x:Name="RemoveDraftButton" Grid.Column="1"
+                                    Content="Remove selected" IsEnabled="False"
+                                    Click="RemoveDraft_Click" />
+                            <Button x:Name="ClearDraftsButton" Grid.Column="2"
+                                    Content="Clear drafts" IsEnabled="False"
+                                    Click="ClearDrafts_Click" />
+                        </Grid>
+                    </Grid>
 
                     <local:PreferencesView x:Name="SettingsPanel" Visibility="Collapsed" />
                 </Grid>

@@ -25,6 +25,7 @@ public sealed partial class MainWindow : Window
         SettingsPanel.HostWindow = this;
         SettingsPanel.PreferencesChanged += (_, _) => ApplyPreferences();
         ApplyPreferences();
+        InitializeDraftQueue();
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
         InitializeSourceScanner();
     }
@@ -246,6 +247,7 @@ public sealed partial class MainWindow : Window
 
         selectedSourcePaths.Clear();
         selectedSourcePaths.AddRange(paths);
+        StageQueueButton.IsEnabled = true;
 
         string first = paths[0];
         bool isFolder = Directory.Exists(first);

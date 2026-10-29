@@ -72,3 +72,8 @@ The primary navigation retains **Workspace**, **Queue** and **Preferences**. Pre
 - **Intentionally unavailable until integration:** language/RTL localization, completion actions (shutdown/sleep/notifications), auto-update checks and actual encoding/destination writes. These are visibly described as unavailable, not silently simulated.
 - Preferences are stored at `%LOCALAPPDATA%\\HandBrake\\WinUI3\\preferences.json` to avoid corrupting or overwriting the original WPF `settings.json`. The reset button affects **only** the WinUI frontend.
 - This code is not yet compiled or exercised on a Windows machine; validate UI navigation, persistence after restart, scanner parameter propagation and DPI scaling during the next manual integrated build.
+
+
+## Queue draft staging (not encoding)
+
+The Workspace **Add to queue** button stages selected file/folder paths as source drafts, with duplicate prevention. The Queue section can list, remove and clear staged sources. Drafts survive restarts in `%LOCALAPPDATA%\\HandBrake\\WinUI3\\queue-drafts.json`. These are **not HandBrake encoding jobs**: they do not include presets, destinations, title selection or encoder state and cannot be started. This intentional staging step is not a substitute for the real queue service integration.
