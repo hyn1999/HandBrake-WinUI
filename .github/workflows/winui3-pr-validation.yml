@@ -1,0 +1,86 @@
+name: WinUI 3 Pull Request Validation
+
+# Fast managed/XAML build for UI and interaction changes.
+# The native HandBrake library is intentionally built only by the full preview workflow.
+on:
+  push:
+    branches:
+      - chore/winui-integration
+    paths:
+      - "win/CS/HandBrake.WinUI/**"
+      - "win/CS/HandBrake.Interop/**"
+      - "win/CS/HandBrake.App.Core/**"
+      - ".github/workflows/winui3-pr-validation.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: winui3-pr-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-winui-x64:
+    name: Compile and publish WinUI 3 x64 (managed)
+    runs-on: windows-2025
+    timeout-minutes: 25
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-winui3-${{ hashFiles('win/CS/**/*.csproj', 'win/CS/**/*.props', 'win/CS/**/*.targets') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-winui3-
+
+      - name: Publish UI and managed integration
+        shell: pwsh
+        run: |
+          dotnet publish win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained false `
+            -p:Platform=x64 `
+            -p:WindowsAppSDKSelfContained=false `
+            --output "$env:RUNNER_TEMP/HandBrake-WinUI3-Validation"
+
+      - name: Verify the framework-dependent package
+        shell: pwsh
+        run: |
+          $publishDir = Join-Path $env:RUNNER_TEMP "HandBrake-WinUI3-Validation"
+          $requiredFiles = @(
+            "HandBrake.WinUI.exe",
+            "HandBrake.WinUI.pri",
+            "HandBrake.Interop.dll",
+            "HandBrake.WinUI.runtimeconfig.json"
+          )
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path -LiteralPath (Join-Path $publishDir $file))) {
+              throw "Missing published dependency: $file"
+            }
+          }
+          if (Test-Path (Join-Path $publishDir "coreclr.dll")) {
+            throw "Unexpected bundled .NET runtime (coreclr.dll)"
+          }
+          $runtimeConfig = Get-Content (Join-Path $publishDir "HandBrake.WinUI.runtimeconfig.json") -Raw | ConvertFrom-Json
+          if (-not $runtimeConfig.runtimeOptions.framework -and -not $runtimeConfig.runtimeOptions.frameworks) {
+            throw "Missing framework dependency in runtimeconfig.json"
+          }
+          Write-Host "Managed WinUI package verified. This check does not claim that native hb.dll is present."
+
+      - name: Upload validation package
+        uses: actions/upload-artifact@v4
+        with:
+          name: HandBrake-WinUI3-PR-Validation-x64
+          path: ${{ runner.temp }}/HandBrake-WinUI3-Validation/
+          if-no-files-found: error
+          retention-days: 1
+

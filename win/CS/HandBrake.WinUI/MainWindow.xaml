@@ -29,13 +29,8 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <NavigationView.Content>
-                <Grid Padding="20,16,20,16">
-                    <Grid x:Name="HomePanel" RowSpacing="16">
-                        <Grid.Transitions>
-                            <TransitionCollection>
-                                <EntranceThemeTransition FromVerticalOffset="8" />
-                            </TransitionCollection>
-                        </Grid.Transitions>
+                <Grid Padding="16,12,16,12">
+                    <Grid x:Name="HomePanel" RowSpacing="12">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -68,7 +63,7 @@
                             <Button x:Name="StageQueueButton" Grid.Column="2" Content="Add to queue"
                                     Click="StageQueue_Click" IsEnabled="False"
                                     VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="Stage selected source/title with its preset and video settings. Encoding is not connected yet." />
+                                    ToolTipService.ToolTip="Stage the scanned title and selected native preset for encoding." />
                             <Button x:Name="PreviewToggleButton" Grid.Column="3" Content="Preview"
                                     Click="PreviewToggle_Click" Visibility="Collapsed"
                                     VerticalAlignment="Center" />
@@ -94,7 +89,7 @@
                                          Value="0" Height="4" />
                         </StackPanel>
 
-                        <Grid x:Name="WorkspaceGrid" Grid.Row="2" ColumnSpacing="16"
+                        <Grid x:Name="WorkspaceGrid" Grid.Row="2" ColumnSpacing="12"
                               SizeChanged="WorkspaceGrid_SizeChanged">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition x:Name="EditorColumn" Width="*" />
@@ -103,10 +98,10 @@
 
                             <!-- Editor: all HandBrake settings are visible as compact categories. -->
                             <Border x:Name="EditorPanel" Grid.Column="0"
-                                    CornerRadius="12" BorderThickness="1"
+                                    CornerRadius="10" BorderThickness="1"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                <Grid RowSpacing="12" Padding="16">
+                                <Grid RowSpacing="8" Padding="12">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="*" />
@@ -129,7 +124,7 @@
                                              TabWidthMode="SizeToContent">
                                         <TabViewItem Header="Summary" IsClosable="False">
                                             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                                <StackPanel Padding="8,16,12,16" Spacing="12">
+                                                <StackPanel Padding="6,12,10,12" Spacing="12">
                                                     <TextBlock Text="Output summary" FontSize="17"
                                                                FontWeight="SemiBold" />
                                                     <TextBlock x:Name="ScanSummaryText"
@@ -214,7 +209,7 @@
                                                     <NumberBox x:Name="VideoBitrateBox"
                                                                Header="Average bitrate (kbps)"
                                                                Minimum="100" Maximum="200000"
-                                                               Value="2500" SpinButtonPlacementMode="Inline"
+                                                               Value="2500" SpinButtonPlacementMode="Compact"
                                                                Visibility="Collapsed" IsEnabled="False"
                                                                ValueChanged="VideoBitrateBox_ValueChanged" />
                                                     <TextBlock Text="Framerate and encoder tuning (from preset)"
@@ -285,7 +280,7 @@
 
                             <!-- Fixed right-hand preview, with a narrow-window fallback. -->
                             <Border x:Name="PreviewPanel" Grid.Column="1"
-                                    CornerRadius="12" BorderThickness="1"
+                                    CornerRadius="10" BorderThickness="1"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                                 <Grid Padding="12" RowSpacing="12">
@@ -295,44 +290,61 @@
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <TextBlock Text="Preview" FontSize="17" FontWeight="SemiBold" />
-                                    <Border Grid.Row="1" Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                            CornerRadius="8" MinHeight="190" VerticalAlignment="Stretch">
-                                        <Grid>
-                                            <Image x:Name="PreviewFrameImage" Stretch="Uniform"
-                                                   Visibility="Collapsed" />
-                                            <StackPanel x:Name="PreviewPlaceholder"
-                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                        Spacing="8" Margin="12">
-                                                <SymbolIcon Symbol="Pictures" />
-                                                <TextBlock Text="Video frame preview"
-                                                           HorizontalAlignment="Center" />
-                                                <TextBlock x:Name="PreviewPlaceholderText"
-                                                           Text="Scan a source, then generate a frame."
-                                                           TextWrapping="Wrap" TextAlignment="Center"
-                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            </StackPanel>
+                                    <Grid Grid.Row="1" RowSpacing="8">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                                CornerRadius="8" Height="220" VerticalAlignment="Top">
+                                            <Grid>
+                                                <Image x:Name="PreviewFrame" Stretch="Uniform"
+                                                       Visibility="Collapsed" />
+                                                <StackPanel x:Name="PreviewPlaceholder"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
+                                                            Spacing="8" Margin="16">
+                                                    <SymbolIcon Symbol="Pictures" />
+                                                    <TextBlock x:Name="PreviewPlaceholderText"
+                                                               Text="Choose a source to decode a real frame"
+                                                               TextWrapping="Wrap" TextAlignment="Center" />
+                                                    <TextBlock Text="Decoded by the native HandBrake engine"
+                                                               TextWrapping="Wrap" TextAlignment="Center"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                        <Grid Grid.Row="1" ColumnSpacing="8">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button x:Name="PreviousPreviewButton" Content="Previous frame"
+                                                    IsEnabled="False" Click="PreviousPreview_Click" />
+                                            <TextBlock x:Name="PreviewFrameCounterText" Grid.Column="1"
+                                                       Text="No frame" VerticalAlignment="Center"
+                                                       HorizontalAlignment="Center"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <Button x:Name="NextPreviewButton" Grid.Column="2"
+                                                    Content="Next frame" IsEnabled="False"
+                                                    Click="NextPreview_Click" />
                                         </Grid>
-                                    </Border>
-                                    <StackPanel Grid.Row="2" Spacing="8">
-                                        <Button x:Name="GeneratePreviewButton" Content="Generate preview frame"
-                                                HorizontalAlignment="Stretch" IsEnabled="False"
-                                                Click="GeneratePreview_Click" />
+                                    </Grid>
+                                    <StackPanel Grid.Row="2" Spacing="6">
                                         <TextBlock Text="Source details" FontWeight="SemiBold" />
                                         <TextBlock x:Name="PreviewSourceText" Text="No source selected"
                                                    TextWrapping="Wrap" />
                                         <TextBlock x:Name="PreviewMetadataText"
                                                    Text="Scan a video to display its properties."
                                                    TextWrapping="Wrap" />
-                                        <TextBlock x:Name="PreviewStatusText" Text="Preview is waiting for a scanned title."
-                                                   FontSize="12" TextWrapping="Wrap"
-                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                 </Grid>
                             </Border>
                         </Grid>
 
-                        <!-- Persistent action bar. Nonfunctional controls are deliberately disabled. -->
-                        <Border Grid.Row="3" CornerRadius="12" Padding="12"
+                        <!-- Persistent action bar for the active native encode queue. -->
+                        <Border Grid.Row="3" CornerRadius="10" Padding="10"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
@@ -349,8 +361,9 @@
                                                x:Name="DestinationText" />
                                 </StackPanel>
                                 <Button x:Name="StartEncodeButton" Grid.Column="1" Content="Start Encode"
-                                        Click="StartEncode_Click" IsEnabled="False"
-                                        ToolTipService.ToolTip="Encode the selected title with the active native HandBrake preset." />
+                                        IsEnabled="False" Click="StartEncode_Click"
+                                        Style="{StaticResource AccentButtonStyle}"
+                                        ToolTipService.ToolTip="Encode configured queue items with the native HandBrake engine." />
                             </Grid>
                         </Border>
                     </Grid>
@@ -368,9 +381,9 @@
                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                         </StackPanel>
                         <InfoBar Grid.Row="1" IsOpen="True" IsClosable="False"
-                                 Severity="Informational" Title="Draft queue"
-                                 Message="Staged sources can include a scanned title, native preset and video settings. These are configuration drafts, not runnable encode jobs. Start Encode remains disabled until full job construction and validation are implemented." />
-                        <Border Grid.Row="2" CornerRadius="12" Padding="12"
+                                 Severity="Informational" Title="Native encode queue"
+                                 Message="Configured items are validated and processed sequentially by the matching HandBrake engine. Scan a title and choose a native preset before staging a job." />
+                        <Border Grid.Row="2" CornerRadius="10" Padding="8"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
@@ -394,22 +407,34 @@
                                 </ListView.ItemTemplate>
                             </ListView>
                         </Border>
-                        <Grid Grid.Row="3" ColumnSpacing="10">
+                        <Grid Grid.Row="3" ColumnSpacing="8">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*" />
                                 <ColumnDefinition Width="Auto" />
                                 <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="QueueStatusText" VerticalAlignment="Center"
-                                       FontSize="12" TextWrapping="Wrap"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       Text="Choose a source in Workspace, then Add to queue." />
+                            <StackPanel Spacing="4" VerticalAlignment="Center">
+                                <TextBlock x:Name="QueueStatusText" FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           Text="Choose a scanned title and native preset, then add it to the queue." />
+                                <ProgressBar x:Name="QueueEncodeProgress" Height="4" Minimum="0"
+                                             Maximum="100" Value="0" Visibility="Collapsed" />
+                            </StackPanel>
                             <Button x:Name="RemoveDraftButton" Grid.Column="1"
                                     Content="Remove selected" IsEnabled="False"
                                     Click="RemoveDraft_Click" />
                             <Button x:Name="ClearDraftsButton" Grid.Column="2"
-                                    Content="Clear drafts" IsEnabled="False"
+                                    Content="Clear queue" IsEnabled="False"
                                     Click="ClearDrafts_Click" />
+                            <Button x:Name="CancelEncodeButton" Grid.Column="3"
+                                    Content="Stop" IsEnabled="False"
+                                    Click="CancelEncode_Click" />
+                            <Button x:Name="StartQueueEncodeButton" Grid.Column="4"
+                                    Content="Start Encode" IsEnabled="False"
+                                    Click="StartEncode_Click"
+                                    Style="{StaticResource AccentButtonStyle}" />
                         </Grid>
                     </Grid>
 

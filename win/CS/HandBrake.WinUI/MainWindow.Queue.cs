@@ -42,7 +42,7 @@ public sealed class QueueDraft
         ? $"Title {TitleIndex} · {PresetName} · {VideoEncoder} · " +
           (VideoRateControl == "ConstantQuality"
               ? $"quality {VideoQuality:0.##}" : $"{VideoBitrateKbps} kbps") +
-          $" · {Container} · configuration draft (not runnable)"
+          $" · {Container} · ready to encode"
         : "Source-only draft · scan a title and select a native preset to configure";
 
     [JsonIgnore]
@@ -78,6 +78,7 @@ public sealed partial class MainWindow
             QueueStatusText.Text = "Unable to load saved queue drafts: " + ex.Message;
         }
         UpdateQueueUi();
+        UpdateEncodeControls();
     }
 
     private QueueDraft CreateDraft(string path, bool allowVideoConfiguration)
@@ -205,6 +206,7 @@ public sealed partial class MainWindow
             : $"{draftQueue.Count} draft(s) · {configured} configured · none running";
         RemoveDraftButton.IsEnabled = DraftQueueList.SelectedItem is QueueDraft;
         ClearDraftsButton.IsEnabled = draftQueue.Count > 0;
+        UpdateEncodeControls();
     }
 
     private void SaveDraftQueue()
@@ -224,3 +226,4 @@ public sealed partial class MainWindow
         }
     }
 }
+
