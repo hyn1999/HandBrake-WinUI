@@ -24,6 +24,8 @@ public sealed partial class MainWindow
     private HandBrakeInstance? scanInstance;
     private bool scanInProgress;
     private bool scanWasCancelled;
+    private bool encodeInProgress;
+    private string? activeEncodeDestination;
     private readonly List<SourceTitle> scannedTitles = new();
 
     private void InitializeSourceScanner()
@@ -176,6 +178,7 @@ public sealed partial class MainWindow
     private void DisplayScannedTitle(SourceTitle title)
     {
         GeneratePreviewButton.IsEnabled = true;
+        UpdateEncodeAvailability();
         selectedScannedTitleName = title.Name;
         UpdateSuggestedDestination();
         string resolution = title.Geometry is null
@@ -227,6 +230,198 @@ public sealed partial class MainWindow
     {
         if (duration is null) return "Unknown duration";
         return $"{duration.Hours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
+    }
+
+    private void UpdateEncodeAvailability()
+    {
+        bool hasTitle = SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: SourceTitle };
+        bool hasNativeEngine = File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll"));
+        StartEncodeButton.IsEnabled = hasTitle && activePreset is not null &&
+            hasNativeEngine && !scanInProgress && !encodeInProgress;
+    }
+
+    private void StartEncode_Click(object sender, RoutedEventArgs e)
+    {
+        if (encodeInProgress) return;
+        if (scanInstance is null ||
+            SourceTitlePicker.SelectedItem is not ComboBoxItem { Tag: SourceTitle title } ||
+            activePreset is null)
+        {
+            SourceStatusText.Text = "Scan a source and select a native HandBrake preset before encoding.";
+            return;
+        }
+
+        string? destination = GetSuggestedOutputPath();
+        if (string.IsNullOrWhiteSpace(destination) ||
+            string.IsNullOrWhiteSpace(Path.GetDirectoryName(destination)) ||
+            !Directory.Exists(Path.GetDirectoryName(destination)))
+        {
+            SourceStatusText.Text = "Choose a valid output folder before starting the encode.";
+            return;
+        }
+
+        try
+        {
+            JsonEncodeObject job = CreateEncodeJob(title, destination);
+            activeEncodeDestination = destination;
+            encodeInProgress = true;
+            StartEncodeButton.IsEnabled = false;
+            GeneratePreviewButton.IsEnabled = false;
+            SourceScanProgress.IsIndeterminate = true;
+            SourceScanProgress.Value = 0;
+            SourceScanProgress.Visibility = Visibility.Visible;
+            SourceStatusText.Text = "Starting native HandBrake encode…";
+
+            scanInstance.EncodeProgress -= NativeEncodeProgress;
+            scanInstance.EncodeCompleted -= NativeEncodeCompleted;
+            scanInstance.EncodeProgress += NativeEncodeProgress;
+            scanInstance.EncodeCompleted += NativeEncodeCompleted;
+            scanInstance.StartEncode(job);
+        }
+        catch (Exception ex)
+        {
+            encodeInProgress = false;
+            SourceScanProgress.Visibility = Visibility.Collapsed;
+            SourceStatusText.Text = "HandBrake could not start encoding: " + ex.Message;
+            UpdateEncodeAvailability();
+        }
+    }
+
+    private JsonEncodeObject CreateEncodeJob(SourceTitle title, string destination)
+    {
+        var preset = activePreset!;
+        var audioPreset = preset.AudioList?.FirstOrDefault();
+        string encoder = ActiveVideoEncoder?.ShortName ?? preset.VideoEncoder ?? "x264";
+        bool useQuality = VideoRateModePicker.SelectedIndex == 0;
+        decimal quality = (decimal)Math.Clamp(VideoQualitySlider.Value, 0, 51);
+        int bitrate = (int)Math.Clamp(VideoBitrateBox.Value, 100, 200000);
+        var audioTracks = new List<AudioTrack>();
+
+        // Use the active HandBrake preset's audio template for each source track.
+        // Track selection remains explicit; no audio tracks are invented if the source has none.
+        if (title.AudioList is not null)
+        {
+            foreach (var sourceTrack in title.AudioList)
+            {
+                audioTracks.Add(new AudioTrack
+                {
+                    Track = sourceTrack.TrackNumber,
+                    Encoder = audioPreset?.AudioEncoder ?? preset.AudioEncoderFallback ?? "av_aac",
+                    Bitrate = audioPreset?.AudioBitrate > 0 ? audioPreset.AudioBitrate : 160,
+                    CompressionLevel = audioPreset?.AudioCompressionLevel,
+                    DRC = audioPreset?.AudioTrackDRCSlider ?? 0,
+                    Gain = audioPreset?.AudioTrackGainSlider ?? 0,
+                    Mixdown = 0,
+                    Samplerate = int.TryParse(audioPreset?.AudioSamplerate, out int sampleRate) ? sampleRate : 0,
+                    Quality = audioPreset?.AudioTrackQualityEnable == true ? audioPreset.AudioTrackQuality : null,
+                    NormalizeMixLevel = audioPreset?.AudioNormalizeMixLevel ?? false,
+                    FilterList = new List<Filter>()
+                });
+            }
+        }
+
+        return new JsonEncodeObject
+        {
+            SequenceID = 0,
+            Source = new HandBrake.Interop.Interop.Json.Encode.Source
+            {
+                Path = title.Path,
+                Title = title.Index,
+                Angle = 1,
+                HWDecode = 0,
+                KeepDuplicateTitles = SettingsPanel.Preferences.KeepDuplicateTitles,
+                Range = new HandBrake.Interop.Interop.Json.Encode.Range
+                {
+                    Type = "chapter",
+                    Start = 1,
+                    End = Math.Max(1, title.ChapterList?.Count ?? 1)
+                }
+            },
+            Destination = new Destination
+            {
+                File = destination,
+                Mux = preset.FileFormat ?? "av_mp4",
+                ChapterMarkers = preset.ChapterMarkers,
+                AlignAVStart = preset.AlignAVStart,
+                Options = new Options { Optimize = preset.Optimize, IpodAtom = preset.Mp4iPodCompatible },
+                ChapterList = title.ChapterList?.Select(chapter => new Chapter { Name = chapter.Name }).ToList()
+                    ?? new List<Chapter>()
+            },
+            Video = new HandBrake.Interop.Interop.Json.Encode.Video
+            {
+                Encoder = encoder,
+                Preset = preset.VideoPreset ?? "medium",
+                Tune = preset.VideoTune ?? string.Empty,
+                Profile = preset.VideoProfile ?? string.Empty,
+                Level = preset.VideoLevel ?? string.Empty,
+                Options = preset.VideoOptionExtra ?? string.Empty,
+                Quality = useQuality ? quality : null,
+                Bitrate = useQuality ? null : bitrate,
+                MultiPass = !useQuality && preset.VideoMultiPass,
+                Turbo = !useQuality && preset.VideoTurboMultiPass,
+                HardwareDecode = 0
+            },
+            Audio = new Audio
+            {
+                AudioList = audioTracks,
+                CopyMask = preset.AudioCopyMask?.ToArray() ?? Array.Empty<string>(),
+                FallbackEncoder = preset.AudioEncoderFallback ?? "av_aac"
+            },
+            Subtitle = new Subtitles
+            {
+                Search = new SubtitleSearch
+                {
+                    Enable = preset.SubtitleAddForeignAudioSearch,
+                    Default = false,
+                    Burn = preset.SubtitleAddForeignAudioSubtitle,
+                    Forced = false
+                },
+                SubtitleList = new List<SubtitleTrack>()
+            },
+            Filters = new Filters { FilterList = new List<Filter>() },
+            PAR = new PAR { Num = 1, Den = 1 },
+            Metadata = new Dictionary<string, string>(),
+            CoverArts = new List<CoverArt>()
+        };
+    }
+
+    private void NativeEncodeProgress(object? sender, EncodeProgressEventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            if (!encodeInProgress) return;
+            SourceScanProgress.IsIndeterminate = false;
+            SourceScanProgress.Value = Math.Clamp(e.FractionComplete * 100.0, 0, 100);
+            SourceScanProgress.Visibility = Visibility.Visible;
+            SourceStatusText.Text = $"Encoding · {SourceScanProgress.Value:0}% · " +
+                $"{e.AverageFrameRate:0.0} fps average · {e.EstimatedTimeLeft:hh\\:mm\\:ss} remaining";
+        });
+    }
+
+    private void NativeEncodeCompleted(object? sender, EncodeCompletedEventArgs e)
+    {
+        DispatcherQueue.TryEnqueue(() =>
+        {
+            encodeInProgress = false;
+            SourceScanProgress.Visibility = Visibility.Collapsed;
+            if (scanInstance is not null)
+            {
+                scanInstance.EncodeProgress -= NativeEncodeProgress;
+                scanInstance.EncodeCompleted -= NativeEncodeCompleted;
+            }
+
+            if (e.Error == 0 && !string.IsNullOrWhiteSpace(activeEncodeDestination) &&
+                File.Exists(activeEncodeDestination))
+            {
+                SourceStatusText.Text = "Encode completed · " + activeEncodeDestination;
+            }
+            else
+            {
+                SourceStatusText.Text = $"HandBrake encode ended with error code {e.Error}. Check the output path and selected preset.";
+            }
+
+            UpdateEncodeAvailability();
+        });
     }
 
     private async void GeneratePreview_Click(object sender, RoutedEventArgs e)
