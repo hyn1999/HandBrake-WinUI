@@ -3,6 +3,14 @@ name: WinUI 3 Pull Request Validation
 # Fast managed/XAML build for UI and interaction changes.
 # The native HandBrake library is intentionally built only by the full preview workflow.
 on:
+  push:
+    branches:
+      - feat/winui3-fluent-preview-encode
+    paths:
+      - "win/CS/HandBrake.WinUI/**"
+      - "win/CS/HandBrake.Interop/**"
+      - "win/CS/HandBrake.App.Core/**"
+      - ".github/workflows/winui3-pr-validation.yml"
   pull_request:
     branches:
       - feature/winui3-shell
