@@ -26,7 +26,7 @@ The WinUI Workspace now connects its source intake to the **existing HandBrake.I
 
 ## Preview build policy
 
-The GitHub Actions preview workflow is normally **manual-only** on this feature branch to avoid large artifacts on every UI commit. A temporary push trigger is present for the explicitly requested framework-dependent test build; it will be removed after the test. For future manual builds, open Actions > WinUI 3 Preview > Run workflow and select `feature/winui3-shell`. Artifacts expire after **2 days**.
+The GitHub Actions preview workflow is **manual-only** on this feature branch to avoid large artifacts on every UI commit. The requested framework-dependent test build was started via a one-time branch-scoped trigger (run #40850566845), which has now been removed without affecting that in-progress run. For future manual builds, open Actions > WinUI 3 Preview > Run workflow and select `feature/winui3-shell`. Artifacts expire after **2 days**.
 
 ## Build
 

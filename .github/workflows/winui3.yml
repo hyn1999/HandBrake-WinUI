@@ -1,16 +1,9 @@
 name: WinUI 3 Preview
 
-# Expensive native cross-compilation is normally manual-only.
-# This temporary branch-scoped push trigger starts the explicitly requested
-# framework-dependent smoke-test build; remove it after the run.
+# Expensive native cross-compilation is manual-only.
 # The native binary is cached by native/interop source hash.
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - feature/winui3-shell
-    paths:
-      - .github/workflows/winui3.yml
 
 permissions:
   contents: read
