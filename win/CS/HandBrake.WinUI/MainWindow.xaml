@@ -14,8 +14,7 @@
                         Loaded="AppNavigation_Loaded"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
-                        PaneDisplayMode="LeftCompact"
-                        CompactPaneLength="56"
+                        PaneDisplayMode="Left"
                         OpenPaneLength="216"
                         SelectionChanged="AppNavigation_SelectionChanged">
             <NavigationView.MenuItems>
@@ -107,7 +106,7 @@
                                     CornerRadius="12" BorderThickness="1"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                <Grid RowSpacing="8" Padding="12">
+                                <Grid RowSpacing="12" Padding="16">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="*" />
@@ -130,7 +129,7 @@
                                              TabWidthMode="SizeToContent">
                                         <TabViewItem Header="Summary" IsClosable="False">
                                             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
+                                                <StackPanel Padding="8,16,12,16" Spacing="12">
                                                     <TextBlock Text="Output summary" FontSize="17"
                                                                FontWeight="SemiBold" />
                                                     <TextBlock x:Name="ScanSummaryText"
@@ -215,7 +214,7 @@
                                                     <NumberBox x:Name="VideoBitrateBox"
                                                                Header="Average bitrate (kbps)"
                                                                Minimum="100" Maximum="200000"
-                                                               Value="2500" SpinButtonPlacementMode="Compact"
+                                                               Value="2500" SpinButtonPlacementMode="Inline"
                                                                Visibility="Collapsed" IsEnabled="False"
                                                                ValueChanged="VideoBitrateBox_ValueChanged" />
                                                     <TextBlock Text="Framerate and encoder tuning (from preset)"
@@ -286,7 +285,7 @@
 
                             <!-- Fixed right-hand preview, with a narrow-window fallback. -->
                             <Border x:Name="PreviewPanel" Grid.Column="1"
-                                    CornerRadius="10" BorderThickness="1"
+                                    CornerRadius="12" BorderThickness="1"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
                                 <Grid Padding="12" RowSpacing="12">
@@ -333,7 +332,7 @@
                         </Grid>
 
                         <!-- Persistent action bar. Nonfunctional controls are deliberately disabled. -->
-                        <Border Grid.Row="3" CornerRadius="10" Padding="10"
+                        <Border Grid.Row="3" CornerRadius="12" Padding="12"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
@@ -371,7 +370,7 @@
                         <InfoBar Grid.Row="1" IsOpen="True" IsClosable="False"
                                  Severity="Informational" Title="Draft queue"
                                  Message="Staged sources can include a scanned title, native preset and video settings. These are configuration drafts, not runnable encode jobs. Start Encode remains disabled until full job construction and validation are implemented." />
-                        <Border Grid.Row="2" CornerRadius="10" Padding="8"
+                        <Border Grid.Row="2" CornerRadius="12" Padding="12"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
