@@ -4,9 +4,13 @@ name: WinUI 3 Preview
 # The native binary is cached by native/interop source hash.
 on:
   workflow_dispatch:
+  push:
+    branches: [chore/winui-integration]
+    paths: [.github/workflows/winui3.yml]
 
 permissions:
   contents: write
+  actions: read
 
 concurrency:
   group: winui3-preview-${{ github.ref }}
@@ -44,9 +48,29 @@ jobs:
           path: native-output/hb.dll
           key: libhb-win-x64-ucrt-v1-${{ hashFiles('libhb/**', 'contrib/**', 'make/**', 'configure', 'scripts/**', 'win/CS/HandBrake.Interop/**') }}
 
+      - name: Recover verified native artifact from baseline build
+        id: native-previous
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          baseline=196e2ddedd5490c8849e3c0c05406b91b57251d2
+          git fetch --depth=1 origin "$baseline"
+          # The only permitted managed difference is the reviewed public subtitle wrapper.
+          git diff --exit-code "$baseline" HEAD -- libhb contrib make configure scripts win/CS/HandBrake.Interop ':!win/CS/HandBrake.Interop/Interop/HandBrakeSubtitleHelpers.cs'
+          mkdir -p native-output
+          if gh run download 40850566845 --repo "$GITHUB_REPOSITORY" --name winui3-native-libhb-x64 --dir native-output && test -s native-output/hb.dll; then
+            echo "hit=true" >> "$GITHUB_OUTPUT"
+          else
+            rm -f native-output/hb.dll
+            echo "hit=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Restore immutable native library release if cache is missing
         id: native-release
-        if: steps.native-cache.outputs.cache-hit != 'true'
+        if: steps.native-cache.outputs.cache-hit != 'true' && steps.native-previous.outputs.hit != 'true'
         shell: bash
         env:
           GH_TOKEN: ${{ github.token }}
@@ -65,7 +89,7 @@ jobs:
           fi
 
       - name: Install cross-build dependencies
-        if: steps.native-cache.outputs.cache-hit != 'true' && steps.native-release.outputs.hit != 'true'
+        if: steps.native-cache.outputs.cache-hit != 'true' && steps.native-previous.outputs.hit != 'true' && steps.native-release.outputs.hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -74,7 +98,7 @@ jobs:
           rustup target add x86_64-pc-windows-gnu
 
       - name: Install cargo-c
-        if: steps.native-cache.outputs.cache-hit != 'true' && steps.native-release.outputs.hit != 'true'
+        if: steps.native-cache.outputs.cache-hit != 'true' && steps.native-previous.outputs.hit != 'true' && steps.native-release.outputs.hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -83,7 +107,7 @@ jobs:
           fi
 
       - name: Download verified HandBrake MinGW x64 toolchain
-        if: steps.native-cache.outputs.cache-hit != 'true' && steps.native-release.outputs.hit != 'true'
+        if: steps.native-cache.outputs.cache-hit != 'true' && steps.native-previous.outputs.hit != 'true' && steps.native-release.outputs.hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
@@ -94,7 +118,7 @@ jobs:
           tar -xzf "$RUNNER_TEMP/mingw-x64.tar.gz" -C "$GITHUB_WORKSPACE/toolchains"
 
       - name: Build libhb from the same checkout
-        if: steps.native-cache.outputs.cache-hit != 'true' && steps.native-release.outputs.hit != 'true'
+        if: steps.native-cache.outputs.cache-hit != 'true' && steps.native-previous.outputs.hit != 'true' && steps.native-release.outputs.hit != 'true'
         shell: bash
         run: |
           set -euo pipefail
