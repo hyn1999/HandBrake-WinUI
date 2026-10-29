@@ -7,8 +7,11 @@
     <Grid x:Name="WindowRoot" AllowDrop="True" DragOver="WindowRoot_DragOver"
           DragLeave="WindowRoot_DragLeave" Drop="WindowRoot_Drop">
         <Grid.KeyboardAccelerators>
-            <KeyboardAccelerator Key="O" Modifiers="Control" Invoked="OpenFiles_AcceleratorInvoked" />
-            <KeyboardAccelerator Key="O" Modifiers="Control,Shift" Invoked="OpenFolder_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="O" Modifiers="Menu" Invoked="OpenSource_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="E" Modifiers="Control" Invoked="StartEncode_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="K" Modifiers="Control" Invoked="StopEncode_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="Q" Modifiers="Control" Invoked="Queue_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="A" Modifiers="Menu" Invoked="StageQueue_AcceleratorInvoked" />
         </Grid.KeyboardAccelerators>
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
@@ -132,7 +135,7 @@
                                                   AutomationProperties.Name="HandBrake encoding preset" />
                                     </Grid>
 
-                                    <TabView Grid.Row="1" IsAddTabButtonVisible="False"
+                                    <TabView Grid.Row="1" SelectionChanged="EditorTabs_SelectionChanged" IsAddTabButtonVisible="False"
                                              CanDragTabs="False" CanReorderTabs="False"
                                              TabWidthMode="SizeToContent">
                                         <TabViewItem Header="Summary" IsClosable="False">
@@ -222,7 +225,7 @@
                                                     <NumberBox x:Name="VideoBitrateBox"
                                                                Header="Average bitrate (kbps)"
                                                                Minimum="100" Maximum="200000"
-                                                               Value="2500" SpinButtonPlacementMode="Compact"
+                                                               Value="2500" SpinButtonPlacementMode="Inline"
                                                                Visibility="Collapsed" IsEnabled="False"
                                                                ValueChanged="VideoBitrateBox_ValueChanged" />
                                                     <TextBlock Text="Framerate and encoder tuning (from preset)"
@@ -269,7 +272,7 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="6,12,10,12" Spacing="12">
                                                     <TextBlock Text="Chapters" FontSize="17" FontWeight="SemiBold" />
-                                                    <CheckBox Content="Create chapter markers" IsEnabled="False" />
+                                                    <CheckBox x:Name="ChapterMarkersToggle" Content="Create chapter markers" IsChecked="True" />
                                                     <TextBlock x:Name="ChapterListText"
                                                                Text="Chapter titles will appear here after source scanning."
                                                                TextWrapping="Wrap" />
@@ -280,8 +283,11 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="6,12,10,12" Spacing="12">
                                                     <TextBlock Text="Metadata" FontSize="17" FontWeight="SemiBold" />
-                                                    <TextBlock Text="Title" />
-                                                    <TextBox PlaceholderText="Source title" IsEnabled="False" />
+                                                    <TextBlock Text="Overrides apply to newly staged jobs. Leave a field empty to retain source metadata." TextWrapping="Wrap" />
+                                                    <TextBox x:Name="MetadataTitleBox" Header="Title" />
+                                                    <TextBox x:Name="MetadataArtistBox" Header="Artist" />
+                                                    <TextBox x:Name="MetadataAlbumBox" Header="Album" />
+                                                    <TextBox x:Name="MetadataCommentBox" Header="Comment" AcceptsReturn="True" TextWrapping="Wrap" />
                                                     <TextBlock Text="Additional metadata will be available after scanning."
                                                                TextWrapping="Wrap" />
                                                 </StackPanel>
@@ -494,7 +500,7 @@
                                 <TextBlock Text="Select one or more videos" FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            TextWrapping="Wrap" />
-                                <TextBlock Text="Ctrl + O" FontSize="12" />
+                                <TextBlock Text="Alt + O" FontSize="12" />
                             </StackPanel>
                         </Button>
                         <Button Grid.Column="1" Click="OpenFolder_Click" HorizontalAlignment="Stretch"
@@ -505,7 +511,7 @@
                                 <TextBlock Text="Scan a folder for media" FontSize="12"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            TextWrapping="Wrap" />
-                                <TextBlock Text="Ctrl + Shift + O" FontSize="12" />
+                                
                             </StackPanel>
                         </Button>
                     </Grid>

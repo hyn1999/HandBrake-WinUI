@@ -428,6 +428,11 @@ public sealed partial class MainWindow
         int chapterCount = Math.Max(1, title.ChapterList?.Count ?? 1);
         bool constantQuality = draft.VideoRateControl == "ConstantQuality";
 
+        var metadata = title.MetaData is null
+            ? new Dictionary<string, string>() : new Dictionary<string, string>(title.MetaData);
+        if (draft.MetadataOverrides is not null)
+            foreach (var entry in draft.MetadataOverrides) metadata[entry.Key] = entry.Value;
+
         return new JsonEncodeObject
         {
             SequenceID = 0,
@@ -448,7 +453,7 @@ public sealed partial class MainWindow
                     Optimize = preset.Optimize,
                     IpodAtom = preset.Mp4iPodCompatible
                 },
-                ChapterMarkers = preset.ChapterMarkers,
+                ChapterMarkers = draft.ChapterMarkers ?? preset.ChapterMarkers,
                 AlignAVStart = preset.AlignAVStart,
                 ChapterList = (title.ChapterList ?? new List<SourceChapter>())
                     .Select(chapter => new Chapter { Name = chapter.Name })
@@ -456,7 +461,7 @@ public sealed partial class MainWindow
             },
             Filters = new Filters { FilterList = filters },
             PAR = new PAR { Num = Math.Max(1, parNum), Den = Math.Max(1, parDen) },
-            Metadata = title.MetaData ?? new Dictionary<string, string>(),
+            Metadata = metadata,
             CoverArts = title.CoverArts ?? new List<CoverArt>(),
             Source = new EncodeSource
             {

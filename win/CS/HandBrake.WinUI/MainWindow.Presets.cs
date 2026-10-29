@@ -140,6 +140,7 @@ public sealed partial class MainWindow
         var choice = ActivePresetChoice;
         if (choice is null) return;
         activePreset = choice.Preset;
+        ChapterMarkersToggle.IsChecked = activePreset.ChapterMarkers;
 
         updatingVideoEditor = true;
         try

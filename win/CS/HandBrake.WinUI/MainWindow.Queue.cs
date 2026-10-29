@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -17,6 +18,8 @@ namespace HandBrake.WinUI;
 /// </summary>
 public sealed class QueueDraft
 {
+    public bool? ChapterMarkers { get; set; }
+    public Dictionary<string, string>? MetadataOverrides { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string SourcePath { get; set; } = string.Empty;
     public int? TitleIndex { get; set; }
@@ -101,6 +104,13 @@ public sealed partial class MainWindow
 
         // A scanned folder can contain several titles. Preserve the actual
         // selected native title index instead of inventing a title number.
+        draft.ChapterMarkers = ChapterMarkersToggle.IsChecked == true;
+        draft.MetadataOverrides = new Dictionary<string, string>();
+        foreach (var field in new[] {
+            ("Name", MetadataTitleBox.Text), ("Artist", MetadataArtistBox.Text),
+            ("Album", MetadataAlbumBox.Text), ("Comment", MetadataCommentBox.Text) })
+            if (!string.IsNullOrWhiteSpace(field.Item2))
+                draft.MetadataOverrides[field.Item1] = field.Item2.Trim();
         draft.TitleIndex = title.Index;
         draft.DisplayName += $" · Title {title.Index}";
         draft.PresetKey = settings.PresetKey;

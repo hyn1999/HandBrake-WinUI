@@ -222,7 +222,8 @@ public sealed partial class MainWindow : Window
         {
             From = from,
             To = to,
-            Duration = new Duration(TimeSpan.FromMilliseconds(durationMs)),
+            Duration = new Duration(TimeSpan.FromMilliseconds(
+                new Windows.UI.ViewManagement.UISettings().AnimationsEnabled ? durationMs : 0)),
             EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
         };
         var storyboard = new Storyboard();
@@ -231,6 +232,42 @@ public sealed partial class MainWindow : Window
         storyboard.Children.Add(animation);
         configure?.Invoke(storyboard);
         storyboard.Begin();
+    }
+
+    private void EditorTabs_SelectionChanged(object sender, SelectionChangedEventArgs args)
+    {
+        if (sender is TabView tabs && tabs.SelectedItem is TabViewItem item && item.Content is UIElement content)
+            AnimateOpacity(content, 0, 1, 140);
+    }
+
+    private void OpenSource_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        ShowSourcePicker();
+    }
+
+    private void StartEncode_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (StartEncodeButton.IsEnabled) StartEncode_Click(StartEncodeButton, new RoutedEventArgs());
+    }
+
+    private void StopEncode_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (CancelEncodeButton.IsEnabled) CancelEncode_Click(CancelEncodeButton, new RoutedEventArgs());
+    }
+
+    private void Queue_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        AppNavigation.SelectedItem = AppNavigation.MenuItems[1];
+    }
+
+    private void StageQueue_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (StageQueueButton.IsEnabled) StageQueue_Click(StageQueueButton, new RoutedEventArgs());
     }
 
     private async void OpenFiles_Click(object sender, RoutedEventArgs e) => await PickFilesAsync();
@@ -360,6 +397,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
         selectedSourcePaths.Clear();
         selectedSourcePaths.AddRange(paths);
         selectedScannedTitleName = null;
