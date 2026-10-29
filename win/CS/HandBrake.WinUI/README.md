@@ -93,3 +93,10 @@ The Workspace **Add to queue** button stages selected file/folder paths as draft
 ## Small framework-dependent test artifact
 
 This preview intentionally **does not bundle the .NET 10 runtime or Windows App SDK runtime**. The Windows 11 test machine must already have a compatible x64 .NET 10 runtime and the matching Windows App SDK runtime installed. The HandBrake-native `hb.dll` and app-specific `HandBrake.Interop.dll` remain included because they are essential program components, not system prerequisites. The publish job checks for a framework-dependent `runtimeconfig.json` and rejects a bundled `coreclr.dll`. The CI artifact is named `HandBrake-WinUI3-FrameworkDependent-x64`.
+
+
+## Fast UI-only preview (no native engine)
+
+For changes limited to the icon, XAML layout, colors, typography or other managed WinUI behavior, run **Actions → WinUI 3 UI-only Preview → Run workflow**. This workflow publishes only the managed WinUI app and its interop assembly; it intentionally excludes `hb.dll`, so the artifact is smaller and does not spend time cross-compiling HandBrake. The app can be opened for visual checks, but native source scanning and encoding are unavailable in this preview. It still relies on the already-installed .NET 10 and Windows App SDK runtimes. The artifact is named `HandBrake-WinUI3-UIOnly-x64` and expires after 2 days.
+
+Use **WinUI 3 Preview** for integrated builds with native scanning. The full workflow now tries, in order: a matching Actions cache, a persistent GitHub Release asset keyed by the native source fingerprint, and only then a source rebuild. After a successful full build, it publishes the matching `hb.dll` as a prerelease asset so later integrated builds do not need to recompile the engine merely because the cache expires.

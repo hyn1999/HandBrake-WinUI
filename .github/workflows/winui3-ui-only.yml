@@ -1,0 +1,73 @@
+name: WinUI 3 UI-only Preview
+
+# Fast, small build for layout, icon, typography and interaction checks.
+# This intentionally excludes hb.dll; use "WinUI 3 Preview" for native scanning.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: winui3-ui-only-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  publish-ui-only-x64:
+    name: Publish UI-only WinUI 3 x64
+    runs-on: windows-2025
+    timeout-minutes: 20
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish framework-dependent UI preview
+        shell: pwsh
+        run: |
+          dotnet publish win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained false `
+            -p:Platform=x64 `
+            -p:WindowsAppSDKSelfContained=false `
+            --output "$env:RUNNER_TEMP/HandBrake-WinUI3-UIOnly"
+
+      - name: Verify small UI-only package
+        shell: pwsh
+        run: |
+          $publishDir = Join-Path $env:RUNNER_TEMP "HandBrake-WinUI3-UIOnly"
+          $requiredFiles = @(
+            "HandBrake.WinUI.exe",
+            "HandBrake.WinUI.pri",
+            "HandBrake.Interop.dll",
+            "HandBrake.WinUI.runtimeconfig.json"
+          )
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path -LiteralPath (Join-Path $publishDir $file))) {
+              throw "Missing published dependency: $file"
+            }
+          }
+          if (Test-Path (Join-Path $publishDir "hb.dll")) {
+            throw "UI-only package must not include the native HandBrake engine."
+          }
+          if (Test-Path (Join-Path $publishDir "coreclr.dll")) {
+            throw "Unexpected bundled .NET runtime (coreclr.dll)"
+          }
+          $runtimeConfig = Get-Content (Join-Path $publishDir "HandBrake.WinUI.runtimeconfig.json") -Raw | ConvertFrom-Json
+          if (-not $runtimeConfig.runtimeOptions.framework -and -not $runtimeConfig.runtimeOptions.frameworks) {
+            throw "Missing framework dependency in runtimeconfig.json"
+          }
+          Write-Host "UI-only package verified. Native scanning/encoding is intentionally unavailable."
+
+      - name: Upload UI-only preview
+        uses: actions/upload-artifact@v4
+        with:
+          name: HandBrake-WinUI3-UIOnly-x64
+          path: ${{ runner.temp }}/HandBrake-WinUI3-UIOnly/
+          if-no-files-found: error
+          retention-days: 2
