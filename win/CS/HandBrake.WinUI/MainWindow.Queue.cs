@@ -3,21 +3,54 @@ using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
 using System.Text.Json;
+using System.Text.Json.Serialization;
+using HandBrake.Interop.Interop.Json.Scan;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
 namespace HandBrake.WinUI;
 
+/// <summary>
+/// A persisted configuration snapshot, not an executable HandBrake job.
+/// The complete audio, subtitle, geometry and filter job graph must be built
+/// and validated before the encode action can be enabled.
+/// </summary>
 public sealed class QueueDraft
 {
     public string DisplayName { get; set; } = string.Empty;
     public string SourcePath { get; set; } = string.Empty;
+    public int? TitleIndex { get; set; }
+    public string? PresetKey { get; set; }
+    public string? PresetName { get; set; }
+    public string? Container { get; set; }
+    public string? VideoEncoder { get; set; }
+    public string? VideoRateControl { get; set; }
+    public double? VideoQuality { get; set; }
+    public int? VideoBitrateKbps { get; set; }
+    public string? VideoFramerate { get; set; }
+    public string? VideoEncoderSpeed { get; set; }
+    public string? DestinationPath { get; set; }
+
+    [JsonIgnore]
+    public bool HasVideoConfiguration => TitleIndex.HasValue &&
+        !string.IsNullOrWhiteSpace(PresetKey) &&
+        !string.IsNullOrWhiteSpace(VideoEncoder) &&
+        !string.IsNullOrWhiteSpace(DestinationPath);
+
+    [JsonIgnore]
+    public string ConfigurationSummary => HasVideoConfiguration
+        ? $"Title {TitleIndex} · {PresetName} · {VideoEncoder} · " +
+          (VideoRateControl == "ConstantQuality"
+              ? $"quality {VideoQuality:0.##}" : $"{VideoBitrateKbps} kbps") +
+          $" · {Container} · configuration draft (not runnable)"
+        : "Source-only draft · scan a title and select a native preset to configure";
+
+    [JsonIgnore]
+    public string DestinationSummary => string.IsNullOrWhiteSpace(DestinationPath)
+        ? "No destination configured"
+        : "Suggested destination: " + DestinationPath;
 }
 
-/// <summary>
-/// A local source staging list only. Encoding jobs are not constructed here;
-/// the real queue will be connected to HandBrake's job and preset models.
-/// </summary>
 public sealed partial class MainWindow
 {
     private readonly ObservableCollection<QueueDraft> draftQueue = new();
@@ -36,9 +69,7 @@ public sealed partial class MainWindow
                 if (saved is not null)
                 {
                     foreach (var item in saved.Where(x => !string.IsNullOrWhiteSpace(x.SourcePath)))
-                    {
                         draftQueue.Add(item);
-                    }
                 }
             }
         }
@@ -49,28 +80,85 @@ public sealed partial class MainWindow
         UpdateQueueUi();
     }
 
+    private QueueDraft CreateDraft(string path, bool allowVideoConfiguration)
+    {
+        var draft = new QueueDraft
+        {
+            SourcePath = path,
+            DisplayName = Path.GetFileName(Path.TrimEndingDirectorySeparator(path))
+        };
+
+        if (!allowVideoConfiguration || scanInProgress ||
+            SourceTitlePicker.SelectedItem is not ComboBoxItem { Tag: SourceTitle title } ||
+            !TryGetVideoDraftSettings(out var settings))
+            return draft;
+
+        string? destination = GetSuggestedOutputPath();
+        if (string.IsNullOrWhiteSpace(destination) ||
+            !Directory.Exists(Path.GetDirectoryName(destination)))
+            return draft;
+
+        // A scanned folder can contain several titles. Preserve the actual
+        // selected native title index instead of inventing a title number.
+        draft.TitleIndex = title.Index;
+        draft.DisplayName += $" · Title {title.Index}";
+        draft.PresetKey = settings.PresetKey;
+        draft.PresetName = settings.PresetName;
+        draft.Container = settings.Container;
+        draft.VideoEncoder = settings.VideoEncoder;
+        draft.VideoRateControl = settings.RateControl;
+        draft.VideoQuality = settings.Quality;
+        draft.VideoBitrateKbps = settings.BitrateKbps;
+        draft.VideoFramerate = settings.Framerate;
+        draft.VideoEncoderSpeed = settings.EncoderSpeed;
+        draft.DestinationPath = destination;
+        return draft;
+    }
+
     private void StageQueue_Click(object sender, RoutedEventArgs e)
     {
-        int added = 0;
+        int added = 0, updated = 0, configured = 0;
+        bool singleSource = selectedSourcePaths.Count == 1;
+
         foreach (string path in selectedSourcePaths)
         {
             if (!File.Exists(path) && !Directory.Exists(path))
                 continue;
-            if (draftQueue.Any(item => string.Equals(item.SourcePath, path,
-                                                       StringComparison.OrdinalIgnoreCase)))
-                continue;
 
-            draftQueue.Add(new QueueDraft
+            QueueDraft draft = CreateDraft(path, singleSource);
+            if (draft.HasVideoConfiguration) configured++;
+
+            // A source can have several scanned titles; keep distinct title
+            // configurations, but upgrade an older source-only draft in place.
+            int existing = -1;
+            for (int i = 0; i < draftQueue.Count; i++)
             {
-                SourcePath = path,
-                DisplayName = Path.GetFileName(Path.TrimEndingDirectorySeparator(path))
-            });
-            added++;
+                QueueDraft previous = draftQueue[i];
+                if (!string.Equals(previous.SourcePath, path, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (previous.TitleIndex == draft.TitleIndex ||
+                    (previous.TitleIndex is null && draft.TitleIndex.HasValue))
+                {
+                    existing = i;
+                    break;
+                }
+            }
+
+            if (existing >= 0)
+            {
+                draftQueue[existing] = draft;
+                updated++;
+            }
+            else
+            {
+                draftQueue.Add(draft);
+                added++;
+            }
         }
 
-        QueueStatusText.Text = added > 0
-            ? $"Staged {added} source(s). Encoding is not available yet."
-            : "These sources are already staged, or no longer exist.";
+        QueueStatusText.Text = added + updated > 0
+            ? $"Staged {added} new, updated {updated} source(s); {configured} with native preset/video settings. No encoding has started."
+            : "No accessible sources to stage.";
         SaveDraftQueue();
         UpdateQueueUi();
         AppNavigation.SelectedItem = AppNavigation.MenuItems[1];
@@ -109,9 +197,10 @@ public sealed partial class MainWindow
 
     private void UpdateQueueUi()
     {
+        int configured = draftQueue.Count(x => x.HasVideoConfiguration);
         QueueCountText.Text = draftQueue.Count == 0
             ? "No staged sources"
-            : $"{draftQueue.Count} staged source(s) · not yet encoding";
+            : $"{draftQueue.Count} draft(s) · {configured} configured · none running";
         RemoveDraftButton.IsEnabled = DraftQueueList.SelectedItem is QueueDraft;
         ClearDraftsButton.IsEnabled = draftQueue.Count > 0;
     }

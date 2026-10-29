@@ -52,7 +52,19 @@ public sealed partial class MainWindow
             ? preferredFolder
             : fallbackFolder;
 
-        return Path.Combine(folder, name + extension);
+        string candidate = Path.Combine(folder, name + extension);
+        // Never suggest overwriting the input or an existing destination.
+        if (File.Exists(candidate))
+        {
+            for (int suffix = 1; suffix <= 999; suffix++)
+            {
+                string alternate = Path.Combine(folder, $"{name}-encoded-{suffix}{extension}");
+                if (!File.Exists(alternate))
+                    return alternate;
+            }
+            return null;
+        }
+        return candidate;
     }
 
     private void UpdateSuggestedDestination()
@@ -60,7 +72,7 @@ public sealed partial class MainWindow
         if (selectedSourcePaths.Count == 0) return;
         string? path = GetSuggestedOutputPath();
         DestinationText.Text = path is null
-            ? "Choose a detected video title to suggest an output filename"
+            ? "No safe output path available (choose a scanned title or change the output folder)"
             : path + " (suggested only)";
     }
 }
