@@ -1,8 +1,8 @@
-# HandBrake WinUI 3 — compact professional workspace preview
+# HandBrake WinUI 3 — compact professional workspace
 
 A new **WinUI 3** frontend alongside HandBrake's unchanged WPF application.
 
-## Current preview (UI milestone 0.5 — Preferences and queue staging)
+## Current preview (UI milestone 0.6 — native presets and video configuration drafts)
 
 - **Modern Professional** Windows 11 layout using Mica and WinUI 3 **Compact** density.
 - LeftCompact navigation for Workspace, Queue, and Preferences.
@@ -16,11 +16,11 @@ A new **WinUI 3** frontend alongside HandBrake's unchanged WPF application.
 - Selected filenames, counts, paths, and a *suggested* destination filename are shown. When a matching native `hb.dll` is available, source selection starts a real HandBrake scan.
 - A compact status line replaces the large permanent InfoBar; the preview frame placeholder uses a fixed, video-like aspect ratio.
 
-**This is not a working video converter yet.** Source scanning is wired to HandBrake.Interop, and a native-enabled manual CI pipeline is configured, but a successful Windows build and scan are not yet verified. Presets, encoder settings and Start Encode remain disabled. The queue currently stores only source drafts, not executable jobs. The preview frame is still a placeholder, and suggested output paths are never written. Never interpret example settings or suggested output filenames as actual encoder state.
+**This is not a working video converter yet.** Source scanning and built-in preset loading are wired to HandBrake.Interop, and a native-enabled manual CI pipeline is configured, but a successful Windows build and scan are not yet verified. Video encoder/rate controls can edit a configuration draft, not a full native encode job. **Start Encode remains disabled.** The queue stores source-only or partially configured drafts, not executable jobs. Preview frames are still placeholders, and suggested output paths are never written.
 
 ## Native source scanning (integration milestone)
 
-The WinUI Workspace now connects its source intake to the **existing HandBrake.Interop `HandBrakeInstance`** scanner. It subscribes to native scan progress/completion events, updates the progress bar on the UI dispatcher, lists detected titles and displays **actual** duration, resolution, frame rate, source codec, audio/subtitle tracks and chapter count. The scan can be cancelled. Preset/encoder controls remain disabled; video frame previews are still placeholders.
+The WinUI Workspace now connects its source intake to the **existing HandBrake.Interop `HandBrakeInstance`** scanner. It subscribes to native scan progress/completion events, updates the progress bar on the UI dispatcher, lists detected titles and displays **actual** duration, resolution, frame rate, source codec, audio/subtitle tracks and chapter count. The scan can be cancelled. Built-in preset and video encoder controls are enabled only when a matching native library successfully initializes; video frame previews are still placeholders.
 
 **Native-enabled manual CI is configured but not yet verified.** The WinUI workflow now builds `hb.dll` from the matching checkout and places it next to the WinUI executable. If it is missing, the app clearly reports scanning is unavailable rather than inventing properties. Do not mix `hb.dll` from unrelated HandBrake releases. End-to-end scanning still needs a successful build and Windows 11 runtime test.
 
@@ -48,10 +48,10 @@ Open **Preferences → Advanced** or **About HandBrake** to see the current WinU
 
 ## Next milestones
 
-1. Validate the manual native-enabled WinUI build and source scanning on Windows 11.
-2. Populate encoder options and presets from HandBrake's existing models.
-3. Display real still preview frames.
-4. Upgrade the draft queue to real encode jobs with editable destinations, progress and cancellation.
+1. Validate the manual native-enabled WinUI build, preset catalog and source scanning on Windows 11.
+2. Construct **complete** native encode jobs from the chosen preset and scanned title, including filters, dimensions, audio, subtitles and destination validation.
+3. Upgrade configuration drafts to executable queue entries with progress, cancellation and recovery.
+4. Display real still preview frames.
 5. Implement queue-completion actions, notifications, localization and updates once their underlying services exist.
 
 The original WPF application and native HandBrake encoder are unchanged. Review original HandBrake and dependency licenses before redistribution.
@@ -77,4 +77,14 @@ The primary navigation retains **Workspace**, **Queue** and **Preferences**. Pre
 
 ## Queue draft staging (not encoding)
 
-The Workspace **Add to queue** button stages selected file/folder paths as source drafts, with duplicate prevention. The Queue section can list, remove and clear staged sources. Drafts survive restarts in `%LOCALAPPDATA%\\HandBrake\\WinUI3\\queue-drafts.json`. These are **not HandBrake encoding jobs**: they do not include presets, destinations, title selection or encoder state and cannot be started. This intentional staging step is not a substitute for the real queue service integration.
+The Workspace **Add to queue** button stages selected file/folder paths as drafts. If **one** source has been successfully scanned and a native preset/compatible encoder are selected, the draft also captures the actual title index, built-in preset key, muxer, video encoder, rate-control mode, quality/bitrate and suggested destination. Multiple-source selection still creates source-only drafts until individual title scans are performed. Drafts can be removed and cleared, and survive restarts in `%LOCALAPPDATA%\\HandBrake\\WinUI3\\queue-drafts.json`. Old source-only draft JSON remains readable. These are **not HandBrake encoding jobs**: complete filter, geometry, audio and subtitle configuration is not yet mapped, so they cannot be started. Never treat saved draft destinations as validated writable output paths without rechecking them at encode time.
+
+
+## Native preset / video editor integration (milestone 0.6)
+
+- On WinUI load, when a matching `hb.dll` is present, initialize the same `HandBrakeInstance` used for scanning (required because the upstream preset service needs `hb_init`), then call **`HandBrakePresetService.GetBuiltInPresets()`**. No sample/fake presets are shown when libhb is unavailable. The catalog is grouped by category in the dropdown; the chosen built-in preset key persists in WinUI preferences.
+- Populate the Video encoder dropdown from **`HandBrakeEncoderHelpers.VideoEncoders`**. The available quality/bitrate modes and quality slider bounds come from the selected native encoder's capabilities. Hardware encoders are labeled as unverified until runtime device checks exist. The preset's frame rate and encoder tuning are shown read-only.
+- The output extension follows the selected preset's muxer (MP4/MKV/WebM). The suggested destination avoids existing files by choosing an unused `-encoded-N` suffix. **This is a suggestion only, never a write or overwrite.**
+- Staging a scanned title stores the video settings snapshot, but only if the chosen encoder supports the preset's container. The built-in preset object is **not mutated**. Unsupported target-size rate control is not silently converted into bitrate mode.
+- The native preset contains many more fields than this first editor exposes. Audio, subtitles, filters, cropping, chapter and metadata configuration still require faithful job construction; until that is complete **Start Encode remains disabled**.
+- **Manual Windows 11 smoke test (after requesting a build):** Open app with matching `hb.dll`; verify preset categories and real encoder list; select two presets with different muxers; scan a known source and select a title; adjust quality/bitrate; stage a draft; inspect its title/preset/encoder/destination in Queue; restart to verify persistence; test missing `hb.dll` for an honest disabled state; verify the original WPF app still works. No CI build is triggered by these commits.
