@@ -346,35 +346,38 @@ public sealed partial class MainWindow
                 : "av_aac";
 
         var selectedAudio = SelectAudioTracks(draft, title);
-        if (selectedAudio.Count > 0)
-        {
-            var nativeAudioEncoder = HandBrakeEncoderHelpers.AudioEncoders.FirstOrDefault(encoder => encoder.ShortName == audioEncoder);
-            bool compatible = nativeAudioEncoder is not null && (FormatPresetContainer(preset.FileFormat) switch
-            {
-                "MP4" => nativeAudioEncoder.SupportsMP4,
-                "MKV" => nativeAudioEncoder.SupportsMkv,
-                "WebM" => nativeAudioEncoder.SupportsWebM,
-                _ => false
-            });
-            if (!compatible)
-                throw new InvalidOperationException("The preset audio encoder is unavailable or incompatible with the output container. Choose another preset.");
-        }
-
         foreach (var sourceTrack in selectedAudio)
         {
-            var mixdown = HandBrakeEncoderHelpers.GetMixdown(audioRule?.AudioMixdown ?? "stereo");
-            bool audioQuality = audioRule?.AudioTrackQualityEnable ?? false;
+            var trackChoice = draft.AudioTracks?.FirstOrDefault(track => track.TrackNumber == sourceTrack.TrackNumber);
+            bool customAudio = trackChoice?.Encoder is not null;
+            string selectedEncoder = trackChoice?.Encoder ?? audioEncoder;
+            var nativeAudioEncoder = HandBrakeEncoderHelpers.GetAudioEncoder(selectedEncoder);
+            if (nativeAudioEncoder is null || !SupportsAudioContainer(nativeAudioEncoder, FormatPresetContainer(preset.FileFormat)))
+                throw new InvalidOperationException("The audio encoder is unavailable or incompatible with the output container. Re-stage this job.");
+            if (customAudio && (nativeAudioEncoder.IsPassthru || nativeAudioEncoder.IsLosslessEncoder))
+                throw new InvalidOperationException("Custom bitrate editing does not support passthrough or lossless encoders.");
+            var mixdown = customAudio
+                ? HandBrakeEncoderHelpers.GetDefaultMixdown(nativeAudioEncoder, sourceTrack.ChannelLayout)
+                : HandBrakeEncoderHelpers.GetMixdown(audioRule?.AudioMixdown ?? "stereo");
+            int sampleRate = customAudio
+                ? HandBrakeEncoderHelpers.SanitizeSampleRate(nativeAudioEncoder, sourceTrack.SampleRate)
+                : ResolveSampleRate(audioRule?.AudioSamplerate);
+            int requestedBitrate = trackChoice?.BitrateKbps ?? Math.Max(32, audioRule?.AudioBitrate ?? 160);
+            if (customAudio && (mixdown is null || requestedBitrate < 6 || requestedBitrate > 1536 ||
+                HandBrakeEncoderHelpers.SanitizeAudioBitrate(requestedBitrate, nativeAudioEncoder, sampleRate, mixdown) != requestedBitrate))
+                throw new InvalidOperationException("The selected audio bitrate is not supported for this encoder and source layout. Re-stage with a supported bitrate.");
+            bool audioQuality = !customAudio && (audioRule?.AudioTrackQualityEnable ?? false);
             audioTracks.Add(new EncodeAudioTrack
             {
                 Track = Math.Max(0, sourceTrack.TrackNumber - 1),
-                Encoder = audioEncoder,
-                Bitrate = audioQuality ? null : Math.Max(32, audioRule?.AudioBitrate ?? 160),
+                Encoder = selectedEncoder,
+                Bitrate = audioQuality ? null : requestedBitrate,
                 Quality = audioQuality ? audioRule!.AudioTrackQuality : null,
-                DRC = audioRule?.AudioTrackDRCSlider ?? 0,
-                Gain = audioRule?.AudioTrackGainSlider ?? 0,
+                DRC = customAudio ? 0 : audioRule?.AudioTrackDRCSlider ?? 0,
+                Gain = customAudio ? 0 : audioRule?.AudioTrackGainSlider ?? 0,
                 Mixdown = mixdown?.Id ?? -1,
-                NormalizeMixLevel = audioRule?.AudioNormalizeMixLevel ?? false,
-                Samplerate = ResolveSampleRate(audioRule?.AudioSamplerate),
+                NormalizeMixLevel = !customAudio && (audioRule?.AudioNormalizeMixLevel ?? false),
+                Samplerate = sampleRate,
                 Name = draft.AudioTracks?.FirstOrDefault(track => track.TrackNumber == sourceTrack.TrackNumber)?.Name ?? sourceTrack.Name,
                 FilterList = new List<Filter>()
             });
