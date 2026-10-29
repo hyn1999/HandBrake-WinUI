@@ -1,0 +1,19 @@
+name: WinUI 3 Preview
+
+# Register this manual workflow on the default branch so GitHub exposes
+# the Run workflow button. Select feature/winui3-shell to execute the full
+# native + WinUI pipeline defined on that development branch.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  select-development-branch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Use the development branch for WinUI preview builds
+        run: |
+          echo "The WinUI source and full native build workflow live on feature/winui3-shell."
+          echo "Use Actions > WinUI 3 Preview > Run workflow > Branch: feature/winui3-shell."
