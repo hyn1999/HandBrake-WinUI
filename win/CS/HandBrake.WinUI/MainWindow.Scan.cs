@@ -234,7 +234,7 @@ public sealed partial class MainWindow
 
     private void UpdateEncodeAvailability()
     {
-        bool hasTitle = SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: SourceTitle };
+        bool hasTitle = SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: SourceTitle _ };
         bool hasNativeEngine = File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll"));
         StartEncodeButton.IsEnabled = hasTitle && activePreset is not null &&
             hasNativeEngine && !scanInProgress && !encodeInProgress;
@@ -307,7 +307,7 @@ public sealed partial class MainWindow
                 {
                     Track = sourceTrack.TrackNumber,
                     Encoder = audioPreset?.AudioEncoder ?? preset.AudioEncoderFallback ?? "av_aac",
-                    Bitrate = audioPreset?.AudioBitrate > 0 ? audioPreset.AudioBitrate : 160,
+                    Bitrate = (audioPreset?.AudioBitrate ?? 0) > 0 ? audioPreset!.AudioBitrate : 160,
                     CompressionLevel = audioPreset?.AudioCompressionLevel,
                     DRC = audioPreset?.AudioTrackDRCSlider ?? 0,
                     Gain = audioPreset?.AudioTrackGainSlider ?? 0,
