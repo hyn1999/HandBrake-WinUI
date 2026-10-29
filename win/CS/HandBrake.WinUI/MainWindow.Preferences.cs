@@ -15,6 +15,7 @@ public sealed partial class MainWindow
             _ => ElementTheme.Default
         };
 
+        ApplyTitleBarTheme();
         UpdatePreviewLayout();
         UpdateSuggestedDestination();
     }
