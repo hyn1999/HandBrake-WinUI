@@ -2,12 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using Microsoft.UI;
+using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
 using Windows.ApplicationModel.DataTransfer;
+using Windows.Graphics;
+using Windows.UI;
 using Windows.Storage;
 
 namespace HandBrake.WinUI;
@@ -22,12 +26,89 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         SystemBackdrop = new MicaBackdrop();
+        ConfigureInitialWindowBounds();
         SettingsPanel.HostWindow = this;
         SettingsPanel.PreferencesChanged += (_, _) => ApplyPreferences();
         ApplyPreferences();
+        ApplyTitleBarTheme();
         InitializeDraftQueue();
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
         InitializeSourceScanner();
+    }
+
+    private void ConfigureInitialWindowBounds()
+    {
+        // Start with a balanced 16:10 workspace rather than a panoramic window.
+        // Respect the available work area on smaller displays and high-DPI setups.
+        try
+        {
+            DisplayArea area = DisplayArea.GetFromWindowId(AppWindow.Id, DisplayAreaFallback.Primary);
+            RectInt32 work = area.WorkArea;
+            int width = Math.Min(1280, (int)(work.Width * 0.90));
+            int height = Math.Min(800, (int)(work.Height * 0.90));
+            if (width <= 0 || height <= 0) return;
+
+            if (width / (double)height > 1.6)
+                width = (int)(height * 1.6);
+            else
+                height = (int)(width / 1.6);
+
+            AppWindow.MoveAndResize(new RectInt32(
+                work.X + (work.Width - width) / 2,
+                work.Y + (work.Height - height) / 2,
+                width, height));
+        }
+        catch
+        {
+            AppWindow.Resize(new SizeInt32(1280, 800));
+        }
+    }
+
+    private void ApplyTitleBarTheme()
+    {
+        try
+        {
+            var titleBar = AppWindow.TitleBar;
+            Color? background = SettingsPanel.Preferences.Theme switch
+            {
+                "Dark" => Color.FromArgb(255, 31, 36, 37),
+                "Light" => Color.FromArgb(255, 239, 246, 248),
+                _ => null
+            };
+            Color? foreground = SettingsPanel.Preferences.Theme switch
+            {
+                "Dark" => Color.FromArgb(255, 245, 247, 248),
+                "Light" => Color.FromArgb(255, 28, 32, 33),
+                _ => null
+            };
+            Color? hover = SettingsPanel.Preferences.Theme switch
+            {
+                "Dark" => Color.FromArgb(255, 55, 62, 63),
+                "Light" => Color.FromArgb(255, 220, 231, 234),
+                _ => null
+            };
+            Color? pressed = SettingsPanel.Preferences.Theme switch
+            {
+                "Dark" => Color.FromArgb(255, 70, 78, 79),
+                "Light" => Color.FromArgb(255, 205, 220, 224),
+                _ => null
+            };
+
+            titleBar.BackgroundColor = background;
+            titleBar.ButtonBackgroundColor = background;
+            titleBar.ForegroundColor = foreground;
+            titleBar.ButtonForegroundColor = foreground;
+            titleBar.ButtonHoverBackgroundColor = hover;
+            titleBar.ButtonPressedBackgroundColor = pressed;
+
+            string iconPath = Path.Combine(AppContext.BaseDirectory, "HandBrake-WinUI.ico");
+            if (File.Exists(iconPath))
+                AppWindow.SetIcon(iconPath);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine("Optional title-bar customization was not available: " + ex.Message);
+        }
     }
 
     private void AppNavigation_Loaded(object sender, RoutedEventArgs e)
