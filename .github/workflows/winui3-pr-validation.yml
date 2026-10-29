@@ -4,9 +4,6 @@ name: WinUI 3 Pull Request Validation
 # The native HandBrake library is intentionally built only by the full preview workflow.
 on:
   workflow_dispatch:
-  push:
-    branches: [chore/winui-integration]
-    paths: [win/CS/HandBrake.WinUI/**]
 
 permissions:
   contents: read
