@@ -105,3 +105,5 @@ Use **WinUI 3 Preview** for integrated builds with native scanning. The full wor
 ## October 29 CI follow-up
 
 The first native-enabled build run #40850566845 compiled matching libhb successfully and saved the Actions cache (`Cache saved with key: libhb-win-x64-ucrt-v1-3740dddc1dc32e9c0ac921257b052aabe08b240d306b996ad94b42dc39b18a76`). The managed WinUI publish stopped with CS0104 because `Duration` resolved ambiguously between the scan model and WinUI. The scan duration parameter is now fully qualified. A one-time, branch-scoped push trigger temporarily runs the fast UI-only workflow to surface any further managed/XAML build issues; it is removed again after triggering. UI-only artifacts expire after one day to minimize storage usage. Native libhb source files and the WPF application remain unchanged.
+
+The one-time UI-only smoke-test build was queued as [GitHub Actions run #40866236406](https://github.com/hyn1999/HandBrake-WinUI/actions/runs/40866236406). The temporary push trigger has been removed, so future UI-only previews are manual-only.
