@@ -5,6 +5,7 @@
     Title="HandBrake WinUI">
     <Grid>
         <NavigationView x:Name="AppNavigation"
+                        Loaded="AppNavigation_Loaded"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
                         PaneDisplayMode="LeftCompact"
@@ -280,6 +281,7 @@
 
                     <StackPanel x:Name="SettingsPanel" Visibility="Collapsed" Spacing="14">
                         <TextBlock Text="Settings" FontSize="23" FontWeight="SemiBold" />
+                        <TextBlock x:Name="DpiStatusText" Text="UI rasterization scale: detecting..." TextWrapping="Wrap" />
                         <InfoBar IsOpen="True" IsClosable="False"
                                  Severity="Informational" Title="Settings preview"
                                  Message="Application settings and theme preferences will be added later." />

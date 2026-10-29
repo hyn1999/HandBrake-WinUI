@@ -19,6 +19,24 @@ public sealed partial class MainWindow : Window
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
     }
 
+    private void AppNavigation_Loaded(object sender, RoutedEventArgs e)
+    {
+        if (AppNavigation.XamlRoot is not null)
+        {
+            AppNavigation.XamlRoot.Changed += (_, _) => UpdateDpiStatus();
+            UpdateDpiStatus();
+        }
+    }
+
+    private void UpdateDpiStatus()
+    {
+        if (AppNavigation.XamlRoot is not null)
+        {
+            double scale = AppNavigation.XamlRoot.RasterizationScale * 100;
+            DpiStatusText.Text = $"WinUI rendering scale: {scale:0}% (Windows display scaling)";
+        }
+    }
+
     private void AppNavigation_SelectionChanged(
         NavigationView sender, NavigationViewSelectionChangedEventArgs args)
     {
