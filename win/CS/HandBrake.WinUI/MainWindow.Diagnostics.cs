@@ -1,12 +1,46 @@
 using System;
 using System.IO;
 using System.Text.Json;
+using HandBrake.Interop.Interop;
+using HandBrake.Interop.Interop.Interfaces.EventArgs;
 using HandBrake.Interop.Interop.Json.Encode;
 
 namespace HandBrake.WinUI;
 
 public sealed partial class MainWindow
 {
+    private static readonly object NativeLogLock = new();
+
+    private void InitializeNativeDiagnostics()
+    {
+        HandBrakeUtils.MessageLogged += NativeMessageLogged;
+        HandBrakeUtils.ErrorLogged += NativeMessageLogged;
+        Closed += (_, _) =>
+        {
+            HandBrakeUtils.MessageLogged -= NativeMessageLogged;
+            HandBrakeUtils.ErrorLogged -= NativeMessageLogged;
+        };
+    }
+
+    private static void NativeMessageLogged(object? sender, MessageLoggedEventArgs args)
+    {
+        try
+        {
+            lock (NativeLogLock)
+            {
+                Directory.CreateDirectory(DiagnosticsFolder);
+                string path = Path.Combine(DiagnosticsFolder, "native.log");
+                if (File.Exists(path) && new FileInfo(path).Length > 2 * 1024 * 1024)
+                    File.Move(path, path + ".previous", overwrite: true);
+                File.AppendAllText(path, $"{DateTimeOffset.Now:O} {args.Message}{Environment.NewLine}");
+            }
+        }
+        catch (Exception failure) when (failure is IOException or UnauthorizedAccessException)
+        {
+            System.Diagnostics.Debug.WriteLine("Native diagnostic unavailable: " + failure.Message);
+        }
+    }
+
     private static string DiagnosticsFolder => Path.Combine(Path.GetDirectoryName(AppPreferences.StorageFile)!, "diagnostics");
 
     private static void SaveEncodeJobDiagnostic(JsonEncodeObject job)

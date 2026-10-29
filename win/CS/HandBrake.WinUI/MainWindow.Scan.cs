@@ -89,6 +89,7 @@ public sealed partial class MainWindow
 
     private HandBrakeInstance CreateScanInstance()
     {
+        HandBrakeUtils.RegisterLogger();
         var instance = new HandBrakeInstance();
         instance.Initialize(verbosity: SettingsPanel.Preferences.ScanVerbosity, noHardware: true);
         instance.ScanProgress += Scanner_ScanProgress;
