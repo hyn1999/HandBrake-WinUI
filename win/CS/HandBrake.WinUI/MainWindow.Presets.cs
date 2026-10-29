@@ -150,7 +150,9 @@ public sealed partial class MainWindow
             var index = nativeVideoEncoders.FindIndex(x =>
                 string.Equals(x.ShortName, activePreset.VideoEncoder, StringComparison.OrdinalIgnoreCase));
             VideoEncoderPicker.SelectedIndex = index;
-            VideoEncoderPicker.IsEnabled = index >= 0;
+            // Even if this preset names an unavailable encoder, let the user
+            // choose another native encoder instead of trapping them.
+            VideoEncoderPicker.IsEnabled = nativeVideoEncoders.Count > 0;
 
             if (index >= 0)
             {
@@ -307,10 +309,22 @@ public sealed partial class MainWindow
                         VideoBitrateBox.Value < 100 || VideoBitrateBox.Value > 200000))
             return false;
 
+        // Native encoder capabilities are muxer-specific. Do not stage a
+        // video configuration the selected HandBrake container cannot mux.
+        string container = FormatPresetContainer(preset.Preset.FileFormat);
+        bool compatible = container switch
+        {
+            "MP4" => encoder.SupportsMP4,
+            "MKV" => encoder.SupportsMKV,
+            "WebM" => encoder.SupportsWebM,
+            _ => false
+        };
+        if (!compatible) return false;
+
         settings = new VideoDraftSettings(
             preset.Key,
             preset.Preset.PresetName,
-            FormatPresetContainer(preset.Preset.FileFormat),
+            container,
             encoder.ShortName,
             quality ? "ConstantQuality" : "AverageBitrate",
             quality ? VideoQualitySlider.Value : null,
