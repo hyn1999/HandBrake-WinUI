@@ -26,7 +26,7 @@ The WinUI Workspace now connects its source intake to the **existing HandBrake.I
 
 ## Preview build policy
 
-The GitHub Actions preview workflow is **manual-only** on this feature branch to avoid automatic ~90 MB artifacts on every UI commit. To request a test build, open Actions > WinUI 3 Preview > Run workflow and select `feature/winui3-shell`. Artifacts expire after **2 days**. Source changes can accumulate without repeatedly downloading the preview.
+The GitHub Actions preview workflow is normally **manual-only** on this feature branch to avoid large artifacts on every UI commit. A temporary push trigger is present for the explicitly requested framework-dependent test build; it will be removed after the test. For future manual builds, open Actions > WinUI 3 Preview > Run workflow and select `feature/winui3-shell`. Artifacts expire after **2 days**.
 
 ## Build
 
@@ -35,7 +35,7 @@ GitHub Actions: `.github/workflows/winui3.yml` builds the unpackaged x64 preview
 To publish on a Windows development machine with .NET 10:
 
 ```powershell
-dotnet publish win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained true -o winui-preview
+dotnet publish win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained false -p:WindowsAppSDKSelfContained=false -o winui-preview
 ```
 
 The project targets Windows App SDK 2.5.1, `WindowsPackageType=None`, and `WindowsAppSDKSelfContained=true`. The project includes an explicit step to ship `HandBrake.WinUI.pri`, which is required for the WinUI XAML resource lookup on startup.
@@ -88,3 +88,8 @@ The Workspace **Add to queue** button stages selected file/folder paths as draft
 - Staging a scanned title stores the video settings snapshot, but only if the chosen encoder supports the preset's container. The built-in preset object is **not mutated**. Unsupported target-size rate control is not silently converted into bitrate mode.
 - The native preset contains many more fields than this first editor exposes. Audio, subtitles, filters, cropping, chapter and metadata configuration still require faithful job construction; until that is complete **Start Encode remains disabled**.
 - **Manual Windows 11 smoke test (after requesting a build):** Open app with matching `hb.dll`; verify preset categories and real encoder list; select two presets with different muxers; scan a known source and select a title; adjust quality/bitrate; stage a draft; inspect its title/preset/encoder/destination in Queue; restart to verify persistence; test missing `hb.dll` for an honest disabled state; verify the original WPF app still works. No CI build is triggered by these commits.
+
+
+## Small framework-dependent test artifact
+
+This preview intentionally **does not bundle the .NET 10 runtime or Windows App SDK runtime**. The Windows 11 test machine must already have a compatible x64 .NET 10 runtime and the matching Windows App SDK runtime installed. The HandBrake-native `hb.dll` and app-specific `HandBrake.Interop.dll` remain included because they are essential program components, not system prerequisites. The publish job checks for a framework-dependent `runtimeconfig.json` and rejects a bundled `coreclr.dll`. The CI artifact is named `HandBrake-WinUI3-FrameworkDependent-x64`.

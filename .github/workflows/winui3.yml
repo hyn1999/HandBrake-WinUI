@@ -1,9 +1,16 @@
 name: WinUI 3 Preview
 
-# Expensive native cross-compilation and large WinUI downloads are opt-in.
-# The native binary is cached by native/interop source hash between manual runs.
+# Expensive native cross-compilation is normally manual-only.
+# This temporary branch-scoped push trigger starts the explicitly requested
+# framework-dependent smoke-test build; remove it after the run.
+# The native binary is cached by native/interop source hash.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/winui3-shell
+    paths:
+      - .github/workflows/winui3.yml
 
 permissions:
   contents: read
@@ -103,9 +110,9 @@ jobs:
           dotnet publish win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj `
             --configuration Release `
             --runtime win-x64 `
-            --self-contained true `
+            --self-contained false `
             -p:Platform=x64 `
-            -p:WindowsAppSDKSelfContained=true `
+            -p:WindowsAppSDKSelfContained=false `
             --output "$env:RUNNER_TEMP/HandBrake-WinUI3"
 
       - name: Download native libhb from this workflow run
@@ -114,7 +121,7 @@ jobs:
           name: winui3-native-libhb-x64
           path: ${{ runner.temp }}/HandBrake-WinUI3
 
-      - name: Verify native scanner and XAML runtime are packaged
+      - name: Verify native scanner and framework-dependent publish
         shell: pwsh
         run: |
           $publishDir = Join-Path $env:RUNNER_TEMP "HandBrake-WinUI3"
@@ -122,7 +129,7 @@ jobs:
             "HandBrake.WinUI.exe",
             "HandBrake.WinUI.pri",
             "HandBrake.Interop.dll",
-            "Microsoft.ui.xaml.dll",
+            "HandBrake.WinUI.runtimeconfig.json",
             "hb.dll"
           )
           foreach ($file in $requiredFiles) {
@@ -131,6 +138,14 @@ jobs:
               throw "Missing published dependency: $file"
             }
             Write-Host "OK: $file"
+          }
+          # Framework-dependent .NET/Windows App SDK: do not ship the runtimes.
+          if (Test-Path (Join-Path $publishDir "coreclr.dll")) {
+            throw "Unexpected bundled .NET runtime (coreclr.dll)"
+          }
+          $runtimeConfig = Get-Content (Join-Path $publishDir "HandBrake.WinUI.runtimeconfig.json") -Raw | ConvertFrom-Json
+          if (-not $runtimeConfig.runtimeOptions.framework -and -not $runtimeConfig.runtimeOptions.frameworks) {
+            throw "Missing framework dependency in runtimeconfig.json"
           }
           # Verify PE Machine == AMD64; reject accidental ARM or 32-bit libhb.
           $dll = Join-Path $publishDir "hb.dll"
@@ -148,7 +163,7 @@ jobs:
       - name: Upload integrated preview folder
         uses: actions/upload-artifact@v4
         with:
-          name: HandBrake-WinUI3-Scanner-x64
+          name: HandBrake-WinUI3-FrameworkDependent-x64
           path: ${{ runner.temp }}/HandBrake-WinUI3/
           if-no-files-found: error
           retention-days: 2
