@@ -1,9 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
+using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.Windows.Storage.Pickers;
+using Windows.ApplicationModel.DataTransfer;
+using Windows.Storage;
 
 namespace HandBrake.WinUI;
 
@@ -11,6 +16,7 @@ public sealed partial class MainWindow : Window
 {
     private bool isNarrow;
     private bool showPreviewOnNarrow;
+    private readonly List<string> selectedSourcePaths = new();
 
     public MainWindow()
     {
@@ -44,6 +50,7 @@ public sealed partial class MainWindow : Window
         HomePanel.Visibility = page == "workspace" ? Visibility.Visible : Visibility.Collapsed;
         QueuePanel.Visibility = page == "queue" ? Visibility.Visible : Visibility.Collapsed;
         SettingsPanel.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
+        SourcePickerOverlay.Visibility = Visibility.Collapsed;
     }
 
     private void WorkspaceGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -85,33 +92,166 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private async void OpenSource_Click(object sender, RoutedEventArgs e)
+    private void ShowSourcePicker_Click(object sender, RoutedEventArgs e) => ShowSourcePicker();
+
+    private void ShowSourcePicker()
+    {
+        AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
+        SourcePickerOverlay.Visibility = Visibility.Visible;
+    }
+
+    private void CloseSourcePicker_Click(object sender, RoutedEventArgs e)
+        => SourcePickerOverlay.Visibility = Visibility.Collapsed;
+
+    private async void OpenFiles_Click(object sender, RoutedEventArgs e) => await PickFilesAsync();
+
+    private async void OpenFolder_Click(object sender, RoutedEventArgs e) => await PickFolderAsync();
+
+    private async void OpenFiles_AcceleratorInvoked(KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        await PickFilesAsync();
+    }
+
+    private async void OpenFolder_AcceleratorInvoked(KeyboardAccelerator sender,
+        KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        await PickFolderAsync();
+    }
+
+    private async System.Threading.Tasks.Task PickFilesAsync()
     {
         try
         {
             var picker = new FileOpenPicker(AppWindow.Id)
             {
                 SuggestedStartLocation = PickerLocationId.VideosLibrary,
-                FileTypeFilter = { ".mp4", ".m4v", ".mkv", ".mov", ".avi", ".webm", ".wmv", ".ts", ".mts" },
+                FileTypeFilter =
+                {
+                    ".mp4", ".m4v", ".mkv", ".mov", ".avi", ".webm", ".wmv",
+                    ".ts", ".mts", ".m2ts", ".mpg", ".mpeg", ".vob", ".flv",
+                    ".ogv", ".3gp", ".mxf", ".iso"
+                }
             };
 
-            var selectedFile = await picker.PickSingleFileAsync();
-            if (selectedFile is null) return;
-
-            var info = new FileInfo(selectedFile.Path);
-            SelectedFileText.Text = info.Name;
-            SelectedPathText.Text = $"{info.Length / 1024d / 1024d:N1} MiB · {info.FullName}";
-            PreviewSourceText.Text = info.Name;
-            DestinationText.Text = Path.GetFileNameWithoutExtension(info.Name) + ".mp4 (suggested only)";
-            SourceInfoBar.Title = "Source selected";
-            SourceInfoBar.Message = "The file is selected. Actual source scanning and video preview are not connected yet.";
-            SourceInfoBar.Severity = InfoBarSeverity.Informational;
+            var files = await picker.PickMultipleFilesAsync();
+            if (files.Count > 0)
+            {
+                AcceptSourcePaths(files.Select(file => file.Path));
+            }
         }
         catch (Exception error)
         {
-            SourceInfoBar.Title = "Unable to open video";
-            SourceInfoBar.Message = error.Message;
-            SourceInfoBar.Severity = InfoBarSeverity.Error;
+            ShowSourceError(error);
         }
+    }
+
+    private async System.Threading.Tasks.Task PickFolderAsync()
+    {
+        try
+        {
+            var picker = new FolderPicker(AppWindow.Id)
+            {
+                SuggestedStartLocation = PickerLocationId.VideosLibrary
+            };
+            var folder = await picker.PickSingleFolderAsync();
+            if (folder is not null)
+            {
+                AcceptSourcePaths(new[] { folder.Path });
+            }
+        }
+        catch (Exception error)
+        {
+            ShowSourceError(error);
+        }
+    }
+
+    private void WindowRoot_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.DataView.Contains(StandardDataFormats.StorageItems))
+        {
+            e.AcceptedOperation = DataPackageOperation.Copy;
+            DropHighlight.Visibility = Visibility.Visible;
+            e.Handled = true;
+        }
+        else
+        {
+            e.AcceptedOperation = DataPackageOperation.None;
+        }
+    }
+
+    private void WindowRoot_DragLeave(object sender, DragEventArgs e)
+    {
+        DropHighlight.Visibility = Visibility.Collapsed;
+    }
+
+    private async void WindowRoot_Drop(object sender, DragEventArgs e)
+    {
+        DropHighlight.Visibility = Visibility.Collapsed;
+        if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
+
+        e.Handled = true;
+        try
+        {
+            var items = await e.DataView.GetStorageItemsAsync();
+            var paths = items
+                .Where(item => item is StorageFile || item is StorageFolder)
+                .Select(item => item.Path)
+                .Where(path => !string.IsNullOrWhiteSpace(path));
+            AcceptSourcePaths(paths);
+        }
+        catch (Exception error)
+        {
+            ShowSourceError(error);
+        }
+    }
+
+    private void AcceptSourcePaths(IEnumerable<string> sourcePaths)
+    {
+        var paths = sourcePaths
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(path => File.Exists(path) || Directory.Exists(path))
+            .ToList();
+
+        if (paths.Count == 0)
+        {
+            SourceStatusText.Text = "No accessible files or folders were selected.";
+            SourcePickerOverlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        selectedSourcePaths.Clear();
+        selectedSourcePaths.AddRange(paths);
+
+        string first = paths[0];
+        bool isFolder = Directory.Exists(first);
+        string firstName = Path.GetFileName(Path.TrimEndingDirectorySeparator(first));
+        SelectedFileText.Text = paths.Count == 1
+            ? firstName
+            : $"{firstName} + {paths.Count - 1} more source(s)";
+        SelectedPathText.Text = paths.Count == 1
+            ? (isFolder ? first : $"{new FileInfo(first).Length / 1024d / 1024d:N1} MiB · {first}")
+            : $"{paths.Count} selected files/folders · {first}";
+        PreviewSourceText.Text = SelectedFileText.Text;
+        DestinationText.Text = isFolder
+            ? "Destination will be available after source scanning"
+            : Path.GetFileNameWithoutExtension(first) + ".mp4 (suggested only)";
+
+        SourceStatusText.Text = paths.Count == 1
+            ? "Source selected. Media scanning and encoding are not connected yet."
+            : $"{paths.Count} sources selected. Batch scanning and queue integration are not connected yet.";
+
+        SourcePickerOverlay.Visibility = Visibility.Collapsed;
+        AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
+    }
+
+    private void ShowSourceError(Exception error)
+    {
+        SourceStatusText.Text = $"Unable to open source: {error.Message}";
+        SourcePickerOverlay.Visibility = Visibility.Collapsed;
+        AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
     }
 }

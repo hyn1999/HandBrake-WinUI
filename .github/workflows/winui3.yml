@@ -1,25 +1,8 @@
 name: WinUI 3 Preview
 
-# Only one preview per change: pull requests and merged pushes to master.
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
-  cancel-in-progress: true
-
+# Large x64 self-contained artifacts are intentionally opt-in during UI development.
+# Use Actions > WinUI 3 Preview > Run workflow when a test build is needed.
 on:
-  push:
-    branches: [master]
-    paths:
-      - 'win/CS/HandBrake.WinUI/**'
-      - 'win/CS/HandBrake.App.Core/**'
-      - 'win/CS/HandBrake.Interop/**'
-      - '.github/workflows/winui3.yml'
-  pull_request:
-    branches: [master]
-    paths:
-      - 'win/CS/HandBrake.WinUI/**'
-      - 'win/CS/HandBrake.App.Core/**'
-      - 'win/CS/HandBrake.Interop/**'
-      - '.github/workflows/winui3.yml'
   workflow_dispatch:
 
 permissions:
@@ -69,3 +52,4 @@ jobs:
           name: HandBrake-WinUI3-Shell-x64
           path: ${{ runner.temp }}/HandBrake-WinUI3/
           if-no-files-found: error
+          retention-days: 2

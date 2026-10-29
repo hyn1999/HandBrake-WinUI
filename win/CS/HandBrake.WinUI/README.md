@@ -2,16 +2,25 @@
 
 A new **WinUI 3** frontend alongside HandBrake's unchanged WPF application.
 
-## Current preview (UI milestone 0.2)
+## Current preview (UI milestone 0.3 — source intake)
 
 - **Modern Professional** Windows 11 layout using Mica and WinUI 3 **Compact** density.
 - LeftCompact navigation for Workspace, Queue, and Settings.
 - Editor with Summary, Dimensions, Filters, Video, Audio, Subtitles, Chapters, and Metadata tabs.
 - **Fixed preview panel on the right** on wider windows. On narrow windows, use the **Preview / Editor** toggle to switch between the two areas without squashing controls.
 - Persistent destination and Start Encode bar.
-- Functional **Open source** file picker that shows the selected filename, path, size, and a *suggested* destination filename.
+- Native **Open source** overlay with separate **Video file(s)** and **Folder** choices; the existing Workspace layout stays intact.
+- Multiple-file selection and folder selection via Windows App SDK pickers.
+- File Explorer **drag and drop** onto the app window, with a temporary Fluent-style drop indicator.
+- Keyboard accelerators: **Ctrl+O** opens the file picker, **Ctrl+Shift+O** opens the folder picker.
+- Selected filenames, counts, paths, and a *suggested* destination filename are shown. No media decoding or scanning occurs yet.
+- A compact status line replaces the large permanent InfoBar; the preview frame placeholder uses a fixed, video-like aspect ratio.
 
 **This is a layout preview, not a video converter yet.** Presets, encoder settings, destination editing, queue actions, and Start Encode are deliberately disabled until the HandBrake engine is connected. The preview area is a placeholder, not a decoded video frame. File selection does not scan media. Never interpret example settings or suggested output filenames as actual encoder state.
+
+## Preview build policy
+
+The GitHub Actions preview workflow is **manual-only** on this feature branch to avoid automatic ~90 MB artifacts on every UI commit. To request a test build, open Actions > WinUI 3 Preview > Run workflow and select `feature/winui3-shell`. Artifacts expire after **2 days**. Source changes can accumulate without repeatedly downloading the preview.
 
 ## Build
 
