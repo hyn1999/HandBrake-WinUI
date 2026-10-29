@@ -168,6 +168,8 @@ public sealed partial class MainWindow
 
     private void DisplayScannedTitle(SourceTitle title)
     {
+        selectedScannedTitleName = title.Name;
+        UpdateSuggestedDestination();
         string resolution = title.Geometry is null
             ? "Unknown resolution"
             : $"{title.Geometry.Width} × {title.Geometry.Height}";

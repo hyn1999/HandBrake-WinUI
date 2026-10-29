@@ -247,6 +247,7 @@ public sealed partial class MainWindow : Window
 
         selectedSourcePaths.Clear();
         selectedSourcePaths.AddRange(paths);
+        selectedScannedTitleName = null;
         StageQueueButton.IsEnabled = true;
 
         string first = paths[0];
