@@ -23,6 +23,7 @@ public sealed partial class MainWindow : Window
         InitializeComponent();
         SystemBackdrop = new MicaBackdrop();
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
+        InitializeSourceScanner();
     }
 
     private void AppNavigation_Loaded(object sender, RoutedEventArgs e)
@@ -210,6 +211,13 @@ public sealed partial class MainWindow : Window
 
     private void AcceptSourcePaths(IEnumerable<string> sourcePaths)
     {
+        if (scanInProgress)
+        {
+            SourceStatusText.Text = "A scan is already running. Cancel it before opening a new source.";
+            SourcePickerOverlay.Visibility = Visibility.Collapsed;
+            return;
+        }
+
         var paths = sourcePaths
             .Where(path => !string.IsNullOrWhiteSpace(path))
             .Distinct(StringComparer.OrdinalIgnoreCase)
@@ -246,6 +254,7 @@ public sealed partial class MainWindow : Window
 
         SourcePickerOverlay.Visibility = Visibility.Collapsed;
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
+        StartSourceScan(paths);
     }
 
     private void ShowSourceError(Exception error)

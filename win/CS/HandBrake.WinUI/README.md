@@ -18,6 +18,12 @@ A new **WinUI 3** frontend alongside HandBrake's unchanged WPF application.
 
 **This is a layout preview, not a video converter yet.** Presets, encoder settings, destination editing, queue actions, and Start Encode are deliberately disabled until the HandBrake engine is connected. The preview area is a placeholder, not a decoded video frame. File selection does not scan media. Never interpret example settings or suggested output filenames as actual encoder state.
 
+## Native source scanning (integration milestone)
+
+The WinUI Workspace now connects its source intake to the **existing HandBrake.Interop `HandBrakeInstance`** scanner. It subscribes to native scan progress/completion events, updates the progress bar on the UI dispatcher, lists detected titles and displays **actual** duration, resolution, frame rate, source codec, audio/subtitle tracks and chapter count. The scan can be cancelled. Preset/encoder controls remain disabled; video frame previews are still placeholders.
+
+**Native dependency is not shipped in the current artifact.** The Git repository and current WinUI workflow do not build/package `hb.dll`. If a matching native library is absent from the app directory, the UI clearly reports that scanning is unavailable rather than inventing video properties. A `hb.dll` from an unrelated HandBrake release may have an incompatible ABI or missing dependencies; do not mix builds. A separate native packaging milestone is required before end-to-end scanning can be verified on Windows. Scan code has not yet been compiled/tested on Windows.
+
 ## Preview build policy
 
 The GitHub Actions preview workflow is **manual-only** on this feature branch to avoid automatic ~90 MB artifacts on every UI commit. To request a test build, open Actions > WinUI 3 Preview > Run workflow and select `feature/winui3-shell`. Artifacts expire after **2 days**. Source changes can accumulate without repeatedly downloading the preview.

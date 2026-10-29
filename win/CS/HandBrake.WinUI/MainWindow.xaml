@@ -52,6 +52,10 @@
                                 <TextBlock x:Name="SelectedPathText" Text="Choose a video to begin"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis" FontSize="12" />
+                                <ComboBox x:Name="SourceTitlePicker"
+                                          Header="Detected titles" Visibility="Collapsed"
+                                          MinWidth="220" HorizontalAlignment="Left"
+                                          SelectionChanged="SourceTitlePicker_SelectionChanged" />
                             </StackPanel>
                             <Button Grid.Column="1" Content="Open source" Click="ShowSourcePicker_Click"
                                     VerticalAlignment="Center" Style="{StaticResource AccentButtonStyle}" />
@@ -60,10 +64,25 @@
                                     VerticalAlignment="Center" />
                         </Grid>
 
-                        <TextBlock Grid.Row="1" x:Name="SourceStatusText"
-                                   Text="Open a video, select a folder, or drop files anywhere in this window."
-                                   FontSize="12" TextWrapping="Wrap"
-                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                        <StackPanel Grid.Row="1" Spacing="6">
+                            <Grid ColumnSpacing="12">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
+                                </Grid.ColumnDefinitions>
+                                <TextBlock x:Name="SourceStatusText"
+                                           Text="Open a video, select a folder, or drop files anywhere in this window."
+                                           FontSize="12" TextWrapping="Wrap"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                           VerticalAlignment="Center" />
+                                <Button x:Name="CancelScanButton" Grid.Column="1"
+                                        Content="Cancel scan" Visibility="Collapsed"
+                                        Click="CancelScan_Click" />
+                            </Grid>
+                            <ProgressBar x:Name="SourceScanProgress"
+                                         Visibility="Collapsed" Minimum="0" Maximum="100"
+                                         Value="0" Height="4" />
+                        </StackPanel>
 
                         <Grid x:Name="WorkspaceGrid" Grid.Row="2" ColumnSpacing="12"
                               SizeChanged="WorkspaceGrid_SizeChanged">
@@ -104,6 +123,9 @@
                                                 <StackPanel Padding="6,12,10,12" Spacing="12">
                                                     <TextBlock Text="Output summary" FontSize="17"
                                                                FontWeight="SemiBold" />
+                                                    <TextBlock x:Name="ScanSummaryText"
+                                                               Text="Scan a source to see actual title, duration and track counts."
+                                                               TextWrapping="Wrap" />
                                                     <TextBlock Text="Container" />
                                                     <ComboBox SelectedIndex="0" IsEnabled="False"
                                                               HorizontalAlignment="Stretch">
@@ -123,6 +145,9 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="6,12,10,12" Spacing="12">
                                                     <TextBlock Text="Dimensions" FontSize="17" FontWeight="SemiBold" />
+                                                    <TextBlock x:Name="SourceDimensionsText"
+                                                               Text="Source dimensions will appear after scanning."
+                                                               TextWrapping="Wrap" />
                                                     <TextBlock Text="Resolution limit" />
                                                     <ComboBox SelectedIndex="0" IsEnabled="False" HorizontalAlignment="Stretch">
                                                         <ComboBoxItem Content="1080p HD" />
@@ -155,6 +180,9 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="6,12,10,12" Spacing="12">
                                                     <TextBlock Text="Video encoding" FontSize="17" FontWeight="SemiBold" />
+                                                    <TextBlock x:Name="SourceVideoText"
+                                                               Text="Source codec and frame rate will appear after scanning."
+                                                               TextWrapping="Wrap" />
                                                     <TextBlock Text="Video encoder" />
                                                     <ComboBox SelectedIndex="0" IsEnabled="False" HorizontalAlignment="Stretch">
                                                         <ComboBoxItem Content="H.265 (x265)" />
@@ -174,8 +202,10 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="6,12,10,12" Spacing="12">
                                                     <TextBlock Text="Audio tracks" FontSize="17" FontWeight="SemiBold" />
-                                                    <TextBlock Text="Tracks will appear after scanning a source."
-                                                               TextWrapping="Wrap" />
+                                                    <StackPanel x:Name="AudioTrackList" Spacing="8">
+                                                        <TextBlock Text="Tracks will appear after scanning a source."
+                                                                   TextWrapping="Wrap" />
+                                                    </StackPanel>
                                                     <Button Content="Add track" IsEnabled="False"
                                                             HorizontalAlignment="Left" />
                                                 </StackPanel>
@@ -185,8 +215,10 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="6,12,10,12" Spacing="12">
                                                     <TextBlock Text="Subtitles" FontSize="17" FontWeight="SemiBold" />
-                                                    <TextBlock Text="Subtitle tracks will appear after scanning."
-                                                               TextWrapping="Wrap" />
+                                                    <StackPanel x:Name="SubtitleTrackList" Spacing="8">
+                                                        <TextBlock Text="Subtitle tracks will appear after scanning."
+                                                                   TextWrapping="Wrap" />
+                                                    </StackPanel>
                                                     <Button Content="Add subtitle" IsEnabled="False"
                                                             HorizontalAlignment="Left" />
                                                 </StackPanel>
@@ -197,7 +229,8 @@
                                                 <StackPanel Padding="6,12,10,12" Spacing="12">
                                                     <TextBlock Text="Chapters" FontSize="17" FontWeight="SemiBold" />
                                                     <CheckBox Content="Create chapter markers" IsEnabled="False" />
-                                                    <TextBlock Text="Chapter titles will appear here after source scanning."
+                                                    <TextBlock x:Name="ChapterListText"
+                                                               Text="Chapter titles will appear here after source scanning."
                                                                TextWrapping="Wrap" />
                                                 </StackPanel>
                                             </ScrollViewer>
@@ -244,6 +277,9 @@
                                     <StackPanel Grid.Row="2" Spacing="6">
                                         <TextBlock Text="Source details" FontWeight="SemiBold" />
                                         <TextBlock x:Name="PreviewSourceText" Text="No source selected"
+                                                   TextWrapping="Wrap" />
+                                        <TextBlock x:Name="PreviewMetadataText"
+                                                   Text="Scan a video to display its properties."
                                                    TextWrapping="Wrap" />
                                         <TextBlock Text="Preview is a placeholder; it does not play video yet."
                                                    FontSize="12" TextWrapping="Wrap"
