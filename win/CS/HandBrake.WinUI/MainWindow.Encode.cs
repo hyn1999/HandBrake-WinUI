@@ -243,11 +243,12 @@ public sealed partial class MainWindow
                 QueueEncodeProgress.IsIndeterminate = true;
                 QueueStatusText.Text =
                     $"Starting {activeEncodeQueueIndex + 1}/{activeEncodeQueue.Count} · {draft.DisplayName}";
+                SaveEncodeJobDiagnostic(job);
                 encodeInstance.StartEncode(job);
             }
             catch (Exception ex)
             {
-                FinishEncodeRun($"Unable to start {draft.DisplayName}: {ex.Message}");
+                FinishEncodeRun(SaveEncodeFailureDiagnostic($"Unable to start {draft.DisplayName}: {ex.Message}", ex));
             }
         });
     }
@@ -285,7 +286,7 @@ public sealed partial class MainWindow
             if (e.Error != 0)
             {
                 FinishEncodeRun(
-                    $"Encoding failed for {draft.DisplayName} (native error {e.Error}). Check the HandBrake log and output path.");
+                    SaveEncodeFailureDiagnostic($"Encoding failed for {draft.DisplayName} (native error {e.Error})."));
                 return;
             }
 
