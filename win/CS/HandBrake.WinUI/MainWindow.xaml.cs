@@ -316,7 +316,7 @@ public sealed partial class MainWindow : Window
 
         SourceStatusText.Text = paths.Count == 1
             ? "Source selected. Preparing HandBrake source scan..."
-            : $"{paths.Count} sources selected. Queue and encoding are not connected yet.";
+            : $"{paths.Count} sources selected. Open and scan one source at a time to configure each encode job.";
 
         SourcePickerOverlay.Visibility = Visibility.Collapsed;
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
