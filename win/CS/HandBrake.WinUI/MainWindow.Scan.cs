@@ -39,6 +39,11 @@ public sealed partial class MainWindow
                 try { scanInstance?.StopScan(); }
                 catch { /* App is shutting down. */ }
             }
+            else if (encodeInProgress)
+            {
+                try { scanInstance?.StopEncode(); }
+                catch { /* App is shutting down. */ }
+            }
             else
             {
                 scanInstance?.Dispose();
