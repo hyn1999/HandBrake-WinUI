@@ -215,7 +215,7 @@ public sealed partial class MainWindow
         panel.Children.Add(new TextBlock { Text = content, TextWrapping = TextWrapping.Wrap });
     }
 
-    private static string FormatDuration(Duration? duration)
+    private static string FormatDuration(HandBrake.Interop.Interop.Json.Scan.Duration? duration)
     {
         if (duration is null) return "Unknown duration";
         return $"{duration.Hours:00}:{duration.Minutes:00}:{duration.Seconds:00}";

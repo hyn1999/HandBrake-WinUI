@@ -2,8 +2,16 @@ name: WinUI 3 UI-only Preview
 
 # Fast, small build for layout, icon, typography and interaction checks.
 # This intentionally excludes hb.dll; use "WinUI 3 Preview" for native scanning.
+# One-time push trigger for the user-approved smoke-test build.
+# Restore workflow_dispatch-only immediately after the run is queued.
 on:
   workflow_dispatch:
+  push:
+    branches:
+      - feature/winui3-shell
+    paths:
+      - .github/workflows/winui3-ui-only.yml
+      - win/CS/HandBrake.WinUI/MainWindow.Scan.cs
 
 permissions:
   contents: read
@@ -70,4 +78,4 @@ jobs:
           name: HandBrake-WinUI3-UIOnly-x64
           path: ${{ runner.temp }}/HandBrake-WinUI3-UIOnly/
           if-no-files-found: error
-          retention-days: 2
+          retention-days: 1
