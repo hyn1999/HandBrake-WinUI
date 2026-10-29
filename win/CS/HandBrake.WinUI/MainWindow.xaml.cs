@@ -36,6 +36,7 @@ public sealed partial class MainWindow : Window
         {
             AppNavigation.XamlRoot.Changed += (_, _) => UpdateDpiStatus();
             UpdateDpiStatus();
+            InitializePresetCatalog();
         }
     }
 
