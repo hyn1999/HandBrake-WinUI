@@ -48,7 +48,9 @@ public sealed partial class MainWindow
 
         try
         {
-            HandBrakeUtils.EnsureGlobalInit(initNoHardwareMode: true);
+            // HandBrakePresetService requires hb_init, not just hb_global_init.
+            // Reuse the same native instance later for source scanning.
+            scanInstance ??= CreateScanInstance();
             var categories = HandBrakePresetService.GetBuiltInPresets();
             if (categories is null) throw new InvalidOperationException("libhb returned no preset catalog.");
 
