@@ -64,7 +64,7 @@
                             <Button x:Name="StageQueueButton" Grid.Column="2" Content="Add to queue"
                                     Click="StageQueue_Click" IsEnabled="False"
                                     VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="Stage sources as drafts. Encoding is not connected yet." />
+                                    ToolTipService.ToolTip="Stage selected source/title with its preset and video settings. Encoding is not connected yet." />
                             <Button x:Name="PreviewToggleButton" Grid.Column="3" Content="Preview"
                                     Click="PreviewToggle_Click" Visibility="Collapsed"
                                     VerticalAlignment="Center" />
@@ -114,11 +114,10 @@
                                         </Grid.ColumnDefinitions>
                                         <TextBlock Text="Preset" VerticalAlignment="Center"
                                                    FontWeight="SemiBold" />
-                                        <ComboBox Grid.Column="1" SelectedIndex="0"
+                                        <ComboBox x:Name="PresetPicker" Grid.Column="1"
                                                   IsEnabled="False" HorizontalAlignment="Stretch"
-                                                  AutomationProperties.Name="Encoding preset">
-                                            <ComboBoxItem Content="Fast 1080p30 (preview only)" />
-                                        </ComboBox>
+                                                  SelectionChanged="PresetPicker_SelectionChanged"
+                                                  AutomationProperties.Name="HandBrake encoding preset" />
                                     </Grid>
 
                                     <TabView Grid.Row="1" IsAddTabButtonVisible="False"
@@ -132,17 +131,17 @@
                                                     <TextBlock x:Name="ScanSummaryText"
                                                                Text="Scan a source to see actual title, duration and track counts."
                                                                TextWrapping="Wrap" />
-                                                    <TextBlock Text="Container" />
-                                                    <ComboBox SelectedIndex="0" IsEnabled="False"
-                                                              HorizontalAlignment="Stretch">
-                                                        <ComboBoxItem Content="MP4" />
-                                                        <ComboBoxItem Content="MKV" />
-                                                        <ComboBoxItem Content="WebM" />
-                                                    </ComboBox>
-                                                    <CheckBox Content="Web optimized" IsEnabled="False" />
-                                                    <CheckBox Content="Align A/V start" IsEnabled="False" />
-                                                    <TextBlock Text="Options will become available when the HandBrake engine is connected."
+                                                    <TextBlock x:Name="PresetStatusText"
+                                                               Text="Built-in presets will load from the matching HandBrake engine."
                                                                TextWrapping="Wrap"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    <TextBlock Text="Selected preset" FontWeight="SemiBold" />
+                                                    <TextBlock x:Name="PresetDescriptionText"
+                                                               Text="No native preset loaded." TextWrapping="Wrap" />
+                                                    <TextBlock Text="Output container (from preset)" FontWeight="SemiBold" />
+                                                    <TextBlock x:Name="PresetContainerText" Text="Not available" />
+                                                    <TextBlock Text="Other preset options (audio, filters, dimensions and subtitles) are preserved in the native preset definition but are not yet editable or mapped into an encode job."
+                                                               TextWrapping="Wrap" FontSize="12"
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
@@ -189,18 +188,38 @@
                                                     <TextBlock x:Name="SourceVideoText"
                                                                Text="Source codec and frame rate will appear after scanning."
                                                                TextWrapping="Wrap" />
-                                                    <TextBlock Text="Video encoder" />
-                                                    <ComboBox SelectedIndex="0" IsEnabled="False" HorizontalAlignment="Stretch">
-                                                        <ComboBoxItem Content="H.265 (x265)" />
+                                                    <TextBlock Text="Video encoder" FontWeight="SemiBold" />
+                                                    <ComboBox x:Name="VideoEncoderPicker"
+                                                              HorizontalAlignment="Stretch" IsEnabled="False"
+                                                              SelectionChanged="VideoEncoderPicker_SelectionChanged" />
+                                                    <TextBlock Text="Rate control" FontWeight="SemiBold" />
+                                                    <ComboBox x:Name="VideoRateModePicker" IsEnabled="False"
+                                                              HorizontalAlignment="Stretch"
+                                                              SelectionChanged="VideoRateModePicker_SelectionChanged">
+                                                        <ComboBoxItem Content="Constant quality" />
+                                                        <ComboBoxItem Content="Average bitrate" />
                                                     </ComboBox>
-                                                    <TextBlock Text="Framerate" />
-                                                    <ComboBox SelectedIndex="0" IsEnabled="False" HorizontalAlignment="Stretch">
-                                                        <ComboBoxItem Content="Same as source" />
-                                                    </ComboBox>
-                                                    <TextBlock Text="Constant quality" />
-                                                    <Slider Minimum="0" Maximum="51" Value="22"
-                                                            IsEnabled="False" />
-                                                    <TextBlock Text="RF 22 (layout example)" />
+                                                    <StackPanel x:Name="QualityControlPanel" Spacing="6">
+                                                        <TextBlock x:Name="VideoQualityText"
+                                                                   Text="Quality: not configured" />
+                                                        <Slider x:Name="VideoQualitySlider"
+                                                                Minimum="0" Maximum="51" Value="22"
+                                                                IsEnabled="False"
+                                                                ValueChanged="VideoQualitySlider_ValueChanged" />
+                                                    </StackPanel>
+                                                    <NumberBox x:Name="VideoBitrateBox"
+                                                               Header="Average bitrate (kbps)"
+                                                               Minimum="100" Maximum="200000"
+                                                               Value="2500" SpinButtonPlacementMode="Compact"
+                                                               Visibility="Collapsed" IsEnabled="False"
+                                                               ValueChanged="VideoBitrateBox_ValueChanged" />
+                                                    <TextBlock Text="Framerate and encoder tuning (from preset)"
+                                                               FontWeight="SemiBold" />
+                                                    <TextBlock x:Name="PresetVideoDetailsText"
+                                                               Text="Not available" TextWrapping="Wrap" />
+                                                    <TextBlock Text="Changing the encoder or rate control updates a draft configuration only. It does not start encoding or modify HandBrake's built-in preset."
+                                                               FontSize="12" TextWrapping="Wrap"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
@@ -333,7 +352,7 @@
                         </StackPanel>
                         <InfoBar Grid.Row="1" IsOpen="True" IsClosable="False"
                                  Severity="Informational" Title="Draft queue"
-                                 Message="Sources can be staged, removed and kept between sessions. These are drafts, not runnable encoding jobs. Encoding will be enabled only after the engine and presets are connected." />
+                                 Message="Staged sources can include a scanned title, native preset and video settings. These are configuration drafts, not runnable encode jobs. Start Encode remains disabled until full job construction and validation are implemented." />
                         <Border Grid.Row="2" CornerRadius="10" Padding="8"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -347,7 +366,11 @@
                                             <TextBlock Text="{Binding SourcePath}" FontSize="12"
                                                        TextWrapping="Wrap"
                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock Text="Draft · awaiting encoder configuration" FontSize="12"
+                                            <TextBlock Text="{Binding ConfigurationSummary}" FontSize="12"
+                                                       TextWrapping="Wrap"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <TextBlock Text="{Binding DestinationSummary}" FontSize="12"
+                                                       TextWrapping="Wrap"
                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                         </StackPanel>
                                     </DataTemplate>
