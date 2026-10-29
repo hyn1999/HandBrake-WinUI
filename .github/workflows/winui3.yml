@@ -4,9 +4,6 @@ name: WinUI 3 Preview
 # The native binary is cached by native/interop source hash.
 on:
   workflow_dispatch:
-  push:
-    branches: [chore/winui-integration]
-    paths: [.github/workflows/winui3.yml]
 
 permissions:
   contents: write
