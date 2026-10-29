@@ -118,6 +118,7 @@ public sealed partial class MainWindow
 
         DispatcherQueue.TryEnqueue(() =>
         {
+            if (!scanInProgress) return; // Ignore completion after cancellation.
             scanInProgress = false;
             SourceScanProgress.Visibility = Visibility.Collapsed;
             CancelScanButton.Visibility = Visibility.Collapsed;
@@ -242,6 +243,8 @@ public sealed partial class MainWindow
         SourceStatusText.Text = "HandBrake native scan could not start: " + error.Message +
             " Check that hb.dll and its dependencies match this application build.";
         // A failed init may leave an unusable instance; don't reuse it.
+        // Avoid reusing a native instance whose initialization failed.
+        // Do not dispose it here: native initialization may have failed part-way.
         scanInstance = null;
     }
 
@@ -251,7 +254,14 @@ public sealed partial class MainWindow
         scanWasCancelled = true;
         SourceStatusText.Text = "Stopping scan...";
         CancelScanButton.IsEnabled = false;
-        try { scanInstance.StopScan(); }
+        try
+        {
+            scanInstance.StopScan();
+            scanInProgress = false;
+            SourceScanProgress.Visibility = Visibility.Collapsed;
+            CancelScanButton.Visibility = Visibility.Collapsed;
+            SourceStatusText.Text = "Source scan cancelled.";
+        }
         catch (Exception ex)
         {
             SourceStatusText.Text = "Unable to stop scan: " + ex.Message;
