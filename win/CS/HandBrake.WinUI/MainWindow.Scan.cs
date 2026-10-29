@@ -561,6 +561,7 @@ public sealed partial class MainWindow
         PreviewFrameImage.Visibility = Visibility.Collapsed;
         PreviewPlaceholder.Visibility = Visibility.Visible;
         GeneratePreviewButton.IsEnabled = false;
+        StartEncodeButton.IsEnabled = false;
         AudioTrackList.Children.Clear();
         SubtitleTrackList.Children.Clear();
         AddDetailLine(AudioTrackList, "Waiting for source scan.");
