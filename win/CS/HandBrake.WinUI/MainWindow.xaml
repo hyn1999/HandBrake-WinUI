@@ -508,7 +508,7 @@
                     <Border CornerRadius="8" Padding="12"
                             Background="{ThemeResource LayerFillColorDefaultBrush}">
                         <StackPanel Orientation="Horizontal" Spacing="10">
-                            <SymbolIcon Symbol="Info" />
+                            <SymbolIcon Symbol="Help" />
                             <TextBlock Text="Tip: You can also drag files or folders directly into the window."
                                        TextWrapping="Wrap" VerticalAlignment="Center" />
                         </StackPanel>
