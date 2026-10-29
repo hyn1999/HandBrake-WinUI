@@ -18,6 +18,9 @@ namespace HandBrake.WinUI;
 /// </summary>
 public sealed class QueueDraft
 {
+    public bool ForeignAudioSearch { get; set; }
+    public bool ForeignAudioForced { get; set; } = true;
+    public bool ForeignAudioBurn { get; set; }
     public List<ImportedSubtitle>? SubtitleImports { get; set; }
     public List<SubtitleChoice>? Subtitles { get; set; }
     public List<AudioTrackChoice>? AudioTracks { get; set; }
@@ -109,10 +112,13 @@ public sealed partial class MainWindow
 
         // A scanned folder can contain several titles. Preserve the actual
         // selected native title index instead of inventing a title number.
+        draft.ForeignAudioSearch = ForeignAudioSearchToggle.IsChecked == true;
+        draft.ForeignAudioForced = ForeignAudioForcedToggle.IsChecked == true;
+        draft.ForeignAudioBurn = draft.ForeignAudioSearch && ForeignAudioBurnToggle.IsChecked == true;
         draft.SubtitleImports = ReadImportedSubtitles();
         BuildImportedSubtitles(draft.SubtitleImports, activePreset?.FileFormat ?? "");
         draft.Subtitles = ReadSubtitleChoices();
-        if (draft.Subtitles.Count(track => track.Burn) + draft.SubtitleImports.Count(track => track.Burn) > 1)
+        if (draft.Subtitles.Count(track => track.Burn) + draft.SubtitleImports.Count(track => track.Burn) + (draft.ForeignAudioBurn ? 1 : 0) > 1)
             throw new InvalidOperationException("Select at most one subtitle track for burn-in.");
         BuildSubtitleTracks(draft.Subtitles, title, activePreset?.FileFormat ?? "");
         draft.AudioTracks = ReadAudioChoices();

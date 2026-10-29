@@ -337,7 +337,7 @@ public sealed partial class MainWindow
             ?? throw new InvalidOperationException("The selected native preset is no longer available.");
         HBPreset preset = choice.Preset;
 
-        if ((draft.Subtitles?.Count(track => track.Burn) ?? 0) + (draft.SubtitleImports?.Count(track => track.Burn) ?? 0) > 1)
+        if ((draft.Subtitles?.Count(track => track.Burn) ?? 0) + (draft.SubtitleImports?.Count(track => track.Burn) ?? 0) + (draft.ForeignAudioSearch && draft.ForeignAudioBurn ? 1 : 0) > 1)
             throw new InvalidOperationException("Only one subtitle track can be burned into the video. Re-stage this job.");
 
         var audioTracks = new List<EncodeAudioTrack>();
@@ -506,7 +506,7 @@ public sealed partial class MainWindow
             },
             Subtitle = new Subtitles
             {
-                Search = new SubtitleSearch { Enable = false, Default = false, Burn = false, Forced = false },
+                Search = new SubtitleSearch { Enable = draft.ForeignAudioSearch, Default = false, Burn = draft.ForeignAudioSearch && draft.ForeignAudioBurn, Forced = draft.ForeignAudioForced },
                 SubtitleList = BuildSubtitleTracks(draft.Subtitles, title, preset.FileFormat ?? ContainerToMux(draft.Container))
                     .Concat(BuildImportedSubtitles(draft.SubtitleImports, preset.FileFormat ?? ContainerToMux(draft.Container))).ToList()
             },

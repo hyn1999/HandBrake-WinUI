@@ -258,6 +258,10 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Subtitles" FontSize="17" FontWeight="SemiBold" />
+                                                    <CheckBox x:Name="ForeignAudioSearchToggle" Content="Foreign Audio Search" />
+                                                    <CheckBox x:Name="ForeignAudioForcedToggle" Content="Search forced subtitles only" IsChecked="True" />
+                                                    <CheckBox x:Name="ForeignAudioBurnToggle" Content="Burn the search result into video" />
+                                                    <TextBlock Text="Search runs during encoding. A still preview cannot show its result. Burn-in shares the single-track limit with other subtitles." TextWrapping="Wrap" />
                                                     <StackPanel x:Name="SubtitleTrackList" Spacing="8">
                                                         <TextBlock Text="Subtitle tracks will appear after scanning."
                                                                    TextWrapping="Wrap" />
@@ -265,7 +269,7 @@
                                                     <Button Content="Import SRT files" Click="ImportSubtitle_Click" HorizontalAlignment="Left" />
                                                     <TextBlock x:Name="SubtitleImportStatus" Text="UTF-8 SRT soft subtitles support MP4 and MKV. At most one internal or imported track may be burned into video." TextWrapping="Wrap" />
                                                     <StackPanel x:Name="ImportedSubtitleList" Spacing="16" />
-                                                    <TextBlock Text="Select internal subtitle tracks to include. Soft subtitles require a compatible container. Burn-in is permanent in the output image and cannot be switched off during playback. Foreign-audio search is pending. Re-stage the queue entry after editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    <TextBlock Text="Select internal subtitle tracks to include. Soft subtitles require a compatible container. Burn-in is permanent in the output image and cannot be switched off during playback. Foreign-audio search runs during encoding. Re-stage the queue entry after editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>

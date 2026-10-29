@@ -221,6 +221,9 @@ public sealed partial class MainWindow
 
     private void ResetScanDetails()
     {
+        ForeignAudioSearchToggle.IsChecked = false;
+        ForeignAudioForcedToggle.IsChecked = true;
+        ForeignAudioBurnToggle.IsChecked = false;
         importedSubtitleEditors.Clear();
         ImportedSubtitleList.Children.Clear();
         subtitleEditors.Clear();
