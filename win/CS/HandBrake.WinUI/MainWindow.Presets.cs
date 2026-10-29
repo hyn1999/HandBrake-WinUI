@@ -163,8 +163,12 @@ public sealed partial class MainWindow
                     VideoQualitySlider.Minimum, VideoQualitySlider.Maximum);
                 VideoBitrateBox.Value = Math.Clamp(activePreset.VideoAvgBitrate ?? 2500, 100, 200000);
 
-                bool cq = activePreset.VideoQualityType == 2;
-                VideoRateModePicker.SelectedIndex = cq ? 0 : 1;
+                VideoRateModePicker.SelectedIndex = activePreset.VideoQualityType switch
+                {
+                    2 => 0, // HandBrake ConstantQuality
+                    1 => 1, // HandBrake AverageBitrate
+                    _ => -1 // TargetSize and unknown modes require explicit user selection.
+                };
                 if (VideoRateModePicker.SelectedIndex == 0 &&
                     !((ComboBoxItem)VideoRateModePicker.Items[0]).IsEnabled)
                     VideoRateModePicker.SelectedIndex = 1;
