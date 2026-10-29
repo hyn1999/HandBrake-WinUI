@@ -349,9 +349,9 @@
                                                TextTrimming="CharacterEllipsis"
                                                x:Name="DestinationText" />
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="Start Encode"
-                                        IsEnabled="False"
-                                        ToolTipService.ToolTip="Encoding will be enabled when the native HandBrake engine is integrated." />
+                                <Button x:Name="StartEncodeButton" Grid.Column="1" Content="Start Encode"
+                                        Click="StartEncode_Click" IsEnabled="False"
+                                        ToolTipService.ToolTip="Encode the selected title with the active native HandBrake preset." />
                             </Grid>
                         </Border>
                     </Grid>
