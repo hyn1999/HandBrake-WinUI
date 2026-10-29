@@ -2,9 +2,16 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 using HandBrake.Interop.Interop;
 using HandBrake.Interop.Interop.Interfaces.EventArgs;
 using HandBrake.Interop.Interop.Json.Scan;
+using HandBrake.Interop.Interop.Json.Encode;
+using HandBrake.Interop.Interop.Json.Shared;
+using HandBrake.Interop.Interop.Interfaces.Model.Preview;
+using Microsoft.UI.Xaml.Media.Imaging;
+using Windows.Graphics.Imaging;
+using Windows.Security.Cryptography;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -168,6 +175,7 @@ public sealed partial class MainWindow
 
     private void DisplayScannedTitle(SourceTitle title)
     {
+        GeneratePreviewButton.IsEnabled = true;
         selectedScannedTitleName = title.Name;
         UpdateSuggestedDestination();
         string resolution = title.Geometry is null
@@ -221,6 +229,128 @@ public sealed partial class MainWindow
         return $"{duration.Hours:00}:{duration.Minutes:00}:{duration.Seconds:00}";
     }
 
+    private async void GeneratePreview_Click(object sender, RoutedEventArgs e)
+    {
+        if (scanInstance is null ||
+            SourceTitlePicker.SelectedItem is not ComboBoxItem { Tag: SourceTitle title })
+        {
+            PreviewStatusText.Text = "Scan a source and select a title before generating a preview.";
+            return;
+        }
+
+        GeneratePreviewButton.IsEnabled = false;
+        PreviewStatusText.Text = "Rendering a frame with the HandBrake engine…";
+        PreviewPlaceholderText.Text = "Rendering preview…";
+        PreviewPlaceholder.Visibility = Visibility.Visible;
+        PreviewFrameImage.Visibility = Visibility.Collapsed;
+
+        try
+        {
+            JsonEncodeObject job = CreatePreviewJob(title);
+            RawPreviewData raw = await Task.Run(() => scanInstance.GetPreview(job, 0));
+            if (raw is null || raw.Width <= 0 || raw.Height <= 0 ||
+                raw.RawBitmapData is null || raw.RawBitmapData.Length < raw.StrideWidth * raw.Height)
+            {
+                throw new InvalidOperationException("HandBrake did not return a valid preview frame.");
+            }
+
+            var buffer = CryptographicBuffer.CreateFromByteArray(raw.RawBitmapData);
+            var bitmap = SoftwareBitmap.CreateCopyFromBuffer(
+                buffer, BitmapPixelFormat.Bgra8, raw.Width, raw.Height,
+                BitmapAlphaMode.Ignore, raw.StrideWidth, 0);
+            var source = new SoftwareBitmapSource();
+            await source.SetBitmapAsync(bitmap);
+
+            PreviewFrameImage.Source = source;
+            PreviewFrameImage.Visibility = Visibility.Visible;
+            PreviewPlaceholder.Visibility = Visibility.Collapsed;
+            PreviewStatusText.Text = $"Preview ready · {raw.Width} × {raw.Height}";
+        }
+        catch (Exception ex)
+        {
+            PreviewPlaceholderText.Text = "The native preview could not be rendered.";
+            PreviewStatusText.Text = "Preview failed: " + ex.Message;
+            PreviewPlaceholder.Visibility = Visibility.Visible;
+            PreviewFrameImage.Visibility = Visibility.Collapsed;
+        }
+        finally
+        {
+            GeneratePreviewButton.IsEnabled = SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: SourceTitle };
+        }
+    }
+
+    private JsonEncodeObject CreatePreviewJob(SourceTitle title)
+    {
+        var preset = activePreset;
+        string encoder = ActiveVideoEncoder?.ShortName ?? preset?.VideoEncoder ?? "x264";
+        bool useQuality = VideoRateModePicker.SelectedIndex == 0;
+        decimal quality = (decimal)Math.Clamp(VideoQualitySlider.Value, 0, 51);
+        int bitrate = (int)Math.Clamp(VideoBitrateBox.Value, 100, 200000);
+        string mux = preset?.FileFormat ?? "av_mp4";
+
+        return new JsonEncodeObject
+        {
+            SequenceID = 0,
+            Source = new HandBrake.Interop.Interop.Json.Encode.Source
+            {
+                Path = title.Path,
+                Title = title.Index,
+                Angle = 1,
+                HWDecode = 0,
+                KeepDuplicateTitles = SettingsPanel.Preferences.KeepDuplicateTitles,
+                Range = new HandBrake.Interop.Interop.Json.Encode.Range
+                {
+                    Type = "preview",
+                    Start = 1,
+                    End = 30 * 90000,
+                    SeekPoints = Math.Max(1, SettingsPanel.Preferences.ScanPreviewCount)
+                }
+            },
+            Destination = new Destination
+            {
+                File = Path.Combine(Path.GetTempPath(), "HandBrake-WinUI-preview.mp4"),
+                Mux = mux,
+                ChapterMarkers = false,
+                AlignAVStart = preset?.AlignAVStart ?? false,
+                Options = new Options
+                {
+                    Optimize = preset?.Optimize ?? false,
+                    IpodAtom = preset?.Mp4iPodCompatible ?? false
+                },
+                ChapterList = new List<Chapter>()
+            },
+            Video = new HandBrake.Interop.Interop.Json.Encode.Video
+            {
+                Encoder = encoder,
+                Preset = preset?.VideoPreset ?? "medium",
+                Tune = preset?.VideoTune ?? string.Empty,
+                Profile = preset?.VideoProfile ?? string.Empty,
+                Level = preset?.VideoLevel ?? string.Empty,
+                Options = preset?.VideoOptionExtra ?? string.Empty,
+                Quality = useQuality ? quality : null,
+                Bitrate = useQuality ? null : bitrate,
+                MultiPass = false,
+                Turbo = false,
+                HardwareDecode = 0
+            },
+            Audio = new Audio
+            {
+                AudioList = new List<AudioTrack>(),
+                CopyMask = preset?.AudioCopyMask?.ToArray() ?? Array.Empty<string>(),
+                FallbackEncoder = preset?.AudioEncoderFallback ?? "av_aac"
+            },
+            Subtitle = new Subtitles
+            {
+                Search = new SubtitleSearch { Enable = false, Default = false, Burn = false, Forced = false },
+                SubtitleList = new List<SubtitleTrack>()
+            },
+            Filters = new Filters { FilterList = new List<Filter>() },
+            PAR = new PAR { Num = 1, Den = 1 },
+            Metadata = new Dictionary<string, string>(),
+            CoverArts = new List<CoverArt>()
+        };
+    }
+
     private void ResetScanDetails()
     {
         scannedTitles.Clear();
@@ -230,6 +360,12 @@ public sealed partial class MainWindow
         SourceDimensionsText.Text = "Source dimensions are not available.";
         SourceVideoText.Text = "Source video properties are not available.";
         PreviewMetadataText.Text = "No decoded preview frame yet.";
+        PreviewStatusText.Text = "Preview is waiting for a scanned title.";
+        PreviewPlaceholderText.Text = "Scan a source, then generate a frame.";
+        PreviewFrameImage.Source = null;
+        PreviewFrameImage.Visibility = Visibility.Collapsed;
+        PreviewPlaceholder.Visibility = Visibility.Visible;
+        GeneratePreviewButton.IsEnabled = false;
         AudioTrackList.Children.Clear();
         SubtitleTrackList.Children.Clear();
         AddDetailLine(AudioTrackList, "Waiting for source scan.");
