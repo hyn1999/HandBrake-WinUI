@@ -208,6 +208,8 @@ public sealed partial class MainWindow
             AddDetailLine(SubtitleTrackList,
                 $"{track.TrackNumber}. {track.Language ?? "Unknown language"} · " +
                 $"{track.SourceName ?? track.Format ?? "Subtitle"}");
+
+        _ = LoadPreviewAsync(title);
     }
 
     private static void AddDetailLine(StackPanel panel, string content)
@@ -230,6 +232,7 @@ public sealed partial class MainWindow
         SourceDimensionsText.Text = "Source dimensions are not available.";
         SourceVideoText.Text = "Source video properties are not available.";
         PreviewMetadataText.Text = "No decoded preview frame yet.";
+        ResetPreview();
         AudioTrackList.Children.Clear();
         SubtitleTrackList.Children.Clear();
         AddDetailLine(AudioTrackList, "Waiting for source scan.");
