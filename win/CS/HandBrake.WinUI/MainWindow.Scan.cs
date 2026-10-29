@@ -168,6 +168,13 @@ public sealed partial class MainWindow
 
     private void DisplayScannedTitle(SourceTitle title)
     {
+        CustomGeometryToggle.IsChecked = false;
+        OutputWidthBox.Value = title.Geometry?.Width ?? 0;
+        OutputHeightBox.Value = title.Geometry?.Height ?? 0;
+        CropTopBox.Value = title.Crop?.ElementAtOrDefault(0) ?? 0;
+        CropBottomBox.Value = title.Crop?.ElementAtOrDefault(1) ?? 0;
+        CropLeftBox.Value = title.Crop?.ElementAtOrDefault(2) ?? 0;
+        CropRightBox.Value = title.Crop?.ElementAtOrDefault(3) ?? 0;
         selectedScannedTitleName = title.Name;
         UpdateSuggestedDestination();
         string resolution = title.Geometry is null

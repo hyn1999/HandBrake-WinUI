@@ -18,6 +18,7 @@ namespace HandBrake.WinUI;
 /// </summary>
 public sealed class QueueDraft
 {
+    public GeometryOverride? Geometry { get; set; }
     public bool? ChapterMarkers { get; set; }
     public Dictionary<string, string>? MetadataOverrides { get; set; }
     public string DisplayName { get; set; } = string.Empty;
@@ -104,6 +105,7 @@ public sealed partial class MainWindow
 
         // A scanned folder can contain several titles. Preserve the actual
         // selected native title index instead of inventing a title number.
+        draft.Geometry = ReadGeometryOverride(title);
         draft.ChapterMarkers = ChapterMarkersToggle.IsChecked == true;
         draft.MetadataOverrides = new Dictionary<string, string>();
         foreach (var field in new[] {
@@ -136,7 +138,13 @@ public sealed partial class MainWindow
             if (!File.Exists(path) && !Directory.Exists(path))
                 continue;
 
-            QueueDraft draft = CreateDraft(path, singleSource);
+            QueueDraft draft;
+            try { draft = CreateDraft(path, singleSource); }
+            catch (InvalidOperationException error)
+            {
+                QueueStatusText.Text = error.Message;
+                return;
+            }
             if (draft.HasVideoConfiguration) configured++;
 
             // A source can have several scanned titles; keep distinct title

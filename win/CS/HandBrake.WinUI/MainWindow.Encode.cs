@@ -378,6 +378,17 @@ public sealed partial class MainWindow
             ? preset.PictureHeight.Value
             : Math.Max(2, sourceHeight - cropTop - cropBottom);
 
+        if (draft.Geometry is { } geometry)
+        {
+            ValidateGeometry(geometry, title);
+            width = geometry.Width;
+            height = geometry.Height;
+            cropTop = geometry.Top;
+            cropBottom = geometry.Bottom;
+            cropLeft = geometry.Left;
+            cropRight = geometry.Right;
+        }
+
         var filters = new List<Filter>();
         if (sourceWidth > 0 && sourceHeight > 0)
         {
@@ -421,9 +432,9 @@ public sealed partial class MainWindow
             });
         }
 
-        int parNum = preset.PicturePARWidth > 0
+        int parNum = draft.Geometry is null && preset.PicturePARWidth > 0
             ? preset.PicturePARWidth : title.Geometry?.PAR?.Num ?? 1;
-        int parDen = preset.PicturePARHeight > 0
+        int parDen = draft.Geometry is null && preset.PicturePARHeight > 0
             ? preset.PicturePARHeight : title.Geometry?.PAR?.Den ?? 1;
         int chapterCount = Math.Max(1, title.ChapterList?.Count ?? 1);
         bool constantQuality = draft.VideoRateControl == "ConstantQuality";

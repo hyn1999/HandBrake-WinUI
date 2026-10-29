@@ -127,6 +127,16 @@ public sealed partial class MainWindow
             ? preset.PictureHeight.Value
             : Math.Max(2, sourceHeight - cropTop - cropBottom);
 
+        if (ReadGeometryOverride(title) is { } geometry)
+        {
+            outputWidth = geometry.Width;
+            outputHeight = geometry.Height;
+            cropTop = geometry.Top;
+            cropBottom = geometry.Bottom;
+            cropLeft = geometry.Left;
+            cropRight = geometry.Right;
+        }
+
         var filters = new List<Filter>();
         if (sourceWidth > 0 && sourceHeight > 0)
         {
@@ -145,8 +155,8 @@ public sealed partial class MainWindow
             }
         }
 
-        int parNum = preset is { PicturePARWidth: > 0 } ? preset.PicturePARWidth : title.Geometry?.PAR?.Num ?? 1;
-        int parDen = preset is { PicturePARHeight: > 0 } ? preset.PicturePARHeight : title.Geometry?.PAR?.Den ?? 1;
+        int parNum = CustomGeometryToggle.IsChecked != true && preset is { PicturePARWidth: > 0 } ? preset.PicturePARWidth : title.Geometry?.PAR?.Num ?? 1;
+        int parDen = CustomGeometryToggle.IsChecked != true && preset is { PicturePARHeight: > 0 } ? preset.PicturePARHeight : title.Geometry?.PAR?.Den ?? 1;
 
         return new JsonEncodeObject
         {

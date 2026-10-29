@@ -140,7 +140,7 @@
                                              TabWidthMode="SizeToContent">
                                         <TabViewItem Header="Summary" IsClosable="False">
                                             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
+                                                <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Output summary" FontSize="17"
                                                                FontWeight="SemiBold" />
                                                     <TextBlock x:Name="ScanSummaryText"
@@ -163,31 +163,33 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Dimensions" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
+                                                <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Dimensions" FontSize="17" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="SourceDimensionsText"
                                                                Text="Source dimensions will appear after scanning."
                                                                TextWrapping="Wrap" />
-                                                    <TextBlock Text="Resolution limit" />
-                                                    <ComboBox SelectedIndex="0" IsEnabled="False" HorizontalAlignment="Stretch">
-                                                        <ComboBoxItem Content="1080p HD" />
-                                                    </ComboBox>
-                                                    <TextBlock Text="Cropping" />
-                                                    <ComboBox SelectedIndex="0" IsEnabled="False" HorizontalAlignment="Stretch">
-                                                        <ComboBoxItem Content="Automatic" />
-                                                    </ComboBox>
-                                                    <TextBlock Text="Width / Height" />
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <NumberBox Value="1920" IsEnabled="False" Width="110" />
-                                                        <TextBlock Text="×" VerticalAlignment="Center" />
-                                                        <NumberBox Value="1080" IsEnabled="False" Width="110" />
-                                                    </StackPanel>
+                                                    <CheckBox x:Name="CustomGeometryToggle" Content="Override output dimensions and cropping" />
+                                                    <TextBlock Text="Enter encoded pixel dimensions. Source pixel aspect ratio is retained. Re-stage the queue item after editing." TextWrapping="Wrap" />
+                                                    <Grid ColumnSpacing="12">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                        <NumberBox x:Name="OutputWidthBox" Header="Width (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="OutputHeightBox" Grid.Column="1" Header="Height (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
+                                                    </Grid>
+                                                    <TextBlock Text="Crop edges (source pixels)" FontWeight="SemiBold" />
+                                                    <Grid ColumnSpacing="12" RowSpacing="12">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                        <NumberBox x:Name="CropTopBox" Header="Top" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropBottomBox" Grid.Column="1" Header="Bottom" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropLeftBox" Grid.Row="1" Header="Left" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropRightBox" Grid.Row="1" Grid.Column="1" Header="Right" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                    </Grid>
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Filters" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
+                                                <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Filters" FontSize="17" FontWeight="SemiBold" />
                                                     <CheckBox Content="Detelecine" IsEnabled="False" />
                                                     <CheckBox Content="Deinterlace" IsEnabled="False" />
@@ -198,7 +200,7 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Video" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
+                                                <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Video encoding" FontSize="17" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="SourceVideoText"
                                                                Text="Source codec and frame rate will appear after scanning."
@@ -244,7 +246,7 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Audio" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
+                                                <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Audio tracks" FontSize="17" FontWeight="SemiBold" />
                                                     <StackPanel x:Name="AudioTrackList" Spacing="8">
                                                         <TextBlock Text="Tracks will appear after scanning a source."
@@ -257,7 +259,7 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Subtitles" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
+                                                <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Subtitles" FontSize="17" FontWeight="SemiBold" />
                                                     <StackPanel x:Name="SubtitleTrackList" Spacing="8">
                                                         <TextBlock Text="Subtitle tracks will appear after scanning."
@@ -270,7 +272,7 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Chapters" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
+                                                <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Chapters" FontSize="17" FontWeight="SemiBold" />
                                                     <CheckBox x:Name="ChapterMarkersToggle" Content="Create chapter markers" IsChecked="True" />
                                                     <TextBlock x:Name="ChapterListText"
@@ -281,7 +283,7 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Metadata" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
+                                                <StackPanel Padding="12,16,12,16" Spacing="16">
                                                     <TextBlock Text="Metadata" FontSize="17" FontWeight="SemiBold" />
                                                     <TextBlock Text="Overrides apply to newly staged jobs. Leave a field empty to retain source metadata." TextWrapping="Wrap" />
                                                     <TextBox x:Name="MetadataTitleBox" Header="Title" />
@@ -469,64 +471,53 @@
                     <EntranceThemeTransition FromVerticalOffset="12" />
                 </TransitionCollection>
             </Grid.Transitions>
-            <Border MaxWidth="620" HorizontalAlignment="Center" VerticalAlignment="Center"
+            <Border MaxWidth="760" Margin="24" HorizontalAlignment="Stretch" VerticalAlignment="Center"
                     Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1" CornerRadius="16" Padding="24">
-                <StackPanel Spacing="18">
-                    <Grid ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Add media" FontSize="24" FontWeight="SemiBold" />
-                            <TextBlock Text="Choose what you want HandBrake to scan."
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                        <Button Grid.Column="1" Content="Close" Click="CloseSourcePicker_Click"
-                                VerticalAlignment="Top" />
-                    </Grid>
-                    <Grid ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Click="OpenFiles_Click" HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch" Padding="16">
-                            <StackPanel Spacing="10" HorizontalAlignment="Left">
-                                <FontIcon Glyph="&#xE8A5;" FontSize="24" />
-                                <TextBlock Text="Video files" FontWeight="SemiBold" FontSize="16" />
-                                <TextBlock Text="Select one or more videos" FontSize="12"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Text="Alt + O" FontSize="12" />
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="640">
+                    <StackPanel Padding="24" Spacing="24">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <StackPanel Spacing="8">
+                                <TextBlock Text="Add media" Style="{ThemeResource TitleTextBlockStyle}" />
+                                <TextBlock Text="Drop media below or browse for a source." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
-                        </Button>
-                        <Button Grid.Column="1" Click="OpenFolder_Click" HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch" Padding="16">
-                            <StackPanel Spacing="10" HorizontalAlignment="Left">
-                                <FontIcon Glyph="&#xE8B7;" FontSize="24" />
-                                <TextBlock Text="Video folder" FontWeight="SemiBold" FontSize="16" />
-                                <TextBlock Text="Scan a folder for media" FontSize="12"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           TextWrapping="Wrap" />
-                                
+                            <Button Grid.Column="1" Content="Close" Click="CloseSourcePicker_Click" VerticalAlignment="Top" />
+                        </Grid>
+                        <Border MinHeight="240" Padding="24" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                Background="{ThemeResource LayerFillColorDefaultBrush}">
+                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
+                                <FontIcon Glyph="&#xE896;" FontSize="40" HorizontalAlignment="Center" />
+                                <TextBlock Text="Drop files or folders here" Style="{ThemeResource SubtitleTextBlockStyle}" TextAlignment="Center" TextWrapping="Wrap" />
+                                <TextBlock Text="HandBrake scans your media to detect video titles." TextAlignment="Center" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
-                        </Button>
-                    </Grid>
-                    <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
-                            CornerRadius="10" Padding="18">
-                        <StackPanel HorizontalAlignment="Center" Spacing="8">
-                            <SymbolIcon Symbol="OpenFile" />
-                            <TextBlock Text="Or drop files and folders here"
-                                       FontSize="15" FontWeight="SemiBold" TextAlignment="Center" />
-                            <TextBlock Text="HandBrake will scan the selected source and detect titles."
-                                       FontSize="12" TextWrapping="Wrap" TextAlignment="Center"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
+                        </Border>
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                            <Button Click="OpenFiles_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="OpenFile" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Text="Browse files" FontWeight="SemiBold" />
+                                        <TextBlock Text="Select one or more videos" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                            <Button Grid.Column="1" Click="OpenFolder_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16">
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <SymbolIcon Symbol="Folder" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="4">
+                                        <TextBlock Text="Browse folder" FontWeight="SemiBold" />
+                                        <TextBlock Text="Scan a media folder" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
 
