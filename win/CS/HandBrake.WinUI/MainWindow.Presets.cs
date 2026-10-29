@@ -280,7 +280,27 @@ public sealed partial class MainWindow
         VideoQualitySlider.IsEnabled = hasEncoder && quality;
         VideoBitrateBox.IsEnabled = hasEncoder && bitrate;
         UpdateVideoQualityText();
+        var choice = ActivePresetChoice;
+        var encoder = ActiveVideoEncoder;
+        VideoConfigurationStatusText.Text = choice is null
+            ? "Select a native preset to configure the video."
+            : encoder is null
+                ? "This preset's encoder is unavailable in the native build. Select another encoder."
+                : !IsContainerCompatible(FormatPresetContainer(choice.Preset.FileFormat), encoder)
+                    ? "This encoder cannot be used with the preset's output container. Select a compatible encoder."
+                    : VideoRateModePicker.SelectedIndex < 0
+                        ? "Select a supported rate-control mode to configure this draft."
+                        : "Video settings can be staged as a queue draft. Actual encoding is not yet enabled.";
     }
+
+    private static bool IsContainerCompatible(string container, HBVideoEncoder encoder)
+        => container switch
+        {
+            "MP4" => encoder.SupportsMP4,
+            "MKV" => encoder.SupportsMKV,
+            "WebM" => encoder.SupportsWebM,
+            _ => false
+        };
 
     private void VideoQualitySlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
@@ -318,14 +338,7 @@ public sealed partial class MainWindow
         // Native encoder capabilities are muxer-specific. Do not stage a
         // video configuration the selected HandBrake container cannot mux.
         string container = FormatPresetContainer(preset.Preset.FileFormat);
-        bool compatible = container switch
-        {
-            "MP4" => encoder.SupportsMP4,
-            "MKV" => encoder.SupportsMKV,
-            "WebM" => encoder.SupportsWebM,
-            _ => false
-        };
-        if (!compatible) return false;
+        if (!IsContainerCompatible(container, encoder)) return false;
 
         settings = new VideoDraftSettings(
             preset.Key,

@@ -159,6 +159,8 @@ public sealed partial class MainWindow
         QueueStatusText.Text = added + updated > 0
             ? $"Staged {added} new, updated {updated} source(s); {configured} with native preset/video settings. No encoding has started."
             : "No accessible sources to stage.";
+        if (added + updated > 0 && configured == 0)
+            QueueStatusText.Text += " To configure a draft, scan one source, select a title, and choose a compatible native preset/encoder.";
         SaveDraftQueue();
         UpdateQueueUi();
         AppNavigation.SelectedItem = AppNavigation.MenuItems[1];
