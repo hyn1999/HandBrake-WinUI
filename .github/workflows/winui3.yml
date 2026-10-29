@@ -1,0 +1,154 @@
+name: WinUI 3 Preview
+
+# Expensive native cross-compilation and large WinUI downloads are opt-in.
+# The native binary is cached by native/interop source hash between manual runs.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: winui3-preview-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-libhb-x64:
+    name: Cross-compile matching libhb x64
+    runs-on: ubuntu-24.04
+    timeout-minutes: 180
+    steps:
+      - name: Checkout this exact HandBrake fork revision
+        uses: actions/checkout@v4
+
+      - name: Restore native library cache
+        id: native-cache
+        uses: actions/cache@v4
+        with:
+          path: native-output/hb.dll
+          key: libhb-win-x64-ucrt-v1-${{ hashFiles('libhb/**', 'contrib/**', 'make/**', 'configure', 'scripts/**', 'win/CS/HandBrake.Interop/**') }}
+
+      - name: Install cross-build dependencies
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y autoconf automake autopoint build-essential bison bzip2 clang cmake curl flex g++ gcc git gzip libssl-dev libtool libtool-bin m4 make meson nasm ninja-build patch pax pkg-config tar zlib1g-dev
+          rustup target add x86_64-pc-windows-gnu
+
+      - name: Install cargo-c
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! command -v cargo-cbuild >/dev/null 2>&1; then
+            cargo install cargo-c --locked
+          fi
+
+      - name: Download verified HandBrake MinGW x64 toolchain
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          url="https://github.com/HandBrake/HandBrake-toolchains/releases/download/1.0/mingw-w64-toolchain-12.0.0-ucrt-linux-x86_64.tar.gz"
+          curl --fail --location --retry 3 "$url" --output "$RUNNER_TEMP/mingw-x64.tar.gz"
+          echo "43abbe33e79d273da2cd102fe45e196b56b5bc92  $RUNNER_TEMP/mingw-x64.tar.gz" | sha1sum -c -
+          mkdir -p "$GITHUB_WORKSPACE/toolchains"
+          tar -xzf "$RUNNER_TEMP/mingw-x64.tar.gz" -C "$GITHUB_WORKSPACE/toolchains"
+
+      - name: Build libhb from the same checkout
+        if: steps.native-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PATH="$GITHUB_WORKSPACE/toolchains/mingw-w64-toolchain-12.0.0-ucrt-linux-x86_64/mingw-w64-x86_64/bin:$PATH"
+          ./configure --cross=x86_64-w64-mingw32 --launch-jobs="$(nproc)" --launch
+          test -s build/libhb/hb.dll
+          mkdir -p native-output
+          cp build/libhb/hb.dll native-output/hb.dll
+
+      - name: Verify matching native library
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s native-output/hb.dll
+          file native-output/hb.dll
+          sha256sum native-output/hb.dll
+
+      - name: Transfer libhb to the Windows publish job
+        uses: actions/upload-artifact@v4
+        with:
+          name: winui3-native-libhb-x64
+          path: native-output/hb.dll
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-winui-x64:
+    name: Publish WinUI 3 x64 with native scanner
+    needs: build-libhb-x64
+    runs-on: windows-2025
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish unpackaged WinUI preview
+        shell: pwsh
+        run: |
+          dotnet publish win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj `
+            --configuration Release `
+            --runtime win-x64 `
+            --self-contained true `
+            -p:Platform=x64 `
+            -p:WindowsAppSDKSelfContained=true `
+            --output "$env:RUNNER_TEMP/HandBrake-WinUI3"
+
+      - name: Download native libhb from this workflow run
+        uses: actions/download-artifact@v4
+        with:
+          name: winui3-native-libhb-x64
+          path: ${{ runner.temp }}/HandBrake-WinUI3
+
+      - name: Verify native scanner and XAML runtime are packaged
+        shell: pwsh
+        run: |
+          $publishDir = Join-Path $env:RUNNER_TEMP "HandBrake-WinUI3"
+          $requiredFiles = @(
+            "HandBrake.WinUI.exe",
+            "HandBrake.WinUI.pri",
+            "HandBrake.Interop.dll",
+            "Microsoft.ui.xaml.dll",
+            "hb.dll"
+          )
+          foreach ($file in $requiredFiles) {
+            $fullPath = Join-Path $publishDir $file
+            if (-not (Test-Path -LiteralPath $fullPath)) {
+              throw "Missing published dependency: $file"
+            }
+            Write-Host "OK: $file"
+          }
+          # Verify PE Machine == AMD64; reject accidental ARM or 32-bit libhb.
+          $dll = Join-Path $publishDir "hb.dll"
+          $stream = [System.IO.File]::OpenRead($dll)
+          try {
+            $reader = [System.IO.BinaryReader]::new($stream)
+            $stream.Seek(0x3c, [System.IO.SeekOrigin]::Begin) | Out-Null
+            $peOffset = $reader.ReadInt32()
+            $stream.Seek($peOffset, [System.IO.SeekOrigin]::Begin) | Out-Null
+            if ($reader.ReadUInt32() -ne 0x00004550) { throw "Invalid PE signature: hb.dll" }
+            if ($reader.ReadUInt16() -ne 0x8664) { throw "hb.dll is not x64" }
+          }
+          finally { $stream.Dispose() }
+
+      - name: Upload integrated preview folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: HandBrake-WinUI3-Scanner-x64
+          path: ${{ runner.temp }}/HandBrake-WinUI3/
+          if-no-files-found: error
+          retention-days: 2
