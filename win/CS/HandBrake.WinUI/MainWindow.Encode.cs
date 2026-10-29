@@ -389,8 +389,16 @@ public sealed partial class MainWindow
             "pfr" => 2,
             _ => 0
         };
+        string? frameRateName = string.IsNullOrWhiteSpace(draft.VideoFramerate)
+            ? preset.VideoFramerate : draft.VideoFramerate;
+        int nativeFrameRate = string.IsNullOrWhiteSpace(frameRateName) ||
+            frameRateName.Equals("auto", StringComparison.OrdinalIgnoreCase)
+                ? 0 : HandBrakeUnitConversionHelpers.GetFramerateFromName(frameRateName);
+        string frameRateSettings = nativeFrameRate > 0
+            ? $"mode={frameRateMode}:rate=27000000/{nativeFrameRate}"
+            : $"mode={frameRateMode}";
         string frameRateJson = HandBrakeFilterHelpers.GenerateFilterSettingJson(
-            (int)hb_filter_ids.HB_FILTER_VFR, null, null, $"mode={frameRateMode}");
+            (int)hb_filter_ids.HB_FILTER_VFR, null, null, frameRateSettings);
         if (!string.IsNullOrWhiteSpace(frameRateJson))
         {
             filters.Add(new Filter
