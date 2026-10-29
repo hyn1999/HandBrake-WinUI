@@ -337,6 +337,9 @@ public sealed partial class MainWindow
             ?? throw new InvalidOperationException("The selected native preset is no longer available.");
         HBPreset preset = choice.Preset;
 
+        if ((draft.Subtitles?.Count(track => track.Burn) ?? 0) + (draft.SubtitleImports?.Count(track => track.Burn) ?? 0) > 1)
+            throw new InvalidOperationException("Only one subtitle track can be burned into the video. Re-stage this job.");
+
         var audioTracks = new List<EncodeAudioTrack>();
         var audioRule = preset.AudioList?.FirstOrDefault();
         string audioEncoder = !string.IsNullOrWhiteSpace(audioRule?.AudioEncoder)

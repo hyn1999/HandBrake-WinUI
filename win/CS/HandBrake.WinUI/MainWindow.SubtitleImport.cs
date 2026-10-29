@@ -11,11 +11,14 @@ using Microsoft.Windows.Storage.Pickers;
 
 namespace HandBrake.WinUI;
 
-public sealed record ImportedSubtitle(string Path, string Language, string Name, int Offset);
+public sealed record ImportedSubtitle(string Path, string Language, string Name, int Offset)
+{
+    public bool Burn { get; init; }
+}
 
 public sealed partial class MainWindow
 {
-    private sealed record ImportEditor(string Path, TextBox Language, TextBox Name, NumberBox Offset, Border Card);
+    private sealed record ImportEditor(string Path, TextBox Language, TextBox Name, NumberBox Offset, CheckBox Burn, Border Card);
     private readonly List<ImportEditor> importedSubtitleEditors = new();
 
     private async void ImportSubtitle_Click(object sender, RoutedEventArgs args)
@@ -31,13 +34,14 @@ public sealed partial class MainWindow
                 var language = new TextBox { Header = "Language (3-letter ISO code)", Text = "und", MaxLength = 3 };
                 var name = new TextBox { Header = "Output track name", Text = Path.GetFileNameWithoutExtension(file.Path) };
                 var offset = new NumberBox { Header = "Offset (milliseconds)", Value = 0, Minimum = -3600000, Maximum = 3600000, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
+                var burn = new CheckBox { Content = "Burn into video" };
                 var row = new StackPanel { Spacing = 8 };
                 row.Children.Add(new TextBlock { Text = file.Path, TextWrapping = TextWrapping.Wrap });
-                row.Children.Add(language); row.Children.Add(name); row.Children.Add(offset);
+                row.Children.Add(language); row.Children.Add(name); row.Children.Add(offset); row.Children.Add(burn);
                 var remove = new Button { Content = "Remove imported subtitle" };
                 row.Children.Add(remove);
                 var card = new Border { Padding = new Thickness(16), Child = row };
-                var editor = new ImportEditor(file.Path, language, name, offset, card);
+                var editor = new ImportEditor(file.Path, language, name, offset, burn, card);
                 remove.Click += (_, _) => { importedSubtitleEditors.Remove(editor); ImportedSubtitleList.Children.Remove(card); };
                 importedSubtitleEditors.Add(editor);
                 ImportedSubtitleList.Children.Add(card);
@@ -68,7 +72,7 @@ public sealed partial class MainWindow
                 !double.IsFinite(offset) || offset != Math.Truncate(offset) || Math.Abs(offset) > 3600000)
                 throw new InvalidOperationException("Use a 3-letter subtitle language code and a whole offset within one hour.");
             ValidateSubtitleFile(editor.Path);
-            result.Add(new ImportedSubtitle(editor.Path, language, editor.Name.Text.Trim(), (int)offset));
+            result.Add(new ImportedSubtitle(editor.Path, language, editor.Name.Text.Trim(), (int)offset) { Burn = editor.Burn.IsChecked == true });
         }
         return result;
     }
@@ -79,12 +83,12 @@ public sealed partial class MainWindow
         foreach (var import in imports ?? Enumerable.Empty<ImportedSubtitle>())
         {
             string container = FormatPresetContainer(mux);
-            if (container is not ("MP4" or "MKV"))
+            if (!import.Burn && container is not ("MP4" or "MKV"))
                 throw new InvalidOperationException("Imported SRT subtitles currently require MP4 or MKV output.");
             ValidateSubtitleFile(import.Path);
             if (import.Language.Length != 3 || import.Language.Any(character => character < 'a' || character > 'z') || Math.Abs((long)import.Offset) > 3600000)
                 throw new InvalidOperationException("Saved subtitle import settings are invalid. Re-stage this job.");
-            result.Add(new SubtitleTrack { Track = -1, Burn = false, Default = false, Forced = false,
+            result.Add(new SubtitleTrack { Track = -1, Burn = import.Burn, Default = false, Forced = false,
                 Offset = import.Offset, Name = import.Name,
                 Import = new SubImport { Filename = import.Path, Format = "SRT", Codeset = "UTF-8", Language = import.Language } });
         }

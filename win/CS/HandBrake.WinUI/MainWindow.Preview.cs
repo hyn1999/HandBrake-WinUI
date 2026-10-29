@@ -110,6 +110,10 @@ public sealed partial class MainWindow
     private JsonEncodeObject CreatePreviewJob(SourceTitle title)
     {
         HBPreset? preset = activePreset;
+        var previewSubtitles = ReadSubtitleChoices();
+        var previewImports = ReadImportedSubtitles();
+        if (previewSubtitles.Count(track => track.Burn) + previewImports.Count(track => track.Burn) > 1)
+            throw new InvalidOperationException("Select at most one subtitle for burn-in.");
         string encoderName = ActiveVideoEncoder?.ShortName ?? preset?.VideoEncoder ?? "x264";
         bool useQuality = VideoRateModePicker.SelectedIndex == 0;
         bool useBitrate = VideoRateModePicker.SelectedIndex == 1;
@@ -198,7 +202,8 @@ public sealed partial class MainWindow
             Subtitle = new Subtitles
             {
                 Search = new SubtitleSearch { Enable = false, Default = false, Burn = false, Forced = false },
-                SubtitleList = new List<EncodeSubtitleTrack>()
+                SubtitleList = BuildSubtitleTracks(previewSubtitles, title, preset?.FileFormat ?? "av_mp4")
+                    .Concat(BuildImportedSubtitles(previewImports, preset?.FileFormat ?? "av_mp4")).ToList()
             },
             Video = new Video
             {

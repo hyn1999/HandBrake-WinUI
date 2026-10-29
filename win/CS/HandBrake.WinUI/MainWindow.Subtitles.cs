@@ -10,12 +10,15 @@ using OutputSubtitle = HandBrake.Interop.Interop.Json.Encode.SubtitleTrack;
 
 namespace HandBrake.WinUI;
 
-public sealed record SubtitleChoice(int TrackNumber, bool Default, bool Forced, int Offset, string Name);
+public sealed record SubtitleChoice(int TrackNumber, bool Default, bool Forced, int Offset, string Name)
+{
+    public bool Burn { get; init; }
+}
 
 public sealed partial class MainWindow
 {
     private sealed record SubtitleEditor(int TrackNumber, CheckBox Selected, CheckBox Default,
-        CheckBox Forced, NumberBox Offset, TextBox Name);
+        CheckBox Forced, CheckBox Burn, NumberBox Offset, TextBox Name);
     private readonly List<SubtitleEditor> subtitleEditors = new();
 
     private void DisplaySubtitleEditor(SourceTitle title)
@@ -27,20 +30,24 @@ public sealed partial class MainWindow
             var selected = new CheckBox { Content = $"{track.TrackNumber}. {track.Language ?? "Unknown language"} · {track.SourceName ?? track.Format}" };
             var defaultTrack = new CheckBox { Content = "Default", IsEnabled = false };
             var forced = new CheckBox { Content = "Forced only", IsEnabled = false };
+            var burn = new CheckBox { Content = "Burn into video", IsEnabled = false };
+            bool canBurn = HandBrakeSubtitleHelpers.CheckCanBurnSubtitle(track.Source) != 0;
             bool canForce = HandBrakeSubtitleHelpers.CheckCanForceSubtitle(track.Source) != 0;
             var offset = new NumberBox { Header = "Offset (milliseconds)", Value = 0, Minimum = -3600000, Maximum = 3600000, IsEnabled = false, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
             var name = new TextBox { Header = "Output track name", Text = track.Name ?? string.Empty, IsEnabled = false };
-            selected.Checked += (_, _) => { defaultTrack.IsEnabled = true; forced.IsEnabled = canForce; offset.IsEnabled = true; name.IsEnabled = true; };
-            selected.Unchecked += (_, _) => { defaultTrack.IsEnabled = forced.IsEnabled = offset.IsEnabled = name.IsEnabled = false; };
+            selected.Checked += (_, _) => { defaultTrack.IsEnabled = burn.IsChecked != true; burn.IsEnabled = canBurn; forced.IsEnabled = canForce; offset.IsEnabled = true; name.IsEnabled = true; };
+            selected.Unchecked += (_, _) => { defaultTrack.IsEnabled = forced.IsEnabled = burn.IsEnabled = offset.IsEnabled = name.IsEnabled = false; };
             defaultTrack.Checked += (_, _) =>
             {
                 foreach (var other in subtitleEditors.Where(other => other.Default != defaultTrack)) other.Default.IsChecked = false;
             };
+            burn.Checked += (_, _) => { defaultTrack.IsChecked = false; defaultTrack.IsEnabled = false; };
+            burn.Unchecked += (_, _) => defaultTrack.IsEnabled = selected.IsChecked == true;
             var row = new StackPanel { Spacing = 8 };
-            row.Children.Add(selected); row.Children.Add(defaultTrack); row.Children.Add(forced);
+            row.Children.Add(selected); row.Children.Add(defaultTrack); row.Children.Add(forced); row.Children.Add(burn);
             row.Children.Add(offset); row.Children.Add(name);
             SubtitleTrackList.Children.Add(new Border { Padding = new Thickness(16), CornerRadius = new CornerRadius(8), Child = row });
-            subtitleEditors.Add(new SubtitleEditor(track.TrackNumber, selected, defaultTrack, forced, offset, name));
+            subtitleEditors.Add(new SubtitleEditor(track.TrackNumber, selected, defaultTrack, forced, burn, offset, name));
         }
         if (subtitleEditors.Count == 0) AddDetailLine(SubtitleTrackList, "No internal subtitle tracks detected.");
     }
@@ -54,7 +61,7 @@ public sealed partial class MainWindow
             if (!double.IsFinite(offset) || offset != Math.Truncate(offset) || Math.Abs(offset) > 3600000)
                 throw new InvalidOperationException("Subtitle offset must be a whole number within one hour in milliseconds.");
             choices.Add(new SubtitleChoice(editor.TrackNumber, editor.Default.IsChecked == true,
-                editor.Forced.IsChecked == true, (int)offset, editor.Name.Text.Trim()));
+                editor.Forced.IsChecked == true, (int)offset, editor.Name.Text.Trim()) { Burn = editor.Burn.IsChecked == true });
         }
         return choices;
     }
@@ -69,14 +76,16 @@ public sealed partial class MainWindow
         foreach (var choice in selected)
         {
             var track = title.SubtitleList?.FirstOrDefault(track => track.TrackNumber == choice.TrackNumber);
-            if (track is null || container is null || HBFunctions.hb_subtitle_can_pass(track.Source, container.Id) == 0)
-                throw new InvalidOperationException("A selected subtitle is missing or cannot be stored in this container. Choose another container or remove the track; burn-in is not implemented yet.");
+            if (track is null || container is null || (!choice.Burn && HBFunctions.hb_subtitle_can_pass(track.Source, container.Id) == 0))
+                throw new InvalidOperationException("A selected subtitle is missing or cannot be stored in this container. Choose another container or a supported burn-in track.");
+            if (choice.Burn && (choice.Default || HandBrakeSubtitleHelpers.CheckCanBurnSubtitle(track.Source) == 0))
+                throw new InvalidOperationException("This subtitle cannot be burned or marked as default while burning.");
             if (choice.Forced && HandBrakeSubtitleHelpers.CheckCanForceSubtitle(track.Source) == 0)
                 throw new InvalidOperationException("Forced-only filtering is unsupported for this subtitle source.");
             if (Math.Abs((long)choice.Offset) > 3600000)
                 throw new InvalidOperationException("Saved subtitle offset is outside the supported range.");
-            result.Add(new OutputSubtitle { Track = track.TrackNumber - 1, Default = choice.Default,
-                Forced = choice.Forced, Burn = false, Offset = choice.Offset, Name = choice.Name });
+            result.Add(new OutputSubtitle { ID = track.TrackNumber, Track = track.TrackNumber - 1, Default = choice.Default,
+                Forced = choice.Forced, Burn = choice.Burn, Offset = choice.Offset, Name = choice.Name });
         }
         return result;
     }

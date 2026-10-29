@@ -112,6 +112,8 @@ public sealed partial class MainWindow
         draft.SubtitleImports = ReadImportedSubtitles();
         BuildImportedSubtitles(draft.SubtitleImports, activePreset?.FileFormat ?? "");
         draft.Subtitles = ReadSubtitleChoices();
+        if (draft.Subtitles.Count(track => track.Burn) + draft.SubtitleImports.Count(track => track.Burn) > 1)
+            throw new InvalidOperationException("Select at most one subtitle track for burn-in.");
         BuildSubtitleTracks(draft.Subtitles, title, activePreset?.FileFormat ?? "");
         draft.AudioTracks = ReadAudioChoices();
         draft.FilterOverrides = ReadFilterOverrides();
