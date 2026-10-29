@@ -1,33 +1,35 @@
-# HandBrake WinUI 3 — first milestone
+# HandBrake WinUI 3 — compact professional workspace preview
 
-This folder contains a **new WinUI 3 front end** added alongside the unchanged WPF application.
+A new **WinUI 3** frontend alongside HandBrake's unchanged WPF application.
 
-## Scope
+## Current preview (UI milestone 0.2)
 
-- A Windows 11-style shell with Mica, NavigationView, Home, Queue, and Settings.
-- A working video file chooser that displays the selected file name, path, and size.
-- Project references to the existing `HandBrake.App.Core` and `HandBrake.Interop` libraries.
-- A separate GitHub Actions workflow that publishes an **unpackaged x64 preview**.
+- **Modern Professional** Windows 11 layout using Mica and WinUI 3 **Compact** density.
+- LeftCompact navigation for Workspace, Queue, and Settings.
+- Editor with Summary, Dimensions, Filters, Video, Audio, Subtitles, Chapters, and Metadata tabs.
+- **Fixed preview panel on the right** on wider windows. On narrow windows, use the **Preview / Editor** toggle to switch between the two areas without squashing controls.
+- Persistent destination and Start Encode bar.
+- Functional **Open source** file picker that shows the selected filename, path, size, and a *suggested* destination filename.
 
-**Not implemented:** source scanning, presets, encoding, queue processing, playback, and native `hb.dll` deployment. The UI is a shell preview, **not a functional HandBrake transcoder yet**. Referencing the managed HandBrake projects does not by itself connect the native encoder.
+**This is a layout preview, not a video converter yet.** Presets, encoder settings, destination editing, queue actions, and Start Encode are deliberately disabled until the HandBrake engine is connected. The preview area is a placeholder, not a decoded video frame. File selection does not scan media. Never interpret example settings or suggested output filenames as actual encoder state.
 
-## Building
+## Build
 
-From the repository root, on Windows with .NET 10 and the appropriate Windows build tooling:
+GitHub Actions: `.github/workflows/winui3.yml` builds the unpackaged x64 preview. Download the entire ZIP artifact, extract it fully, and run `HandBrake.WinUI.exe` from the extracted folder. Do not move the EXE alone.
+
+To publish on a Windows development machine with .NET 10:
 
 ```powershell
 dotnet publish win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj -c Release -r win-x64 -p:Platform=x64 --self-contained true -o winui-preview
 ```
 
-The project targets Windows App SDK **2.5.1** and is intentionally **unpackaged** (`WindowsPackageType=None`) and **self-contained** (`WindowsAppSDKSelfContained=true`) for simple early testing. Run the generated `HandBrake.WinUI.exe` from its output directory on Windows 11. Do not move the EXE alone: the rest of the publish output is required.
-
-GitHub Actions: [WinUI 3 Preview](../../../.github/workflows/winui3.yml). Download the entire artifact ZIP after a successful run, extract it, and open the EXE.
+The project targets Windows App SDK 2.5.1, `WindowsPackageType=None`, and `WindowsAppSDKSelfContained=true`. The project includes an explicit step to ship `HandBrake.WinUI.pri`, which is required for the WinUI XAML resource lookup on startup.
 
 ## Next milestones
 
-1. Connect the existing HandBrake source scanning interface without changing `libhb`.
-2. Reuse existing preset and title models.
-3. Add output destination, queue management, encode progress, and cancellation.
-4. Bundle the matching native HandBrake libraries and verify real media conversion.
+1. Connect native `libhb` source scanning and show actual video information.
+2. Populate encoder options and presets from HandBrake's existing models.
+3. Display real still preview frames.
+4. Implement output destination, queue, encoding, progress, and cancellation.
 
-The original WPF application and existing workflows remain untouched. The original HandBrake license files at the repository root apply; review component licenses when distributing a build.
+The original WPF application and native HandBrake encoder are unchanged. Review original HandBrake and dependency licenses before redistribution.
