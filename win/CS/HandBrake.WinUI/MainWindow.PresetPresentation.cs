@@ -46,10 +46,7 @@ public sealed partial class MainWindow
             {
                 var item = Design.CompactUi.MenuItem(new ToggleMenuFlyoutItem { Text = choice.Preset.PresetName });
                 string description = PresetHelp(choice);
-                ToolTipService.SetToolTip(item, new ToolTip
-                {
-                    Content = new TextBlock { Text = description, MaxWidth = 340, TextWrapping = TextWrapping.Wrap }
-                });
+                ToolTipService.SetToolTip(item, Design.CompactUi.Help(description));
                 AutomationProperties.SetHelpText(item, description);
                 item.Click += (_, _) =>
                 {
@@ -148,10 +145,7 @@ public sealed partial class MainWindow
         if (tooltipPreset != choice)
         {
             tooltipPreset = choice;
-            ToolTipService.SetToolTip(PresetPicker, new ToolTip
-            {
-                Content = new TextBlock { Text = PresetHelp(choice), MaxWidth = 340, TextWrapping = TextWrapping.Wrap }
-            });
+            ToolTipService.SetToolTip(PresetPicker, Design.CompactUi.Help(PresetHelp(choice)));
         }
         foreach (var entry in presetMenuItems)
         {

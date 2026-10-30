@@ -57,29 +57,32 @@
                         <!-- Source header: commands, source identity, then one bounded selection group. -->
                         <Grid x:Name="SourceHeader" RowSpacing="{StaticResource HBSpaceGroup}" SizeChanged="SourceHeader_SizeChanged">
                             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                            <StackPanel x:Name="WorkspaceCommands" Spacing="{StaticResource HBSpaceRow}" HorizontalAlignment="Stretch">
+                            <StackPanel x:Name="WorkspaceCommands" Spacing="{StaticResource HBMainCommandGap}" HorizontalAlignment="Stretch">
+                                <StackPanel.Resources>
+                                    <ResourceDictionary Source="ms-appx:///Design/StandardCommands.xaml"/>
+                                </StackPanel.Resources>
                                 <Button Click="ShowSourcePicker_Click" ToolTipService.ToolTip="Open Source (Alt+O)">
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBSpaceRow}">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
                                         <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="OpenFile"/></Viewbox>
                                         <TextBlock Text="Open Source" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                                 <Button x:Name="StageQueueButton" Click="StageQueue_Click" IsEnabled="False"
                                         ToolTipService.ToolTip="Add to Queue (Alt+A)">
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBSpaceRow}">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
                                         <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon x:Name="StageQueueIcon" Symbol="Add"/></Viewbox>
                                         <TextBlock x:Name="StageQueueLabel" Text="Add to Queue" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                                 <Button x:Name="CancelQueueEditButton" Click="CancelQueueEdit_Click" Visibility="Collapsed" ToolTipService.ToolTip="Cancel edit">
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBSpaceRow}">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
                                         <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="Cancel"/></Viewbox>
                                         <TextBlock Text="Cancel edit" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                                 <Button x:Name="StartEncodeButton" Click="StartEncode_Click" IsEnabled="False"
-                                        Style="{StaticResource HBCompactAccentButtonStyle}" ToolTipService.ToolTip="Start Encode (Ctrl+E)">
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBSpaceRow}">
+                                        Style="{StaticResource HBMainCommandAccentButtonStyle}" ToolTipService.ToolTip="Start Encode (Ctrl+E)">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
                                         <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="Play"/></Viewbox>
                                         <TextBlock Text="Start Encode" VerticalAlignment="Center"/>
                                     </StackPanel>
@@ -466,10 +469,13 @@
                     <Grid x:Name="QueuePanel" Visibility="Collapsed" RowSpacing="{StaticResource HBSpaceRow}">
                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                         <StackPanel Spacing="{StaticResource HBSpaceTight}">
-                            <TextBlock Text="Queue" FontSize="23" FontWeight="SemiBold"/>
+                            <TextBlock Text="Queue" FontSize="{StaticResource HBPageTitleFontSize}" FontWeight="SemiBold"/>
                             <TextBlock x:Name="QueueCountText" Text="No jobs" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         </StackPanel>
                         <CommandBar Grid.Row="1" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True" Background="Transparent">
+                            <CommandBar.Resources>
+                                <ResourceDictionary Source="ms-appx:///Design/StandardCommands.xaml"/>
+                            </CommandBar.Resources>
                             <AppBarButton x:Name="StartQueueEncodeButton" Label="Start queue" Click="StartEncode_Click" IsEnabled="False">
                                 <AppBarButton.Icon><SymbolIcon Symbol="Play"/></AppBarButton.Icon>
                             </AppBarButton>
@@ -514,6 +520,9 @@
                                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                                     <TextBlock x:Name="QueueSelectedTitle" Text="Select a job" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                     <CommandBar Grid.Row="1" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True" Background="Transparent">
+                            <CommandBar.Resources>
+                                <ResourceDictionary Source="ms-appx:///Design/StandardCommands.xaml"/>
+                            </CommandBar.Resources>
                                         <AppBarButton x:Name="EditQueueJobButton" Label="Edit" Click="EditQueueJob_Click" IsEnabled="False">
                                             <AppBarButton.Icon><SymbolIcon Symbol="Edit"/></AppBarButton.Icon>
                                         </AppBarButton>

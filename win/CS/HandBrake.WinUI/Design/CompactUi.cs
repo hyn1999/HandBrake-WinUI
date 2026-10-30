@@ -11,7 +11,7 @@ namespace HandBrake.WinUI.Design;
 /// Shared UI recipes for programmatically created controls. Size values live
 /// only in CompactMetrics.xaml; styles and native templates live in XAML.
 /// </summary>
-public static class CompactUi
+public static partial class CompactUi
 {
     public static T Resource<T>(string key)
     {
@@ -22,6 +22,8 @@ public static class CompactUi
     public static double ControlHeight => Resource<double>("HBControlMinHeight");
     public static double RowGap => Resource<double>("HBSpaceRow");
     public static double GroupGap => Resource<double>("HBSpaceGroup");
+    public static double ControlGap => Resource<double>("HBControlGap");
+    public static double LabelGap => Resource<double>("HBLabelInputGap");
 
     public static Viewbox Icon(Symbol symbol) => new()
     {
@@ -30,14 +32,28 @@ public static class CompactUi
     };
 
     public static Button Command(string label, Symbol symbol, bool primary = false)
+        => CreateCommand(label, symbol, primary, main: false);
+
+    public static Button MainCommand(string label, Symbol symbol, bool primary = false)
+        => CreateCommand(label, symbol, primary, main: true);
+
+    private static Button CreateCommand(string label, Symbol symbol, bool primary, bool main)
     {
-        var content = new StackPanel { Orientation = Orientation.Horizontal, Spacing = RowGap };
+        var content = new StackPanel
+        {
+            Orientation = Orientation.Horizontal,
+            Spacing = Resource<double>(main ? "HBMainCommandIconTextGap" : "HBIconTextGap")
+        };
         content.Children.Add(Icon(symbol));
-        content.Children.Add(new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center });
+        var text = new TextBlock { Text = label, VerticalAlignment = VerticalAlignment.Center };
+        if (main) text.Style = Resource<Style>("HBMainCommandTextStyle");
+        content.Children.Add(text);
         var button = new Button
         {
             Content = content,
-            Style = Resource<Style>(primary ? "HBCompactAccentButtonStyle" : "HBCompactButtonStyle")
+            Style = Resource<Style>(main
+                ? primary ? "HBMainCommandAccentButtonStyle" : "HBMainCommandButtonStyle"
+                : primary ? "HBCompactAccentButtonStyle" : "HBCompactButtonStyle")
         };
         AutomationProperties.SetName(button, label);
         return button;
@@ -61,7 +77,27 @@ public static class CompactUi
     {
         item.MinHeight = ControlHeight;
         item.Padding = Resource<Thickness>("HBMenuItemPadding");
+        item.FontSize = Resource<double>("HBBodyFontSize");
         return item;
+    }
+
+    public static ToolTip Help(string text) => new()
+    {
+        Content = new TextBlock
+        {
+            Text = text, FontSize = Resource<double>("HBTooltipFontSize"),
+            MaxWidth = Resource<double>("HBTooltipMaxWidth"), TextWrapping = TextWrapping.Wrap
+        }
+    };
+
+    /// <summary>Size a future picker presenter; native popup placement/scrolling stays native.</summary>
+    public static void SizePickerPopup(FrameworkElement anchor, FrameworkElement presenter)
+    {
+        if (anchor.XamlRoot is not { } root) return;
+        double width = Math.Max(0, root.Size.Width - 2 * GroupGap);
+        presenter.MaxWidth = Math.Min(Resource<double>("HBPopupMaxWidth"), width);
+        presenter.Width = Math.Min(Resource<double>("HBPopupPreferredWidth"), presenter.MaxWidth);
+        presenter.MaxHeight = Math.Max(0, root.Size.Height * Resource<double>("HBPopupHeightFraction"));
     }
 
     /// <summary>Responsive settings rows. Field widths/alignment remain layout concerns.</summary>
@@ -69,12 +105,12 @@ public static class CompactUi
     {
         var grid = new Grid
         {
-            ColumnSpacing = GroupGap, RowSpacing = RowGap,
+            ColumnSpacing = ControlGap, RowSpacing = RowGap,
             Margin = Resource<Thickness>("HBFormRowMargin")
         };
         foreach (var field in fields)
         {
-            field.VerticalAlignment = VerticalAlignment.Center;
+            field.VerticalAlignment = VerticalAlignment.Bottom;
             grid.Children.Add(field);
         }
         int previousColumns = -1;
@@ -95,9 +131,10 @@ public static class CompactUi
 
     /// <summary>Bounded-width groups for headers and command strips, without star-column gaps.</summary>
     public static void WrapFields(StackPanel host, List<(FrameworkElement Element, double Width)> fields,
-        double availableWidth, ref string? previousLayout)
+        double availableWidth, ref string? previousLayout, double? gap = null)
     {
         if (!double.IsFinite(availableWidth) || availableWidth <= 0) return;
+        double spacing = gap ?? ControlGap;
         var rows = new List<List<FrameworkElement>>();
         var row = new List<FrameworkElement>();
         double used = 0;
@@ -110,11 +147,11 @@ public static class CompactUi
             element.Width = width;
             element.HorizontalAlignment = HorizontalAlignment.Left;
             element.VerticalAlignment = VerticalAlignment.Top;
-            if (row.Count > 0 && used + GroupGap + width > availableWidth)
+            if (row.Count > 0 && used + spacing + width > availableWidth)
             {
                 rows.Add(row); row = new(); used = 0; signature.Add("/");
             }
-            if (row.Count > 0) used += GroupGap;
+            if (row.Count > 0) used += spacing;
             row.Add(element); used += width; signature.Add(index.ToString());
         }
         if (row.Count > 0) rows.Add(row);
@@ -125,7 +162,7 @@ public static class CompactUi
         host.Children.Clear();
         foreach (var elements in rows)
         {
-            var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = GroupGap };
+            var line = new StackPanel { Orientation = Orientation.Horizontal, Spacing = spacing };
             foreach (var element in elements) line.Children.Add(element);
             host.Children.Add(line);
         }

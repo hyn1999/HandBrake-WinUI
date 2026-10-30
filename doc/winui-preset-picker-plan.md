@@ -15,3 +15,5 @@ Recorded from the user's WPF/WinUI comparison; implement after the shared Compac
 Acceptance: compact placement on narrow/wide windows, grouped scrolling, clear current selection, keyboard navigation, native tooltip descriptions, default persistence, modified/reload behavior and correct labels when both states apply.
 
 Status: design recorded, not yet implemented. This commit only centralizes density and existing menu sizing; it does not claim the grouped picker is complete.
+
+Shared profile update: use 13 text, minimum 28 single-line items, HBPresetWidth/HBPresetMaxWidth for the closed field, and SizePickerPopup for 360–420 popup width and a 60%-of-root height limit. Use a separate management command role; keep main Workspace commands standard-sized. These resources do not themselves implement the pending grouped picker.

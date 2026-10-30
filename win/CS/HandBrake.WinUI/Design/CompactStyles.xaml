@@ -4,6 +4,21 @@
     <ResourceDictionary.MergedDictionaries>
         <ResourceDictionary Source="ms-appx:///Design/CompactMetrics.xaml"/>
     </ResourceDictionary.MergedDictionaries>
+    <!-- Main commands opt out of Compact: native padding/template and native
+         BodyTextBlockFontSize, independent of HBBodyFontSize. -->
+    <Style x:Key="HBMainCommandButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
+        <Setter Property="FontSize" Value="{ThemeResource BodyTextBlockFontSize}"/>
+    </Style>
+    <Style x:Key="HBMainCommandAccentButtonStyle" TargetType="Button" BasedOn="{StaticResource AccentButtonStyle}">
+        <Setter Property="FontSize" Value="{ThemeResource BodyTextBlockFontSize}"/>
+    </Style>
+    <Style x:Key="HBMainCommandTextStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}"/>
+    <Style TargetType="TextBlock">
+        <Setter Property="FontSize" Value="{StaticResource HBBodyFontSize}"/>
+    </Style>
+    <Style TargetType="ToolTip" BasedOn="{StaticResource DefaultToolTipStyle}">
+        <Setter Property="FontSize" Value="{StaticResource HBTooltipFontSize}"/>
+    </Style>
     <!-- Preserve WinUI templates, focus visuals, brushes and visual states. -->
     <Style x:Key="HBCompactButtonStyle" TargetType="Button" BasedOn="{StaticResource DefaultButtonStyle}">
         <Setter Property="MinHeight" Value="{StaticResource HBControlMinHeight}"/>
@@ -77,8 +92,10 @@
         <Setter Property="Foreground" Value="{ThemeResource TextFillColorSecondaryBrush}"/>
         <Setter Property="TextWrapping" Value="Wrap"/>
     </Style>
-    <Style x:Key="HBCompactSectionTitleStyle" TargetType="TextBlock">
+    <Style x:Key="HBCompactSectionTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource SubtitleTextBlockStyle}">
         <Setter Property="FontSize" Value="{StaticResource HBSectionFontSize}"/>
-        <Setter Property="FontWeight" Value="SemiBold"/>
+    </Style>
+    <Style x:Key="HBCompactPageTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
+        <Setter Property="FontSize" Value="{StaticResource HBPageTitleFontSize}"/>
     </Style>
 </ResourceDictionary>

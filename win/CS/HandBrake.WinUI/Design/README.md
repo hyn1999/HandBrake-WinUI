@@ -1,82 +1,111 @@
-# Shared Compact UI
+# Shared Compact UI — agreed profile
 
-This is the app's internal presentation library. It adds no NuGet dependency or separate assembly. Do not put encoding rules or task state here.
+This internal presentation library adds no package or separate assembly. Keep engine/task logic outside Design. The values below implement the user's size, spacing and width review; colour, font family/weight, corners, focus and interaction states remain native WinUI.
 
-## Decision
+## Resource order and scope
 
-Use Microsoft's native Compact dictionary as the baseline, then application tokens and derived styles. App.xaml merges XamlControlsResources, native DensityStyles/Compact.xaml, then CompactStyles.xaml (which imports CompactMetrics.xaml). Never replace native control templates to make the UI smaller.
+App.xaml loads XamlControlsResources, Microsoft's DensityStyles/Compact.xaml, then CompactStyles.xaml. The latter imports CompactMetrics.xaml. Common controls inherit application Compact styles, including controls created in C#. Native text/number input resources size NumberBox's inner TextBox; no fictional DefaultNumberBoxStyle or replacement templates are used.
 
-The goal is coherent desktop density, not scaling the whole application or forcing every container to the same height. Native header labels, multiline inputs, switches and interaction targets need their own space. No fixed-height text inputs or reduced system font scaling are introduced.
+StandardCommands.xaml is an explicit exception: merge it ONLY inside a main command strip or CommandBar. It restores native body typography and default button styles within that scope. Never merge it at application scope. HBMainCommandButtonStyle / HBMainCommandAccentButtonStyle inherit native defaults, have no Compact MinHeight/Padding setters, and use the native BodyTextBlockFontSize resource. Their text style inherits native BodyTextBlockStyle. Main commands therefore remain naturally larger than compact settings without hard-coded enlarged fonts, icons or weights.
 
-| Role | Policy |
+## Agreed size and spacing tokens
+
+| Role | Profile |
 | --- | --- |
-| Button, accent command, DropDownButton | 28 effective-pixel minimum, 14 text, shared padding; native corners and states |
-| ComboBox, TextBox | 28 minimum input body, 14 text; headers add their native height |
-| NumberBox | Native template retained; shared TextControlThemeMinHeight/Padding resources size its inner TextBox |
-| CheckBox / RadioButton | 32 minimum row; preserve native indicator and RadioButton's internal 32-pixel layout |
-| Icon command | 28 square with 16 icon; accessible name required |
-| List items / navigation | Native Compact baseline (32 where provided) |
-| Slider, ToggleSwitch, AppBarButton / CommandBar | Keep native geometry/states; Compact font/resources where consumed; do not squeeze native interaction parts |
-| Settings card | Shared padding, radius and theme brushes |
-| Add media browse action | Dedicated 68 minimum, 20 icon; deliberately larger two-line action |
-| Drag/drop area and title/caption buttons | Keep their functional/platform dimensions; not small-input controls |
+| Settings buttons, fields, labels, menu/list text, source/job names | 13 base text |
+| Secondary text, status and tooltips | 12 |
+| Section headings | 15; inherit native SubtitleTextBlockStyle weight/family |
+| Page headings | 20; inherit native TitleTextBlockStyle weight/family |
+| Main command strip | Native typography, padding and geometry; exempt from Compact |
+| Compact input/button body | 28 minimum, not a fixed text-control height |
+| CheckBox / RadioButton | 32 minimum row; retain native indicator geometry |
+| Icon button / icon | 28 / 16; accessible name required |
+| Larger Add media action / icon | 68 minimum / 20 |
+| Icon-to-text gap in compact compound buttons | 6 |
+| Label-to-input gap | 4 |
+| Related controls / rows | 8 |
+| Independent groups / cards | 12 |
+| Card padding | 12 |
+| Main command icon-to-text / between-command gap | Separate 8 / 12 tokens |
 
-28/32 are initial design values awaiting Windows review, not a claim that every runtime control measures exactly that height. A minimum can grow for content and accessibility. Touch-oriented or unusually dense views should be reviewed separately before any template change.
+Minimums grow with content and Windows text scaling. Native sliders, switches, CommandBars and their interaction parts retain their native geometry. Drag/drop space and system caption buttons are not compact form inputs. Card radius aliases the native OverlayCornerRadius; other corners use native ControlCornerRadius. Do not introduce density-specific FontWeight/FontFamily setters or fixed colours.
 
 ## Authoring XAML
 
-Common Button/ComboBox/TextBox/CheckBox/RadioButton/DropDownButton styles apply implicitly throughout Workspace, Queue, Preferences and Preview, including controls created in C#. Do not repeat MinHeight, Padding, FontSize or CornerRadius on each new control.
+Add xmlns:design="using:HandBrake.WinUI.Design" for width roles.
 
 ```xml
-<Button Content="Reload" Click="Reload_Click" />
-<Button Content="Start Encode" Style="{StaticResource HBCompactAccentButtonStyle}" />
-<ComboBox Header="Encoder" />
-<NumberBox Header="Bitrate" />
-<TextBox Header="Track name" />
+<Button Content="Reload" />
+<Button Content="Apply" Style="{StaticResource HBCompactAccentButtonStyle}" />
+<ComboBox Header="Encoder" design:FieldLayout.Role="NamedChoice" />
+<NumberBox Header="Bitrate" design:FieldLayout.Role="Number" />
+<TextBox Header="Track name" design:FieldLayout.Role="Name" />
 <TextBlock Text="Audio" Style="{StaticResource HBCompactSectionTitleStyle}" />
 <Border Style="{StaticResource HBCompactCardStyle}">
     <StackPanel Spacing="{StaticResource HBSpaceRow}">
-        <!-- controls -->
+        <!-- content -->
     </StackPanel>
 </Border>
 ```
 
-Icon-only buttons use HBCompactIconButtonStyle and must provide AutomationProperties.Name and an appropriate tooltip. Use HBMediaSourceButtonStyle only for the larger source-selection action, not ordinary commands.
+Width roles cap fields without forcing minimum widths that break narrow layouts. Their parent still owns alignment and space allocation: use bounded columns or AlignedFormRow rather than spreading small fields across star columns. Role changes own Width/MinWidth/MaxWidth/HorizontalAlignment; do not combine them with conflicting local width setters. Path fills available space; Preset has a 360 preference and 400 cap. None clears the role's sizing back to defaults.
 
-Use HBSpaceTight / HBSpaceRow / HBSpaceGroup for spacing. Edit CompactMetrics.xaml to tune density; edit CompactStyles.xaml for reusable semantic roles. Do not override framework colours or radii with fixed colours. Styles inherit native defaults, including AccentButtonStyle, so Light/Dark/HighContrast and focus/pressed/disabled states remain the framework's responsibility.
+| FieldWidthRole | Preferred width (effective pixels) |
+| --- | ---: |
+| ShortNumber | 96 |
+| Number | 144 |
+| ShortChoice | 180 |
+| NamedChoice | 280 |
+| Name | 360 |
+| Preset | 360 (maximum 400) |
+| Path | Remaining space |
+
+These are initial preferences within the agreed ranges, not minimums or a guarantee that every field is always that width. Values remain unchanged when names/paths are visually truncated; expose full values through approved tooltips where needed.
+
+For the main Workspace command strip, use StandardCommands.xaml in the strip's resources and HBMainCommandAccentButtonStyle for its primary action. This also prevents the application's implicit compact TextBlock style leaking into command labels. Existing Queue CommandBars use the same scoped dictionary and retain native overflow behavior.
 
 ## Authoring C#
 
 ```csharp
 using HandBrake.WinUI.Design;
 
-var start = CompactUi.Command("Start Encode", Symbol.Play, primary: true);
+var reload = CompactUi.Command("Reload", Symbol.Refresh); // Compact card action
+var start = CompactUi.MainCommand("Start Encode", Symbol.Play, primary: true);
 var expand = CompactUi.IconCommand(Symbol.FullScreen, "Open preview");
-var row = CompactUi.FormRow(encoderPicker, bitrateBox, trackNameBox);
+var name = new TextBox();
+FieldLayout.SetRole(name, FieldWidthRole.Name);
+var row = CompactUi.AlignedFormRow(
+    new CompactFormField("Encoder", new ComboBox(), FieldWidthRole.NamedChoice),
+    new CompactFormField("Bitrate", new NumberBox(), FieldWidthRole.Number),
+    new CompactFormField("", new CheckBox { Content = "Enabled" }, FieldWidthRole.ShortChoice));
 var card = CompactUi.Card(row);
-var reload = CompactUi.MenuItem(new MenuFlyoutItem { Text = "Reload" });
+var help = CompactUi.Help("Product-approved description");
 ```
 
-Wire events and provide localized/product-approved labels at the call site. Helpers centralize appearance and composition, not behavior or tooltip copy. Set values such as minimum/maximum bitrate at the feature boundary. Widths, column count, wrapping and visibility remain layout concerns, not density setters.
+AlignedFormRow supplies shared label/body rows and AutomationProperties.LabeledBy. Pass inputs with no native Header so labels are not duplicated. Labels wrap and body rows grow; controls align to the input body, not the entire header+input container. Width groups wrap together. It observes visibility changes and removes those callbacks on unload. Events and valid encoder settings remain the feature's responsibility.
 
-FormRow preserves the existing responsive equal-column editor recipe. Use WrapFields for bounded-width groups such as the source header; do not stretch small controls across an entire window. MainWindow.CompactRow is now only a compatibility forwarding method. Source-header wrapping now also delegates to this library.
+FormRow is the compatibility recipe used by existing editors: its fields now bottom-align, with 8-pixel gaps. It does not extract/rewrite native headers or promise exact cross-control baselines. Migrate existing forms to AlignedFormRow during their visual review. WrapFields handles bounded header groups; main command rows pass their separate standard gap.
 
-## Migration boundary
+## Popups, lists and tabs
 
-Removed the conflicting HomePanel/source-header implicit density styles. MainWindow spacing/text/icon roles, preview icon buttons, preset-menu metrics and Preferences card styling now use shared resources. Existing per-feature layout sizes/card paddings not migrated here remain candidates for their visual review; this is not a claim that the complete application layout has been redesigned.
+MenuItem applies shared 13 text, minimum 28 and padding, retaining native interaction states. Multi-line Queue items may grow; do not force them to 28. Help creates wrapped 12-point tooltip content so a nested TextBlock cannot accidentally inherit the application's 13-point body style.
 
-The grouped single-popup preset picker and inline Default/Modified labels are recorded in doc/winui-preset-picker-plan.md. Its old menu structure is intentionally pending while this foundation is reviewed.
+SizePickerPopup(anchor, presenter) supplies a preferred 360, maximum 420 width, limited by the root viewport, and a maximum height of 60% of the root height. Call it when opening/resizing a future picker; the native popup owns placement and scrolling. This helper does not create a picker or implement keyboard navigation itself.
 
-## Sources and constraints
+HBTabPreferredHeight = 32 is a design target only. Native TabView geometry/selection/focus/scrolling are not replaced or forcibly clipped to that value. Compact base text is 13; review any per-view/template font overrides in Windows. Tabs stay in a single row with native horizontal navigation when required.
 
+## Migration and pending work
+
+The shared profile is active application-wide; source header widths, its tooltip content, Workspace/Queue standard command scopes, page title sizes and preset tooltip/menu metrics are wired to the new roles. Feature-specific legacy inline font sizes, card layouts and field headers still need their section-by-section review; changing tokens is not a full UI redesign.
+
+The single-popup grouped preset picker and inline Default/Modified labels remain pending under doc/winui-preset-picker-plan.md. Its size constraints are now available in this library, but its menu structure has not been replaced here.
+
+## Sources and verification
+
+Microsoft Compact/style guidance:
 - https://learn.microsoft.com/en-us/windows/apps/develop/ui/controls/compact-sizing
-- https://learn.microsoft.com/windows/apps/design/style/xaml-styles
-- Microsoft UI XAML source inspected at 6583084e128aca2ac5aed38bd5521029e803ad66: controls/dev/dll/DensityStyles/Compact.xaml; CommonStyles Button/TextBox/CheckBox/RadioButton resources; ComboBox resources; DropDownButton.xaml; NumberBox.xaml.
+- https://learn.microsoft.com/en-us/windows/apps/develop/platform/xaml/xaml-styles
 
-The inspected NumberBox source supplies an implicit native style, not a named DefaultNumberBoxStyle. Do not invent that resource key: the numeric-input density is applied through the native TextBox sizing resources instead. Microsoft main is implementation evidence, not a substitute for validating the app's pinned Windows App SDK 2.5.1 package.
+Native implementation evidence: microsoft/microsoft-ui-xaml at 6583084e128aca2ac5aed38bd5521029e803ad66, including Button, TextBlock, ToolTip, TextBox, ComboBox and NumberBox resources. BodyTextBlockFontSize and native body/heading styles are consumed rather than inventing a command-font baseline. The reference source is not a substitute for checking the pinned Windows App SDK 2.5.1 package.
 
-## Verification status
-
-Performed: XAML XML/resource-reference checks, helper call-site review, native style-key/source inspection and checks that no replacement ControlTemplate or unsupported SymbolIcon.FontSize was added. No build, Windows runtime/UI inspection or full accessibility verification was performed.
-
-Next aggregate Windows build: compare input bodies including NumberBox inline spin buttons; inspect Light/Dark/HighContrast, 100/150/200% display scale and enlarged text, keyboard focus/tab order, hover/pressed/disabled states, open popups, narrow header wrapping, Queue edit controls, Preferences and detached Preview. Inspect rather than assume uniformity: native templates may impose additional content requirements.
+Static XML/resource/handler checks and source review are performed separately from compilation. No Windows build or runtime visual/accessibility verification is claimed. For the next aggregate build, verify input heights/headers/spin buttons, main command isolation, native weight/corners/colours, all range modes, narrow windows, 100/150/200% DPI, enlarged text, focus/tab order, High Contrast, popup scrolling and queue editing. Exact uniformity must be measured on Windows.

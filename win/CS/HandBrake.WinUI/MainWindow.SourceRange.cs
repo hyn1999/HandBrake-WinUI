@@ -22,11 +22,14 @@ public sealed partial class MainWindow
     {
         updatingSourceSelection = true;
         PopulateChoices(sourceRangePicker, new[] { ("Full title", "all"), ("Chapters", "chapter"), ("Seconds", "time"), ("Frames", "frame") }, "all");
-        rangeBoundsPanel = new Grid { ColumnSpacing = 12 };
+        Design.FieldLayout.SetRole(anglePicker, Design.FieldWidthRole.ShortNumber);
+        Design.FieldLayout.SetRole(sourceRangePicker, Design.FieldWidthRole.ShortChoice);
+        Design.FieldLayout.SetRole(rangeStartBox, Design.FieldWidthRole.Number);
+        Design.FieldLayout.SetRole(rangeEndBox, Design.FieldWidthRole.Number);
+        rangeBoundsPanel = new Grid { ColumnSpacing = Design.CompactUi.ControlGap };
         rangeBoundsPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         rangeBoundsPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
         rangeStartBox.HorizontalAlignment = rangeEndBox.HorizontalAlignment = HorizontalAlignment.Stretch;
-        rangeStartBox.MaxWidth = rangeEndBox.MaxWidth = double.PositiveInfinity;
         Grid.SetColumn(rangeEndBox, 1);
         rangeBoundsPanel.Children.Add(rangeStartBox); rangeBoundsPanel.Children.Add(rangeEndBox);
         rangeBoundsPanel.Visibility = Visibility.Collapsed;
