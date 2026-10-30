@@ -73,17 +73,38 @@ public sealed partial class MainWindow
             }
 
             List<QueueDraft> jobs = draftQueue.Where(item => item.IsPending).ToList();
+            QueueDraft? currentTask = null;
             if (jobs.Count == 0)
             {
-                QueueStatusText.Text = "There are no waiting jobs. Add a configured source or reset a job to retry.";
-                return;
+                // Starting from Queue must never silently enqueue the Workspace.
+                // Workspace Start mirrors WPF: use waiting jobs first, otherwise
+                // capture the current editor through the same path as Add to queue.
+                if (!ReferenceEquals(sender, StartEncodeButton) || !CanCaptureCurrentTask())
+                {
+                    QueueStatusText.Text = "There are no waiting jobs. Open and scan a source or reset a job to retry.";
+                    return;
+                }
+                currentTask = CreateDraft(selectedSourcePaths[0], allowVideoConfiguration: true);
+                if (!currentTask.HasVideoConfiguration)
+                    throw new InvalidOperationException("Choose a scanned title, compatible preset and valid output destination before encoding.");
+                jobs.Add(currentTask);
+            }
+
+            void RejectStart(QueueDraft draft, string message)
+            {
+                if (ReferenceEquals(draft, currentTask))
+                {
+                    SourceStatusText.Text = message;
+                    QueueStatusText.Text = message;
+                }
+                else FailQueueValidation(draft, message);
             }
 
             foreach (QueueDraft draft in jobs)
             {
                 if (!File.Exists(draft.SourcePath) && !Directory.Exists(draft.SourcePath))
                 {
-                    FailQueueValidation(draft, $"Source no longer exists: {draft.SourcePath}");
+                    RejectStart(draft, $"Source no longer exists: {draft.SourcePath}");
                     return;
                 }
 
@@ -92,13 +113,13 @@ public sealed partial class MainWindow
                     string.IsNullOrWhiteSpace(Path.GetFileName(draft.DestinationPath)) ||
                     !Directory.Exists(Path.GetDirectoryName(draft.DestinationPath)))
                 {
-                    FailQueueValidation(draft, $"Output folder is unavailable for {draft.DisplayName}. Choose a valid destination folder.");
+                    RejectStart(draft, $"Output folder is unavailable for {draft.DisplayName}. Choose a valid destination folder.");
                     return;
                 }
 
                 if (!nativePresetChoices.Any(choice => choice.Key == draft.PresetKey))
                 {
-                    FailQueueValidation(draft, $"Preset '{draft.PresetName}' is not available in the current native engine. Re-stage this item with a current preset.");
+                    RejectStart(draft, $"Preset '{draft.PresetName}' is not available in the current native engine. Re-stage this item with a current preset.");
                     return;
                 }
 
@@ -106,7 +127,7 @@ public sealed partial class MainWindow
                 string outputFullPath = Path.GetFullPath(draft.DestinationPath);
                 if (string.Equals(sourceFullPath, outputFullPath, StringComparison.OrdinalIgnoreCase))
                 {
-                    FailQueueValidation(draft, $"The output path cannot overwrite its source: {draft.SourcePath}");
+                    RejectStart(draft, $"The output path cannot overwrite its source: {draft.SourcePath}");
                     return;
                 }
             }
@@ -120,7 +141,7 @@ public sealed partial class MainWindow
                 string output = Path.GetFullPath(draft.DestinationPath!);
                 if (!destinations.Add(output) || sourcePaths.Contains(output))
                 {
-                    FailQueueValidation(draft, "Queue destinations must be unique and must not overwrite any queued source.");
+                    RejectStart(draft, "Queue destinations must be unique and must not overwrite any queued source.");
                     return;
                 }
             }
@@ -140,6 +161,14 @@ public sealed partial class MainWindow
                 if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
             }
 
+            // Only persist the captured task once validation and any overwrite
+            // confirmation succeed. Cancel must leave queue history untouched.
+            if (currentTask is not null)
+            {
+                draftQueue.Add(currentTask);
+                SaveDraftQueue();
+                DraftQueueList.SelectedItem = currentTask;
+            }
             activeEncodeQueue = jobs;
             activeEncodeQueueIndex = 0;
             encodeStopRequested = false;
@@ -156,7 +185,11 @@ public sealed partial class MainWindow
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
         {
             if (encodeRunning) FinishEncodeRun("Queue could not start: " + error.Message);
-            else QueueStatusText.Text = "Queue could not start: " + error.Message;
+            else
+            {
+                QueueStatusText.Text = "Queue could not start: " + error.Message;
+                SourceStatusText.Text = QueueStatusText.Text;
+            }
         }
         finally
         {
@@ -514,12 +547,17 @@ public sealed partial class MainWindow
         catch { /* Preserve the completed/failed job status if cleanup reports an error. */ }
     }
 
+    private bool CanCaptureCurrentTask()
+        => selectedSourcePaths.Count == 1 && !scanInProgress &&
+           SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: SourceTitle };
+
     private void UpdateEncodeControls()
     {
         bool nativeReady = File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll")) &&
             nativePresetChoices.Count > 0;
         bool hasRunnableJobs = draftQueue.Any(item => item.IsPending);
-        StartEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady && hasRunnableJobs;
+        StartEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady &&
+            (hasRunnableJobs || CanCaptureCurrentTask());
         StartQueueEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady && hasRunnableJobs;
         CancelEncodeButton.IsEnabled = encodeRunning && !encodeStopRequested;
         PauseQueueButton.IsEnabled = encodeRunning && !encodeScanning && !encodeStopRequested;
@@ -538,3 +576,5 @@ public sealed partial class MainWindow
         StageQueueButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && selectedSourcePaths.Count > 0;
     }
 }
+
+

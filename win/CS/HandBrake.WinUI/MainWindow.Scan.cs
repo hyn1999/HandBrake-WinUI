@@ -165,6 +165,7 @@ public sealed partial class MainWindow
         {
             DisplayScannedTitle(title);
         }
+        UpdateEncodeControls();
     }
 
     private void DisplayScannedTitle(SourceTitle title)
@@ -293,3 +294,5 @@ public sealed partial class MainWindow
         }
     }
 }
+
+
