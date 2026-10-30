@@ -47,7 +47,7 @@ public sealed partial class MainWindow
 
         // HandBrake's native preset determines the muxer. Never suggest a
         // mismatched .mp4 extension for an MKV or WebM preset.
-        string presetFormat = activePreset?.FileFormat ?? "";
+        string presetFormat = CurrentMux;
         string extension = presetFormat.Contains("mkv", StringComparison.OrdinalIgnoreCase)
             ? ".mkv"
             : presetFormat.Contains("webm", StringComparison.OrdinalIgnoreCase)

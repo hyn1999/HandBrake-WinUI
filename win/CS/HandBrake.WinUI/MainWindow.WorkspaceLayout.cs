@@ -46,25 +46,29 @@ public sealed partial class MainWindow
 
     private void PresetRules_Toggled(object sender, RoutedEventArgs args)
     {
-        if (AudioTrackList is not null && UsePresetAudioToggle is not null)
-            AudioTrackList.IsEnabled = UsePresetAudioToggle.IsChecked != true;
-        if (SubtitleManualPanel is not null && UsePresetSubtitlesToggle is not null)
-            SubtitleManualPanel.IsEnabled = UsePresetSubtitlesToggle.IsChecked != true;
-        if (FilterEditorPanel is not null && UsePresetFiltersToggle is not null)
-            FilterEditorPanel.IsEnabled = UsePresetFiltersToggle.IsChecked != true;
+        if (AudioEditorGate is not null && UsePresetAudioToggle is not null)
+            AudioEditorGate.IsEnabled = UsePresetAudioToggle.IsChecked != true;
+        if (SubtitleEditorGate is not null && UsePresetSubtitlesToggle is not null)
+            SubtitleEditorGate.IsEnabled = UsePresetSubtitlesToggle.IsChecked != true;
+        if (FilterEditorGate is not null && UsePresetFiltersToggle is not null)
+            FilterEditorGate.IsEnabled = UsePresetFiltersToggle.IsChecked != true;
         RefreshOutputSummary();
     }
 
     private void RefreshOutputSummary()
     {
         UpdatePresetPresentation();
+        ScheduleResolvedSummary();
         if (ConfiguredOutputText is null || VideoRateModePicker is null || !TryGetVideoDraftSettings(out var settings)) return;
         string rate = settings.RateControl == "ConstantQuality" ? $"Quality {settings.Quality:0.##}" : $"{settings.BitrateKbps} kbps";
         int audio = audioEditors.Count(editor => editor.Selected.IsChecked == true);
         string geometry = CustomGeometryToggle.IsChecked == true
             ? $"{OutputWidthBox.Value:0} × {OutputHeightBox.Value:0} (manual dimensions)" : "Dimensions from preset";
         string audioSummary = UsePresetAudioToggle?.IsChecked == true ? "Audio: native preset rules" : $"{audio} selected audio track(s)";
-        ConfiguredOutputText.Text = $"{settings.Container} · {settings.VideoEncoder} · {rate}\n" +
+        PresetContainerText.Text = CurrentContainer;
+        string frameRate = DisplayPresetFramerate(settings.Framerate);
+        string frameMode = ChoiceValue(frameModePicker).ToUpperInvariant();
+        ConfiguredOutputText.Text = $"{settings.Container} · {settings.VideoEncoder} · {rate} · {frameRate} ({frameMode})\n" +
             $"{audioSummary} · {geometry}\n" +
             $"Chapter markers: {(ChapterMarkersToggle.IsChecked == true ? "On" : "Off")}";
     }

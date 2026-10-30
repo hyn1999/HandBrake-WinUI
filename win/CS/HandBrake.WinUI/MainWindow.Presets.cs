@@ -188,6 +188,7 @@ public sealed partial class MainWindow
                 VideoBitrateBox.IsEnabled = false;
                 PresetVideoDetailsText.Text += "\nThe preset's encoder is not listed by this native build.";
             }
+            LoadAdvancedPreset();
             UpdateVideoModeControls();
         }
         finally
@@ -230,6 +231,7 @@ public sealed partial class MainWindow
         try
         {
             ConfigureVideoEncoder();
+            ConfigureAdvancedEncoder();
             UpdateVideoModeControls();
         }
         finally { updatingVideoEditor = false; }
@@ -282,6 +284,7 @@ public sealed partial class MainWindow
 
     private void UpdateVideoModeControls()
     {
+        UpdateAdvancedAvailability();
         bool hasEncoder = ActiveVideoEncoder is not null;
         bool quality = VideoRateModePicker.SelectedIndex == 0;
         bool bitrate = VideoRateModePicker.SelectedIndex == 1;
@@ -296,7 +299,7 @@ public sealed partial class MainWindow
             ? "Select a native preset to configure the video."
             : encoder is null
                 ? "This preset's encoder is unavailable in the native build. Select another encoder."
-                : !IsContainerCompatible(FormatPresetContainer(choice.Preset.FileFormat), encoder)
+                : !IsContainerCompatible(CurrentContainer, encoder)
                     ? "This encoder cannot be used with the preset's output container. Select a compatible encoder."
                     : VideoRateModePicker.SelectedIndex < 0
                         ? "Select a supported rate-control mode to configure this draft."
@@ -347,7 +350,7 @@ public sealed partial class MainWindow
 
         // Native encoder capabilities are muxer-specific. Do not stage a
         // video configuration the selected HandBrake container cannot mux.
-        string container = FormatPresetContainer(preset.Preset.FileFormat);
+        string container = CurrentContainer;
         if (!IsContainerCompatible(container, encoder)) return false;
 
         settings = new VideoDraftSettings(
@@ -358,8 +361,8 @@ public sealed partial class MainWindow
             quality ? "ConstantQuality" : "AverageBitrate",
             quality ? VideoQualitySlider.Value : null,
             bitrate ? (int)Math.Round(VideoBitrateBox.Value) : null,
-            preset.Preset.VideoFramerate,
-            preset.Preset.VideoPreset);
+            ChoiceValue(frameRatePicker),
+            ChoiceValue(speedPicker));
         return true;
     }
 

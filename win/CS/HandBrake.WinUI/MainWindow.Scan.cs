@@ -169,6 +169,7 @@ public sealed partial class MainWindow
 
     private void DisplayScannedTitle(SourceTitle title)
     {
+        LoadSourceRange(title);
         CustomGeometryToggle.IsChecked = false;
         OutputWidthBox.Value = title.Geometry?.Width ?? 0;
         OutputHeightBox.Value = title.Geometry?.Height ?? 0;
@@ -228,6 +229,8 @@ public sealed partial class MainWindow
 
     private void ResetScanDetails()
     {
+        SourceRangeGate.IsEnabled = false;
+        SourceRangePanel.Visibility = Visibility.Collapsed;
         ForeignAudioSearchToggle.IsChecked = false;
         ForeignAudioForcedToggle.IsChecked = true;
         ForeignAudioBurnToggle.IsChecked = false;

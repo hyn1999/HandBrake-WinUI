@@ -120,7 +120,7 @@ public sealed partial class MainWindow
             throw new InvalidOperationException("Choose an available preset and encoder before previewing.");
         var draft = new QueueDraft
         {
-            PresetKey = settings.PresetKey, NativePresetJson = ActivePresetChoice?.Json,
+            PresetKey = settings.PresetKey, NativePresetJson = GetEditorPresetJson(),
             VideoEncoder = settings.VideoEncoder, VideoRateControl = settings.RateControl,
             VideoQuality = settings.Quality, VideoBitrateKbps = settings.BitrateKbps,
             VideoFramerate = settings.Framerate, VideoEncoderSpeed = settings.EncoderSpeed,

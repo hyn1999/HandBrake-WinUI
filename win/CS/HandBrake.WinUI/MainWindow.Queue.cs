@@ -19,6 +19,7 @@ namespace HandBrake.WinUI;
 public sealed class QueueDraft
 {
     public string? NativePresetJson { get; set; }
+    public EncodeSelection? Selection { get; set; }
     public bool UsePresetAudio { get; set; }
     public bool UsePresetSubtitles { get; set; }
     public bool UsePresetFilters { get; set; }
@@ -120,7 +121,7 @@ public sealed partial class MainWindow
 
         // A scanned folder can contain several titles. Preserve the actual
         // selected native title index instead of inventing a title number.
-        draft.NativePresetJson = ActivePresetChoice?.Json;
+        draft.NativePresetJson = GetEditorPresetJson();
         draft.UsePresetAudio = UsePresetAudioToggle.IsChecked == true;
         draft.UsePresetSubtitles = UsePresetSubtitlesToggle.IsChecked == true;
         draft.UsePresetFilters = UsePresetFiltersToggle.IsChecked == true;
@@ -128,11 +129,11 @@ public sealed partial class MainWindow
         draft.ForeignAudioForced = ForeignAudioForcedToggle.IsChecked == true;
         draft.ForeignAudioBurn = draft.ForeignAudioSearch && ForeignAudioBurnToggle.IsChecked == true;
         draft.SubtitleImports = draft.UsePresetSubtitles ? new() : ReadImportedSubtitles();
-        BuildImportedSubtitles(draft.SubtitleImports, activePreset?.FileFormat ?? "");
+        BuildImportedSubtitles(draft.SubtitleImports, CurrentMux);
         draft.Subtitles = draft.UsePresetSubtitles ? new() : ReadSubtitleChoices();
         if (draft.Subtitles.Count(track => track.Burn) + draft.SubtitleImports.Count(track => track.Burn) + (draft.ForeignAudioBurn ? 1 : 0) > 1)
             throw new InvalidOperationException("Select at most one subtitle track for burn-in.");
-        BuildSubtitleTracks(draft.Subtitles, title, activePreset?.FileFormat ?? "");
+        BuildSubtitleTracks(draft.Subtitles, title, CurrentMux);
         draft.AudioTracks = draft.UsePresetAudio ? new() : ReadAudioChoices();
         draft.FilterOverrides = draft.UsePresetFilters ? new() : ReadFilterOverrides();
         // Validate selected native presets before persisting a configured entry.
@@ -147,6 +148,7 @@ public sealed partial class MainWindow
             ("Album", MetadataAlbumBox.Text), ("Comment", MetadataCommentBox.Text) })
             if (!string.IsNullOrWhiteSpace(field.Item2))
                 draft.MetadataOverrides[field.Item1] = field.Item2.Trim();
+        draft.Selection = ReadSourceSelection(title);
         draft.TitleIndex = title.Index;
         draft.DisplayName += $" · Title {title.Index}";
         draft.PresetKey = settings.PresetKey;

@@ -66,7 +66,20 @@ public sealed partial class MainWindow
         var source = job["Source"]!.AsObject();
         source["Path"] = title.Path;
         source["Title"] = title.Index;
-        // The engine uses one-based angles. Keep the native default angle.
+        if (!preview && draft.Selection is { } selection)
+        {
+            ValidateSelection(selection, title);
+            source["Angle"] = selection.Angle;
+            if (selection.Type != "all")
+            {
+                long start = selection.Type == "time" ? checked((long)Math.Round(selection.Start * 90000)) : (long)selection.Start;
+                long end = selection.Type == "time" ? checked((long)Math.Round(selection.End * 90000)) : (long)selection.End;
+                if (selection.Type == "time" && end <= start)
+                    throw new InvalidOperationException("The selected time range is shorter than one native clock tick.");
+                source["Range"] = new JsonObject { ["Type"] = selection.Type, ["Start"] = start, ["End"] = end };
+            }
+        }
+        // Still-frame previews navigate scan frames independently of encode range.
         if (preview)
         {
             source["Range"] = new JsonObject { ["Type"] = "preview", ["Start"] = 0, ["End"] = 30 * 90000L, ["SeekPoints"] = Math.Max(1, instance.PreviewCount) };
@@ -89,6 +102,11 @@ public sealed partial class MainWindow
             };
         }
         if (preview && job["Subtitle"]?["Search"] is JsonObject search) search["Enable"] = false;
+        if (preset["MetadataPassthru"]?.GetValue<bool>() == false)
+        {
+            job["Metadata"] = new JsonObject();
+            job["CoverArts"] = new JsonArray();
+        }
         if (draft.MetadataOverrides is not null)
         {
             job["Metadata"] ??= new JsonObject();

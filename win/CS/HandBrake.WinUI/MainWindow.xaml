@@ -63,7 +63,7 @@
 
                         <!-- Fluent commands overflow automatically as the window narrows. -->
                         <Grid RowSpacing="8">
-                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                             <CommandBar x:Name="WorkspaceCommands" DefaultLabelPosition="Right"
                                         IsDynamicOverflowEnabled="True" Background="Transparent">
                                 <AppBarButton Label="Open source" Click="ShowSourcePicker_Click"
@@ -97,6 +97,7 @@
                                           MinWidth="180" MaxWidth="360" HorizontalAlignment="Left"
                                           SelectionChanged="SourceTitlePicker_SelectionChanged" />
                             </Grid>
+                            <ContentControl x:Name="SourceRangeGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch" Grid.Row="2"><StackPanel x:Name="SourceRangePanel" Spacing="4" Visibility="Collapsed" /></ContentControl>
                         </Grid>
 
                         <StackPanel Grid.Row="1" Spacing="6">
@@ -173,10 +174,10 @@
                                         </Border>
                                     </Grid>
 
-                                    <TabView Grid.Row="1" SelectionChanged="EditorTabs_SelectionChanged" IsAddTabButtonVisible="False"
+                                    <TabView x:Name="EditorTabs" Grid.Row="1" SelectionChanged="EditorTabs_SelectionChanged" IsAddTabButtonVisible="False"
                                              CanDragTabs="False" CanReorderTabs="False"
                                              TabWidthMode="SizeToContent">
-                                        <TabViewItem Header="Summary" IsClosable="False">
+                                        <TabViewItem x:Name="SummaryTab" Header="Summary" IsClosable="False">
                                             <ScrollViewer VerticalScrollBarVisibility="Auto">
                                                 <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Source" FontSize="17"
@@ -186,6 +187,7 @@
                                                                TextWrapping="Wrap" />
                                                     <TextBlock Text="Configured output" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="ConfiguredOutputText" Text="Choose a source and preset." TextWrapping="Wrap" />
+                                                    <TextBlock x:Name="ResolvedOutputDetailsText" TextWrapping="Wrap" />
                                                     <TextBlock x:Name="PresetStatusText"
                                                                Text="Built-in presets will load from the matching HandBrake engine."
                                                                TextWrapping="Wrap"
@@ -193,7 +195,8 @@
                                                     <TextBlock Text="Selected preset" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="PresetDescriptionText"
                                                                Text="No native preset loaded." TextWrapping="Wrap" />
-                                                    <TextBlock Text="Output container (from preset)" FontWeight="SemiBold" />
+                                                    <TextBlock Text="Output format" FontWeight="SemiBold" />
+                                                    <ContentControl x:Name="ContainerEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="ContainerEditorPanel" Spacing="4" /></ContentControl>
                                                     <TextBlock x:Name="PresetContainerText" Text="Not available" />
                                                     <TextBlock Text="Preset rules are resolved by the native engine. Manual audio, subtitle and filter editing supports a subset of HandBrake options."
                                                                TextWrapping="Wrap" FontSize="12"
@@ -233,7 +236,7 @@
                                                     <TextBlock Text="Filters" FontSize="17" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="FilterEditorStatus" Text="Filter presets and tunes require the matching native HandBrake engine." TextWrapping="Wrap" />
                                                     <CheckBox x:Name="UsePresetFiltersToggle" Content="Use preset filters" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
-                                                    <StackPanel x:Name="FilterEditorPanel" Spacing="4" IsEnabled="False" />
+                                                    <ContentControl x:Name="FilterEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="FilterEditorPanel" Spacing="4" /></ContentControl>
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
@@ -269,7 +272,8 @@
                                                                Value="2500" SpinButtonPlacementMode="Inline"
                                                                Visibility="Collapsed" IsEnabled="False"
                                                                ValueChanged="VideoBitrateBox_ValueChanged" />
-                                                    <TextBlock Text="Framerate and encoder tuning (from preset)"
+                                                    <ContentControl x:Name="AdvancedVideoGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="AdvancedVideoPanel" Spacing="4" /></ContentControl>
+                                                    <TextBlock Text="Preset reference"
                                                                FontWeight="SemiBold" />
                                                     <TextBlock x:Name="PresetVideoDetailsText"
                                                                Text="Not available" TextWrapping="Wrap" />
@@ -288,10 +292,10 @@
                                                 <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Audio tracks" FontSize="17" FontWeight="SemiBold" />
                                                     <CheckBox x:Name="UsePresetAudioToggle" Content="Use preset audio selection and encoding rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
-                                                    <StackPanel x:Name="AudioTrackList" Spacing="8" IsEnabled="False">
+                                                    <ContentControl x:Name="AudioEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="AudioTrackList" Spacing="8">
                                                         <TextBlock Text="Tracks will appear after scanning a source."
                                                                    TextWrapping="Wrap" />
-                                                    </StackPanel>
+                                                    </StackPanel></ContentControl>
                                                     <TextBlock Text="Checked tracks are included in newly staged jobs, one output per source track. Uncheck all tracks for silent output. Choose a per-track encoder and bitrate, or retain the preset audio rule. Custom encoding uses the native default mixdown and source-compatible sample rate. Passthrough, lossless and multiple outputs per track still require full rule editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
@@ -301,7 +305,7 @@
                                                 <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Subtitles" FontSize="17" FontWeight="SemiBold" />
                                                     <CheckBox x:Name="UsePresetSubtitlesToggle" Content="Use preset subtitle selection and search rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
-                                                    <StackPanel x:Name="SubtitleManualPanel" Spacing="8" IsEnabled="False">
+                                                    <ContentControl x:Name="SubtitleEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="SubtitleManualPanel" Spacing="8">
                                                     <CheckBox x:Name="ForeignAudioSearchToggle" Content="Foreign Audio Search" Checked="ForeignSearch_Toggled" Unchecked="ForeignSearch_Toggled" />
                                                     <CheckBox x:Name="ForeignAudioForcedToggle" IsEnabled="False" Content="Search forced subtitles only" IsChecked="True" />
                                                     <CheckBox x:Name="ForeignAudioBurnToggle" IsEnabled="False" Content="Burn the search result into video" />
@@ -314,7 +318,7 @@
                                                     <TextBlock x:Name="SubtitleImportStatus" Text="UTF-8 SRT soft subtitles support MP4 and MKV. At most one internal or imported track may be burned into video." TextWrapping="Wrap" />
                                                     <StackPanel x:Name="ImportedSubtitleList" Spacing="4" />
                                                     <TextBlock Text="Select internal subtitle tracks to include. Soft subtitles require a compatible container. Burn-in is permanent in the output image and cannot be switched off during playback. Foreign-audio search runs during encoding. Re-stage the queue entry after editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                    </StackPanel>
+                                                    </StackPanel></ContentControl>
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>

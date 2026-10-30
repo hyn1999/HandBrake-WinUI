@@ -28,11 +28,11 @@
 
 This is not complete WPF parity. These must be finished before declaring the replacement ready:
 - Native encode initialization failure (error 3): diagnostic logging exists, but the cause remains unconfirmed.
-- Title angle and chapter/time/frame range selection.
-- Container selection and mux flags; preset save/reload.
+- Source selection now supports angle and full/chapter/time/frame ranges; formatted time entry and richer range presentation remain refinements.
+- Saving new presets remains; container selection and MP4 flags are now editable.
 - Full geometry editing: rotation, flip, anamorphic/PAR, scaling limits/upscaling, borders and computed final geometry display. Native preset mode now resolves these settings in libhb.
 - Manual filter algorithm selection, custom settings and colours/grayscale. Native preset effects are now retained.
-- Frame rate/mode, colour range, speed/tune/profile/level, multi-pass and advanced video options.
+- Video options now expose frame rate/mode, colour range, speed/tune/profile/level, multi-pass, turbo, fast decode and advanced arguments. Runtime validation across encoder families remains required.
 - Multiple audio outputs per input, passthrough/fallback, mixdown, sample rate, gain, DRC and selection rules.
 - Subtitle default/selection rules and wider import support.
 - Chapter duration display and import/export.
@@ -106,3 +106,29 @@ Visual density and responsive breakpoints require checking in the next batched W
 - Browse actions use matching 20-point icons, 12 padding, two-point title/description spacing and a 68 minimum height. Actions stack below 520 logical pixels.
 - Valid file drags highlight the dialog's drop zone with a theme Accent border and subtle tint. The whole-window feedback remains for drags outside the source dialog; feedback clears on leave, drop and dialog transitions.
 - XAML, event references and preservation of the original target dimensions were checked. No build or Windows visual validation was performed.
+
+
+## Summary, Video and source-range controls
+
+- Summary now edits MP4/MKV/WebM, MP4 web optimization/iPod flags, A/V alignment and metadata pass-through. Container compatibility checks and suggested filename extensions follow the selected format.
+- Video frame-rate choices and encoder preset/tune/profile/level choices come from the matching engine. Multi-pass and fast-decode availability follow encoder capabilities; turbo is gated by supported multi-pass and encoder family.
+- Editor options are merged into a full native preset snapshot captured with each queued job and passed to the shared encode/preview builder. Switching encoder clears incompatible tuning; reloading the base preset restores the advanced editor baseline.
+- Modified includes the effective advanced option state. Dormant MP4 or unsupported encoder flags are excluded from effective values.
+- Summary lazily resolves the actual job through libhb after edits or tab entry, showing scale/PAR, output audio/subtitle counts, foreign-audio search and filters. Scale is deliberately labeled separately from any subsequent padding or rotation.
+- Source controls expose one-based angles and full-title, inclusive chapter, seconds (exclusive end) and inclusive frame ranges. Duration uses the native 90 kHz clock; frame-based duration is explicitly estimated from average source FPS.
+- Source selection is stored separately from preset options and revalidated after the encode rescan. Legacy drafts with no selection retain the engine's full-title range.
+- Still previews navigate the scan frames independently of the selected encode range.
+- Source ranges were checked against the WPF factory and native JSON parser: time endpoints are converted to 90 kHz ticks; frame endpoints remain one-based/inclusive.
+- Structural XML, event references, snapshot wiring and range-validation calls were checked. This environment has no .NET SDK; no C# compilation, native encode or Actions run was performed.
+
+### Next Windows validation for these controls
+
+1. Reload each representative x264, x265, SVT-AV1 and hardware preset; verify controls/capabilities and Modified reset/revert behaviour.
+2. Change containers and inspect saved NativePresetJson and submitted job; confirm compatible codec enforcement, filename extensions and MP4-only option gating.
+3. Check CFR/VFR/PFR (including same-as-source), CQ/ABR, multi-pass/turbo, tunes, profiles, levels, extra options and metadata on/off in produced media.
+4. Encode nonzero time starts, a single chapter/frame, a partial chapter range, full-title and alternate DVD angles. Check selected duration and retained chapter names.
+5. Reject reversed, fractional chapter/frame, out-of-duration time and stale source ranges before native encoding.
+6. Check resolved Summary track counts/filter chain with preset and manual modes and confirm still previews remain independent of source range.
+7. These changes still require one batched Windows build and the reported error-3 reproduction before encode reliability can be declared.
+
+The editor review also corrected earlier group-disabling code: panel containers are now wrapped in non-focusable ContentControl gates, keeping native disabled/focus behaviour for their child controls. The earlier StackPanel.IsEnabled assignments were invalid for WinUI. This was checked against Microsoft's Control.IsEnabled API documentation, alongside the structural validation; it does not substitute for compiling the application.

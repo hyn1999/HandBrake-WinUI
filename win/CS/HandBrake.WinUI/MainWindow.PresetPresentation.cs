@@ -105,6 +105,7 @@ public sealed partial class MainWindow
     private bool IsPresetModified(NativePresetChoice choice)
     {
         var preset = choice.Preset;
+        if (AdvancedPresetModified()) return true;
         int mode = preset.VideoQualityType switch { 2 => 0, 1 => 1, _ => -1 };
         if (ActiveVideoEncoder?.ShortName != preset.VideoEncoder || VideoRateModePicker.SelectedIndex != mode)
             return true;
