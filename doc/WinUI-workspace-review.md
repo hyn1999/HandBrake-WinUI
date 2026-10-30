@@ -79,3 +79,14 @@ Visual density and responsive breakpoints require checking in the next batched W
 - Reload a modified preset; confirm both the editor fields and staged job are restored to preset rules.
 - Check both themes, compact spacing, a narrow window and screen-reader names/help text.
 - Structural checks pass; Windows compilation and interactive checks remain for the next batched build.
+
+
+## Workspace header and preview follow-up
+
+- Primary Workspace commands now use native CommandBar/AppBarButton icons and labels, with dynamic overflow. Start Encode has one Workspace location in the toolbar; the destination footer contains the filename and folder picker.
+- Source identity and title selection occupy the next compact row. The complete truncated source path is available in a local tooltip.
+- Open, add-to-queue, encode, preview, browse, scan cancellation and frame-navigation icons use native SymbolIcon assets. Icon-only frame buttons have accessible names and tooltips.
+- Preview no longer has a fixed 220-pixel height. The image is centered and explicitly fitted to both viewport dimensions using the decoded bitmap's width/height. Frame controls remain outside that viewport, and source details have a bounded scrollable area.
+- Narrow-window preview switching works even when the preview was hidden in the wide-window layout.
+- Structural XAML and event/type references were checked. No build or Windows visual validation was run.
+- Next Windows checks: landscape/portrait/square video, short and narrow windows, resize while decoding, preview hide/show, light/dark themes, 125–200% DPI, keyboard navigation and toolbar overflow. Confirm the complete video frame remains visible and proportional.

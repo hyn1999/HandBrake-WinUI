@@ -69,6 +69,21 @@ public sealed partial class MainWindow
             $"Chapter markers: {(ChapterMarkersToggle.IsChecked == true ? "On" : "Off")}";
     }
 
+    private void PreviewViewport_SizeChanged(object sender, SizeChangedEventArgs args) => UpdatePreviewFrameBounds();
+
+    private void UpdatePreviewFrameBounds()
+    {
+        if (PreviewFrame?.Source is not Microsoft.UI.Xaml.Media.Imaging.BitmapSource bitmap ||
+            bitmap.PixelWidth <= 0 || bitmap.PixelHeight <= 0 || PreviewViewport is null) return;
+        double scale = Math.Min(PreviewViewport.ActualWidth / bitmap.PixelWidth,
+                                PreviewViewport.ActualHeight / bitmap.PixelHeight);
+        if (!double.IsFinite(scale) || scale < 0) return;
+        // Fit the complete decoded display frame in both dimensions.
+        // A zero-height viewport produces a zero-sized image, never overflow.
+        PreviewFrame.Width = bitmap.PixelWidth * scale;
+        PreviewFrame.Height = bitmap.PixelHeight * scale;
+    }
+
     private bool previewHidden;
     private readonly List<TextBox> chapterNameEditors = new();
     private void GeometryOverride_Toggled(object sender, RoutedEventArgs args)

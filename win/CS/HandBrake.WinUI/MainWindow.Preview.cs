@@ -87,6 +87,7 @@ public sealed partial class MainWindow
             if (requestId != previewRequestId) return;
 
             PreviewFrame.Source = bitmap;
+            UpdatePreviewFrameBounds();
             PreviewFrame.Opacity = 0;
             PreviewFrame.Visibility = Visibility.Visible;
             PreviewPlaceholder.Visibility = Visibility.Collapsed;

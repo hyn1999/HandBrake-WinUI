@@ -161,10 +161,10 @@ public sealed partial class MainWindow : Window
 
     private void UpdatePreviewLayout()
     {
-        if (previewHidden || !SettingsPanel.Preferences.ShowPreviewPanel)
+        if ((!isNarrow && previewHidden) || !SettingsPanel.Preferences.ShowPreviewPanel)
         {
             PreviewToggleButton.Visibility = SettingsPanel.Preferences.ShowPreviewPanel ? Visibility.Visible : Visibility.Collapsed;
-            PreviewToggleButton.Content = "Show preview";
+            PreviewToggleButton.Label = "Show preview";
             EditorColumn.Width = new GridLength(1, GridUnitType.Star);
             PreviewColumn.Width = new GridLength(0);
             EditorPanel.Visibility = Visibility.Visible;
@@ -179,12 +179,12 @@ public sealed partial class MainWindow : Window
             PreviewColumn.Width = showPreviewOnNarrow ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
             EditorPanel.Visibility = showPreviewOnNarrow ? Visibility.Collapsed : Visibility.Visible;
             PreviewPanel.Visibility = showPreviewOnNarrow ? Visibility.Visible : Visibility.Collapsed;
-            PreviewToggleButton.Content = showPreviewOnNarrow ? "Editor" : "Preview";
+            PreviewToggleButton.Label = showPreviewOnNarrow ? "Editor" : "Preview";
         }
         else
         {
             EditorColumn.Width = new GridLength(1, GridUnitType.Star);
-            PreviewToggleButton.Content = "Hide preview";
+            PreviewToggleButton.Label = "Hide preview";
             PreviewColumn.Width = new GridLength(0.8, GridUnitType.Star);
             EditorPanel.Visibility = Visibility.Visible;
             PreviewPanel.Visibility = Visibility.Visible;

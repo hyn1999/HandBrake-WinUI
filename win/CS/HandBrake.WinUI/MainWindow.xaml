@@ -61,35 +61,48 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <!-- Top bar: source information remains visible while changing tabs. -->
-                        <Grid ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="2" VerticalAlignment="Center">
-                                
-                                <TextBlock x:Name="SelectedFileText" Text="No source selected"
-                                           FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="SelectedPathText" Text="Choose a video to begin"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           TextTrimming="CharacterEllipsis" FontSize="12" />
-                                <ComboBox x:Name="SourceTitlePicker"
+                        <!-- Fluent commands overflow automatically as the window narrows. -->
+                        <Grid RowSpacing="8">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <CommandBar x:Name="WorkspaceCommands" DefaultLabelPosition="Right"
+                                        IsDynamicOverflowEnabled="True" Background="Transparent">
+                                <AppBarButton Label="Open source" Click="ShowSourcePicker_Click"
+                                              ToolTipService.ToolTip="Open source (Alt+O)">
+                                    <AppBarButton.Icon><SymbolIcon Symbol="OpenFile"/></AppBarButton.Icon>
+                                </AppBarButton>
+                                <AppBarButton x:Name="StageQueueButton" Label="Add to queue"
+                                              Click="StageQueue_Click" IsEnabled="False"
+                                              ToolTipService.ToolTip="Add the configured title to the queue">
+                                    <AppBarButton.Icon><SymbolIcon Symbol="Add"/></AppBarButton.Icon>
+                                </AppBarButton>
+                                <AppBarButton x:Name="StartEncodeButton" Label="Start Encode"
+                                              Click="StartEncode_Click" IsEnabled="False"
+                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
+                                              ToolTipService.ToolTip="Start configured queue jobs">
+                                    <AppBarButton.Icon><SymbolIcon Symbol="Play"/></AppBarButton.Icon>
+                                </AppBarButton>
+                                <AppBarSeparator/>
+                                <AppBarButton x:Name="PreviewToggleButton" Label="Preview"
+                                              Click="PreviewToggle_Click" Visibility="Collapsed"
+                                              ToolTipService.ToolTip="Show or hide the preview panel">
+                                    <AppBarButton.Icon><SymbolIcon Symbol="View"/></AppBarButton.Icon>
+                                </AppBarButton>
+                            </CommandBar>
+                            <Grid Grid.Row="1" ColumnSpacing="12">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                <StackPanel Spacing="2" VerticalAlignment="Center">
+                                    <TextBlock x:Name="SelectedFileText" Text="No source selected"
+                                               FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
+                                    <TextBlock x:Name="SelectedPathText" Text="Choose a video to begin"
+                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                                               TextTrimming="CharacterEllipsis" FontSize="12"
+                                               ToolTipService.ToolTip="{Binding Text, ElementName=SelectedPathText}" />
+                                </StackPanel>
+                                <ComboBox x:Name="SourceTitlePicker" Grid.Column="1"
                                           Header="Title" Visibility="Collapsed"
-                                          MinWidth="220" MaxWidth="420" HorizontalAlignment="Left"
+                                          MinWidth="180" MaxWidth="360" HorizontalAlignment="Left"
                                           SelectionChanged="SourceTitlePicker_SelectionChanged" />
-                            </StackPanel>
-                            <Button Grid.Column="1" Content="Open source" ToolTipService.ToolTip="Open source (Alt+O)" Click="ShowSourcePicker_Click"
-                                    VerticalAlignment="Center" Style="{StaticResource AccentButtonStyle}" />
-                            <Button x:Name="StageQueueButton" Grid.Column="2" Content="Add to queue"
-                                    Click="StageQueue_Click" IsEnabled="False"
-                                    VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="Stage the scanned title and selected native preset for encoding." />
-                            <Button x:Name="PreviewToggleButton" Grid.Column="3" Content="Preview"
-                                    Click="PreviewToggle_Click" Visibility="Collapsed"
-                                    VerticalAlignment="Center" />
+                            </Grid>
                         </Grid>
 
                         <StackPanel Grid.Row="1" Spacing="6">
@@ -104,8 +117,11 @@
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            VerticalAlignment="Center" />
                                 <Button x:Name="CancelScanButton" Grid.Column="1"
-                                        Content="Cancel scan" Visibility="Collapsed"
-                                        Click="CancelScan_Click" />
+                                        Visibility="Collapsed" Click="CancelScan_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <SymbolIcon Symbol="Cancel" FontSize="16"/><TextBlock Text="Cancel scan" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                             </Grid>
                             <ProgressBar x:Name="SourceScanProgress"
                                          Visibility="Collapsed" Minimum="0" Maximum="100"
@@ -338,7 +354,7 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Fixed right-hand preview, with a narrow-window fallback. -->
+                            <!-- Bounded image viewport; navigation and source details remain outside it. -->
                             <Border x:Name="PreviewPanel" Grid.Column="1"
                                     CornerRadius="10" BorderThickness="1"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -356,9 +372,11 @@
                                             <RowDefinition Height="Auto" />
                                         </Grid.RowDefinitions>
                                         <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                                CornerRadius="8" Height="220" VerticalAlignment="Top">
-                                            <Grid>
+                                                CornerRadius="8" MinHeight="0" VerticalAlignment="Stretch">
+                                            <Grid x:Name="PreviewViewport" MinWidth="0" MinHeight="0"
+                                                  SizeChanged="PreviewViewport_SizeChanged">
                                                 <Image x:Name="PreviewFrame" Stretch="Uniform"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
                                                        Visibility="Collapsed" />
                                                 <StackPanel x:Name="PreviewPlaceholder"
                                                             HorizontalAlignment="Center"
@@ -380,18 +398,24 @@
                                                 <ColumnDefinition Width="*" />
                                                 <ColumnDefinition Width="Auto" />
                                             </Grid.ColumnDefinitions>
-                                            <Button x:Name="PreviousPreviewButton" Content="Previous frame"
-                                                    IsEnabled="False" Click="PreviousPreview_Click" />
+                                            <Button x:Name="PreviousPreviewButton" IsEnabled="False" Click="PreviousPreview_Click"
+                                                    Width="32" Height="32" Padding="6"
+                                                    AutomationProperties.Name="Previous preview frame" ToolTipService.ToolTip="Previous frame">
+                                                <SymbolIcon Symbol="Back" FontSize="16"/>
+                                            </Button>
                                             <TextBlock x:Name="PreviewFrameCounterText" Grid.Column="1"
-                                                       Text="No frame" VerticalAlignment="Center"
+                                                       Text="No frame" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
                                                        HorizontalAlignment="Center"
                                                        Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <Button x:Name="NextPreviewButton" Grid.Column="2"
-                                                    Content="Next frame" IsEnabled="False"
-                                                    Click="NextPreview_Click" />
+                                            <Button x:Name="NextPreviewButton" Grid.Column="2" IsEnabled="False" Click="NextPreview_Click"
+                                                    Width="32" Height="32" Padding="6"
+                                                    AutomationProperties.Name="Next preview frame" ToolTipService.ToolTip="Next frame">
+                                                <SymbolIcon Symbol="Forward" FontSize="16"/>
+                                            </Button>
                                         </Grid>
                                     </Grid>
-                                    <StackPanel Grid.Row="2" Spacing="6">
+                                    <ScrollViewer Grid.Row="2" MaxHeight="100" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                    <StackPanel Spacing="4">
                                         <TextBlock Text="Source details" FontWeight="SemiBold" />
                                         <TextBlock x:Name="PreviewSourceText" Text="No source selected"
                                                    TextWrapping="Wrap" />
@@ -399,11 +423,12 @@
                                                    Text="Scan a video to display its properties."
                                                    TextWrapping="Wrap" />
                                     </StackPanel>
+                                    </ScrollViewer>
                                 </Grid>
                             </Border>
                         </Grid>
 
-                        <!-- Persistent action bar for the active native encode queue. -->
+                        <!-- Destination stays editable; encode commands have one home in the toolbar. -->
                         <Border Grid.Row="3" CornerRadius="10" Padding="10"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
@@ -412,18 +437,18 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
-                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Destination" FontSize="12"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     <TextBox PlaceholderText="Choose a source to prepare an output filename" MaxWidth="10000" HorizontalAlignment="Stretch" x:Name="DestinationText" TextChanged="Destination_Changed" />
                                 </StackPanel>
-                                <Button Grid.Column="1" Content="Browse…" Click="BrowseDestination_Click" VerticalAlignment="Center" />
-                                <Button x:Name="StartEncodeButton" Grid.Column="2" Content="Start Encode"
-                                        IsEnabled="False" Click="StartEncode_Click"
-                                        Style="{StaticResource AccentButtonStyle}"
-                                        ToolTipService.ToolTip="Encode configured queue items with the native HandBrake engine." />
+                                <Button Grid.Column="1" Click="BrowseDestination_Click" VerticalAlignment="Center" ToolTipService.ToolTip="Choose the output folder">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <SymbolIcon Symbol="Folder" FontSize="16"/><TextBlock Text="Browse…" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
                             </Grid>
                         </Border>
                     </Grid>
