@@ -367,11 +367,10 @@
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
                                         <TextBlock Text="Preview" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
                                         <Button x:Name="OpenPreviewWindowButton" Grid.Column="1" Click="OpenPreviewWindow_Click"
-                                                IsEnabled="False" ToolTipService.ToolTip="Open a larger preview window">
-                                            <StackPanel Orientation="Horizontal" Spacing="8">
-                                                <SymbolIcon Symbol="FullScreen" FontSize="16"/>
-                                                <TextBlock Text="Open preview" VerticalAlignment="Center"/>
-                                            </StackPanel>
+                                                IsEnabled="False" Width="32" Height="32" Padding="6"
+                                                AutomationProperties.Name="Expand preview"
+                                                ToolTipService.ToolTip="Open a larger preview window">
+                                            <SymbolIcon Symbol="FullScreen" FontSize="16"/>
                                         </Button>
                                     </Grid>
                                     <Grid Grid.Row="1" RowSpacing="8">
