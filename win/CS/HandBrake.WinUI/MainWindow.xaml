@@ -464,74 +464,112 @@
                         </Border>
                     </Grid>
 
-                    <Grid x:Name="QueuePanel" Visibility="Collapsed" RowSpacing="12">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
+                    <Grid x:Name="QueuePanel" Visibility="Collapsed" RowSpacing="8">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                         <StackPanel Spacing="4">
-                            <TextBlock Text="Queue" FontSize="23" FontWeight="SemiBold" />
-                            <TextBlock x:Name="QueueCountText" Text="No staged sources"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <TextBlock Text="Queue" FontSize="23" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="QueueCountText" Text="No jobs" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         </StackPanel>
-                        <InfoBar Grid.Row="1" IsOpen="True" IsClosable="False"
-                                 Severity="Informational" Title="Native encode queue"
-                                 Message="Configured items are validated and processed sequentially by the matching HandBrake engine. Scan a title and choose a native preset before staging a job." />
-                        <Border Grid.Row="2" CornerRadius="10" Padding="8"
-                                BorderThickness="1"
-                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                            <ListView x:Name="DraftQueueList" SelectionMode="Single"
-                                      SelectionChanged="DraftQueueList_SelectionChanged">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Spacing="4" Padding="6">
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding SourcePath}" FontSize="12"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock Text="{Binding ConfigurationSummary}" FontSize="12"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock Text="{Binding DestinationSummary}" FontSize="12"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-                        </Border>
-                        <Grid Grid.Row="3" ColumnSpacing="8">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="4" VerticalAlignment="Center">
-                                <TextBlock x:Name="QueueStatusText" FontSize="12" TextWrapping="Wrap"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           Text="Choose a scanned title and native preset, then add it to the queue." />
-                                <ProgressBar x:Name="QueueEncodeProgress" Height="4" Minimum="0"
-                                             Maximum="100" Value="0" Visibility="Collapsed" />
-                            </StackPanel>
-                            <Button x:Name="RemoveDraftButton" Grid.Column="1"
-                                    Content="Remove selected" IsEnabled="False"
-                                    Click="RemoveDraft_Click" />
-                            <Button x:Name="ClearDraftsButton" Grid.Column="2"
-                                    Content="Clear queue" IsEnabled="False"
-                                    Click="ClearDrafts_Click" />
-                            <Button x:Name="CancelEncodeButton" Grid.Column="3"
-                                    Content="Stop" IsEnabled="False"
-                                    Click="CancelEncode_Click" />
-                            <Button x:Name="StartQueueEncodeButton" Grid.Column="4"
-                                    Content="Start Encode" IsEnabled="False"
-                                    Click="StartEncode_Click"
-                                    Style="{StaticResource AccentButtonStyle}" />
+                        <CommandBar Grid.Row="1" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True" Background="Transparent">
+                            <AppBarButton x:Name="StartQueueEncodeButton" Label="Start queue" Click="StartEncode_Click" IsEnabled="False">
+                                <AppBarButton.Icon><SymbolIcon Symbol="Play"/></AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarButton x:Name="PauseQueueButton" Label="Pause" Click="PauseQueue_Click" IsEnabled="False">
+                                <AppBarButton.Icon><SymbolIcon Symbol="Pause"/></AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarButton x:Name="CancelEncodeButton" Label="Stop" Click="CancelEncode_Click" IsEnabled="False">
+                                <AppBarButton.Icon><SymbolIcon Symbol="Stop"/></AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarSeparator/>
+                            <AppBarButton x:Name="ClearDraftsButton" Label="Clear queue" Click="ClearDrafts_Click" IsEnabled="False">
+                                <AppBarButton.Icon><SymbolIcon Symbol="Delete"/></AppBarButton.Icon>
+                            </AppBarButton>
+                        </CommandBar>
+                        <Grid x:Name="QueueBody" Grid.Row="2" ColumnSpacing="12" SizeChanged="QueueBody_SizeChanged">
+                            <Grid.ColumnDefinitions><ColumnDefinition x:Name="QueueListColumn" Width="0.65*"/><ColumnDefinition x:Name="QueueDetailColumn" Width="*"/></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition x:Name="QueueListRow" Height="*"/><RowDefinition x:Name="QueueDetailRow" Height="0"/></Grid.RowDefinitions>
+                            <Border CornerRadius="10" BorderThickness="1" Padding="4"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                <ListView x:Name="DraftQueueList" SelectionMode="Single" SelectionChanged="DraftQueueList_SelectionChanged">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnSpacing="10" Padding="6,8" ToolTipService.ToolTip="{Binding DestinationPath}">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                <SymbolIcon Symbol="{Binding StateIcon}" FontSize="16" VerticalAlignment="Center"/>
+                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                    <TextBlock Text="{Binding OutputName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding RowSummary}" FontSize="12" TextTrimming="CharacterEllipsis"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Border>
+                            <Border x:Name="QueueDetailsCard" Grid.Column="1" CornerRadius="10" Padding="12" BorderThickness="1"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                <Grid RowSpacing="8">
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                    <TextBlock x:Name="QueueSelectedTitle" Text="Select a job" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                    <CommandBar Grid.Row="1" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True" Background="Transparent">
+                                        <AppBarButton x:Name="ResetQueueJobButton" Label="Reset / Retry" Click="ResetQueueJob_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><SymbolIcon Symbol="Refresh"/></AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <AppBarButton x:Name="MoveQueueUpButton" Label="Move up" Click="MoveQueueUp_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><SymbolIcon Symbol="Up"/></AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <AppBarButton x:Name="MoveQueueDownButton" Label="Move down" Click="MoveQueueDown_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><SymbolIcon Symbol="Down"/></AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <AppBarButton x:Name="RemoveDraftButton" Label="Remove" Click="RemoveDraft_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><SymbolIcon Symbol="Delete"/></AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <CommandBar.SecondaryCommands>
+                                            <AppBarButton x:Name="OpenQueueSourceButton" Label="Open source in Workspace" Click="OpenQueueSource_Click" IsEnabled="False"/>
+                                            <AppBarButton x:Name="OpenQueueOutputButton" Label="Open output folder" Click="OpenQueueOutput_Click" IsEnabled="False"/>
+                                        </CommandBar.SecondaryCommands>
+                                    </CommandBar>
+                                    <TabView x:Name="QueueDetailTabs" Grid.Row="2" IsAddTabButtonVisible="False" CanDragTabs="False" CanReorderTabs="False"
+                                             TabWidthMode="SizeToContent" SelectionChanged="QueueDetailTabs_SelectionChanged">
+                                        <TabViewItem Header="Summary" IsClosable="False">
+                                            <ScrollViewer>
+                                                <StackPanel Spacing="12" Padding="4,12">
+                                                    <InfoBar x:Name="QueueJobError" IsOpen="False" IsClosable="False" Severity="Error" Title="Job needs attention"/>
+                                                    <StackPanel x:Name="QueueSummaryFields" Spacing="8"/>
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </TabViewItem>
+                                        <TabViewItem Header="Statistics" IsClosable="False">
+                                            <ScrollViewer>
+                                            <StackPanel Spacing="12" Padding="4,12">
+                                                <ProgressBar x:Name="QueueJobProgress" Minimum="0" Maximum="100"/>
+                                                <TextBlock x:Name="QueueJobStatsText" Text="No statistics available." TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            </ScrollViewer>
+                                        </TabViewItem>
+                                        <TabViewItem Header="Activity Log" IsClosable="False">
+                                            <Grid RowSpacing="8" Padding="4,8">
+                                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                                <Button Content="Refresh log" Click="RefreshQueueLog_Click"/>
+                                                <TextBox x:Name="QueueJobLogText" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                                         MaxWidth="100000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                         FontFamily="Consolas" FontSize="12" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                                            </Grid>
+                                        </TabViewItem>
+                                    </TabView>
+                                </Grid>
+                            </Border>
                         </Grid>
+                        <StackPanel Grid.Row="3" Spacing="4">
+                            <InfoBar x:Name="QueueStorageWarning" IsOpen="False" IsClosable="False" Severity="Warning"
+                                     Title="Queue storage is unavailable"/>
+                            <TextBlock x:Name="QueueStatusText" FontSize="12" TextWrapping="Wrap" Text="Add a configured source to begin."
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <ProgressBar x:Name="QueueEncodeProgress" Height="4" Minimum="0" Maximum="100" Value="0" Visibility="Collapsed"/>
+                        </StackPanel>
                     </Grid>
 
                     <local:PreferencesView x:Name="SettingsPanel" Visibility="Collapsed" />

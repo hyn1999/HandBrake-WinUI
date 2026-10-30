@@ -54,98 +54,117 @@ public sealed partial class MainWindow
 
     private async void StartEncode_Click(object sender, RoutedEventArgs e)
     {
-        if (encodeRunning) return;
-
-        if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll")))
-        {
-            QueueStatusText.Text = "The matching native HandBrake engine (hb.dll) is missing. Build the full native package before encoding.";
-            return;
-        }
-
-        if (nativePresetChoices.Count == 0)
-        {
-            QueueStatusText.Text = "Native presets are not loaded. Verify hb.dll and restart the application.";
-            return;
-        }
-
-        List<QueueDraft> jobs = draftQueue.Where(item => item.HasVideoConfiguration).ToList();
-        if (jobs.Count == 0)
-        {
-            QueueStatusText.Text = "There are no configured jobs. Scan a title, choose a native preset, then select Add to queue.";
-            return;
-        }
-
-        foreach (QueueDraft draft in jobs)
-        {
-            if (!File.Exists(draft.SourcePath) && !Directory.Exists(draft.SourcePath))
-            {
-                QueueStatusText.Text = $"Source no longer exists: {draft.SourcePath}";
-                return;
-            }
-
-            if (string.IsNullOrWhiteSpace(draft.DestinationPath) ||
-                !Directory.Exists(Path.GetDirectoryName(draft.DestinationPath)))
-            {
-                QueueStatusText.Text = $"Output folder is unavailable for {draft.DisplayName}. Choose a valid destination folder.";
-                return;
-            }
-
-            if (!nativePresetChoices.Any(choice => choice.Key == draft.PresetKey))
-            {
-                QueueStatusText.Text = $"Preset '{draft.PresetName}' is not available in the current native engine. Re-stage this item with a current preset.";
-                return;
-            }
-
-            string sourceFullPath = Path.GetFullPath(draft.SourcePath);
-            string outputFullPath = Path.GetFullPath(draft.DestinationPath);
-            if (string.Equals(sourceFullPath, outputFullPath, StringComparison.OrdinalIgnoreCase))
-            {
-                QueueStatusText.Text = $"The output path cannot overwrite its source: {draft.SourcePath}";
-                return;
-            }
-        }
-
-        var destinations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        var sourcePaths = jobs.Select(job => Path.GetFullPath(job.SourcePath))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        foreach (QueueDraft draft in jobs)
-        {
-            string output = Path.GetFullPath(draft.DestinationPath!);
-            if (!destinations.Add(output) || sourcePaths.Contains(output))
-            {
-                QueueStatusText.Text = "Queue destinations must be unique and must not overwrite any queued source.";
-                return;
-            }
-        }
-
-        var existingOutputs = jobs.Where(job => File.Exists(job.DestinationPath)).ToList();
-        if (existingOutputs.Count > 0)
-        {
-            var dialog = new ContentDialog
-            {
-                XamlRoot = WindowRoot.XamlRoot,
-                Title = "Replace existing output files?",
-                Content = $"{existingOutputs.Count} output file(s) already exist. HandBrake will replace them if you continue.",
-                PrimaryButtonText = "Replace and encode",
-                CloseButtonText = "Cancel",
-                DefaultButton = ContentDialogButton.Close
-            };
-            if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
-        }
-
-        activeEncodeQueue = jobs;
-        activeEncodeQueueIndex = 0;
-        encodeStopRequested = false;
-        encodeRunning = true;
-        encodeScanning = false;
+        if (encodeRunning || preparingEncodeQueue) return;
+        preparingEncodeQueue = true;
         UpdateEncodeControls();
-        QueueEncodeProgress.Visibility = Visibility.Visible;
-        QueueEncodeProgress.IsIndeterminate = true;
-        QueueEncodeProgress.Value = 0;
-        QueueStatusText.Text = $"Preparing native encode queue · {jobs.Count} job(s).";
-        AppNavigation.SelectedItem = AppNavigation.MenuItems[1];
-        StartNextQueueItem();
+        try
+        {
+
+            if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll")))
+            {
+                QueueStatusText.Text = "The matching native HandBrake engine (hb.dll) is missing. Build the full native package before encoding.";
+                return;
+            }
+
+            if (nativePresetChoices.Count == 0)
+            {
+                QueueStatusText.Text = "Native presets are not loaded. Verify hb.dll and restart the application.";
+                return;
+            }
+
+            List<QueueDraft> jobs = draftQueue.Where(item => item.IsPending).ToList();
+            if (jobs.Count == 0)
+            {
+                QueueStatusText.Text = "There are no waiting jobs. Add a configured source or reset a job to retry.";
+                return;
+            }
+
+            foreach (QueueDraft draft in jobs)
+            {
+                if (!File.Exists(draft.SourcePath) && !Directory.Exists(draft.SourcePath))
+                {
+                    FailQueueValidation(draft, $"Source no longer exists: {draft.SourcePath}");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(draft.DestinationPath) ||
+                    !Path.IsPathFullyQualified(draft.DestinationPath) || Directory.Exists(draft.DestinationPath) ||
+                    string.IsNullOrWhiteSpace(Path.GetFileName(draft.DestinationPath)) ||
+                    !Directory.Exists(Path.GetDirectoryName(draft.DestinationPath)))
+                {
+                    FailQueueValidation(draft, $"Output folder is unavailable for {draft.DisplayName}. Choose a valid destination folder.");
+                    return;
+                }
+
+                if (!nativePresetChoices.Any(choice => choice.Key == draft.PresetKey))
+                {
+                    FailQueueValidation(draft, $"Preset '{draft.PresetName}' is not available in the current native engine. Re-stage this item with a current preset.");
+                    return;
+                }
+
+                string sourceFullPath = Path.GetFullPath(draft.SourcePath);
+                string outputFullPath = Path.GetFullPath(draft.DestinationPath);
+                if (string.Equals(sourceFullPath, outputFullPath, StringComparison.OrdinalIgnoreCase))
+                {
+                    FailQueueValidation(draft, $"The output path cannot overwrite its source: {draft.SourcePath}");
+                    return;
+                }
+            }
+
+            var destinations = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            var sourcePaths = draftQueue.Where(job => File.Exists(job.SourcePath) || Directory.Exists(job.SourcePath))
+                .Select(job => Path.GetFullPath(job.SourcePath))
+                .ToHashSet(StringComparer.OrdinalIgnoreCase);
+            foreach (QueueDraft draft in jobs)
+            {
+                string output = Path.GetFullPath(draft.DestinationPath!);
+                if (!destinations.Add(output) || sourcePaths.Contains(output))
+                {
+                    FailQueueValidation(draft, "Queue destinations must be unique and must not overwrite any queued source.");
+                    return;
+                }
+            }
+
+            var existingOutputs = jobs.Where(job => File.Exists(job.DestinationPath)).ToList();
+            if (existingOutputs.Count > 0)
+            {
+                var dialog = new ContentDialog
+                {
+                    XamlRoot = WindowRoot.XamlRoot,
+                    Title = "Replace existing output files?",
+                    Content = $"{existingOutputs.Count} output file(s) already exist. HandBrake will replace them if you continue.",
+                    PrimaryButtonText = "Replace and encode",
+                    CloseButtonText = "Cancel",
+                    DefaultButton = ContentDialogButton.Close
+                };
+                if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+            }
+
+            activeEncodeQueue = jobs;
+            activeEncodeQueueIndex = 0;
+            encodeStopRequested = false;
+            encodeRunning = true;
+            encodeScanning = false;
+            UpdateEncodeControls();
+            QueueEncodeProgress.Visibility = Visibility.Visible;
+            QueueEncodeProgress.IsIndeterminate = true;
+            QueueEncodeProgress.Value = 0;
+            QueueStatusText.Text = $"Preparing native encode queue · {jobs.Count} job(s).";
+            AppNavigation.SelectedItem = AppNavigation.MenuItems[1];
+            StartNextQueueItem();
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException or ArgumentException or InvalidOperationException)
+        {
+            if (encodeRunning) FinishEncodeRun("Queue could not start: " + error.Message);
+            else QueueStatusText.Text = "Queue could not start: " + error.Message;
+        }
+        finally
+        {
+            preparingEncodeQueue = false;
+            UpdateEncodeControls();
+        }
     }
+
 
     private void StartNextQueueItem()
     {
@@ -158,6 +177,8 @@ public sealed partial class MainWindow
         }
 
         QueueDraft draft = activeEncodeQueue[activeEncodeQueueIndex];
+        encodeScanning = true;
+        BeginQueueJob(draft);
         if (!File.Exists(draft.SourcePath) && !Directory.Exists(draft.SourcePath))
         {
             FinishEncodeRun($"Queue stopped: source is missing for {draft.DisplayName}.");
@@ -196,9 +217,16 @@ public sealed partial class MainWindow
     {
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (!encodeRunning || !encodeScanning) return;
+            if (!encodeRunning || !encodeScanning || !ReferenceEquals(sender, encodeInstance)) return;
             QueueEncodeProgress.IsIndeterminate = false;
-            QueueEncodeProgress.Value = Math.Clamp(e.Progress * 100, 0, 100);
+            QueueEncodeProgress.Value = double.IsFinite(e.Progress) ? Math.Clamp(e.Progress * 100, 0, 100) : 0;
+            if (ActiveQueueJob is { } scanning)
+            {
+                scanning.Progress = QueueEncodeProgress.Value;
+                scanning.NotifyRuntimeChanged();
+                CheckpointQueueProgress();
+                if (DraftQueueList.SelectedItem == scanning) UpdateQueueStatistics(scanning);
+            }
             QueueStatusText.Text =
                 $"Scanning {activeEncodeQueueIndex + 1}/{activeEncodeQueue.Count} · " +
                 $"title {e.CurrentTitle}/{e.Titles} · {QueueEncodeProgress.Value:0}%";
@@ -212,7 +240,7 @@ public sealed partial class MainWindow
 
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (!encodeRunning) return;
+            if (!encodeRunning || !ReferenceEquals(sender, encodeInstance)) return;
             encodeScanning = false;
 
             if (encodeStopRequested)
@@ -245,6 +273,12 @@ public sealed partial class MainWindow
                 QueueStatusText.Text =
                     $"Starting {activeEncodeQueueIndex + 1}/{activeEncodeQueue.Count} · {draft.DisplayName}";
                 SaveEncodeJobDiagnostic(job);
+                SaveQueueJobJson(draft, job);
+                draft.State = "Encoding";
+                draft.Progress = 0;
+                draft.NotifyRuntimeChanged();
+                SaveDraftQueue();
+                UpdateQueueUi();
                 encodeInstance.StartEncode(job);
             }
             catch (Exception ex)
@@ -258,10 +292,16 @@ public sealed partial class MainWindow
     {
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (!encodeRunning || encodeStopRequested) return;
+            if (!encodeRunning || encodeStopRequested || encodePaused || !ReferenceEquals(sender, encodeInstance)) return;
             QueueEncodeProgress.IsIndeterminate = false;
-            QueueEncodeProgress.Value = Math.Clamp(e.FractionComplete * 100, 0, 100);
+            QueueEncodeProgress.Value = double.IsFinite(e.FractionComplete) ? Math.Clamp(e.FractionComplete * 100, 0, 100) : 0;
             QueueDraft draft = activeEncodeQueue[activeEncodeQueueIndex];
+            draft.Progress = QueueEncodeProgress.Value;
+            draft.AverageFps = double.IsFinite(e.AverageFrameRate) && e.AverageFrameRate > 0 ? e.AverageFrameRate : 0;
+            draft.RemainingSeconds = e.EstimatedTimeLeft > TimeSpan.Zero ? e.EstimatedTimeLeft.TotalSeconds : null;
+            draft.NotifyRuntimeChanged();
+            CheckpointQueueProgress();
+            if (DraftQueueList.SelectedItem == draft) UpdateQueueStatistics(draft);
             string fps = e.AverageFrameRate > 0 ? $" · {e.AverageFrameRate:0.0} fps" : string.Empty;
             string eta = e.EstimatedTimeLeft > TimeSpan.Zero
                 ? $" · ETA {FormatEncodeTime(e.EstimatedTimeLeft)}"
@@ -276,7 +316,7 @@ public sealed partial class MainWindow
     {
         DispatcherQueue.TryEnqueue(() =>
         {
-            if (!encodeRunning) return;
+            if (!encodeRunning || !ReferenceEquals(sender, encodeInstance)) return;
             if (encodeStopRequested)
             {
                 FinishEncodeRun("Encode queue stopped by user.");
@@ -286,22 +326,41 @@ public sealed partial class MainWindow
             QueueDraft draft = activeEncodeQueue[activeEncodeQueueIndex];
             if (e.Error != 0)
             {
+                draft.NativeErrorCode = e.Error;
                 FinishEncodeRun(
                     SaveEncodeFailureDiagnostic($"Encoding failed for {draft.DisplayName} (native error {e.Error})."));
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(draft.DestinationPath) ||
-                !File.Exists(draft.DestinationPath) ||
-                new FileInfo(draft.DestinationPath).Length == 0)
+            long outputBytes;
+            try
             {
-                FinishEncodeRun(
-                    $"HandBrake reported completion, but the output file is missing or empty: {draft.DestinationPath}");
+                outputBytes = !string.IsNullOrWhiteSpace(draft.DestinationPath) && File.Exists(draft.DestinationPath)
+                    ? new FileInfo(draft.DestinationPath).Length : 0;
+            }
+            catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+            {
+                FinishEncodeRun("Unable to verify the output: " + error.Message);
+                return;
+            }
+            if (outputBytes <= 0)
+            {
+                FinishEncodeRun($"HandBrake reported completion, but the output file is missing or empty: {draft.DestinationPath}");
                 return;
             }
 
-            activeEncodeQueueIndex++;
+            draft.State = "Completed";
+            draft.Progress = 100;
+            draft.RemainingSeconds = null;
+            draft.FinishedAt = DateTimeOffset.Now;
+            draft.OutputBytes = outputBytes;
+            draft.NotifyRuntimeChanged();
+            QueueJobNote(draft, "Completed successfully");
+            SaveDraftQueue();
             ReleaseEncodeInstance();
+            lock (NativeLogLock) activeQueueLogPath = null;
+            activeEncodeQueueIndex++;
+            UpdateQueueUi();
             StartNextQueueItem();
         });
     }
@@ -311,6 +370,7 @@ public sealed partial class MainWindow
         if (!encodeRunning) return;
         encodeStopRequested = true;
         QueueStatusText.Text = "Stopping the current native task…";
+        UpdateEncodeControls();
 
         try
         {
@@ -321,6 +381,7 @@ public sealed partial class MainWindow
             }
             else
             {
+                if (encodePaused) { encodeInstance?.ResumeEncode(); encodePaused = false; }
                 // Let the native poller report WorkDone before releasing its instance.
                 encodeInstance?.StopEncode();
                 QueueStatusText.Text = "Stop requested. Waiting for the native engine to finish shutting down…";
@@ -415,10 +476,22 @@ public sealed partial class MainWindow
 
     private void FinishEncodeRun(string message)
     {
+        if (ActiveQueueJob is { } job && job.State is not ("Completed" or "Failed" or "Canceled"))
+        {
+            job.State = encodeStopRequested ? "Canceled" : "Failed";
+            job.LastError = encodeStopRequested ? null : message;
+            job.FinishedAt = DateTimeOffset.Now;
+            job.RemainingSeconds = null;
+            job.NotifyRuntimeChanged();
+            QueueJobNote(job, message);
+            SaveDraftQueue();
+        }
+        encodePaused = false;
         encodeRunning = false;
         encodeScanning = false;
         encodeStopRequested = false;
         ReleaseEncodeInstance();
+        lock (NativeLogLock) activeQueueLogPath = null;
         QueueEncodeProgress.IsIndeterminate = false;
         QueueEncodeProgress.Value = 0;
         QueueEncodeProgress.Visibility = Visibility.Collapsed;
@@ -445,12 +518,23 @@ public sealed partial class MainWindow
     {
         bool nativeReady = File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll")) &&
             nativePresetChoices.Count > 0;
-        bool hasRunnableJobs = draftQueue.Any(item => item.HasVideoConfiguration);
-        StartEncodeButton.IsEnabled = !encodeRunning && nativeReady && hasRunnableJobs;
-        StartQueueEncodeButton.IsEnabled = !encodeRunning && nativeReady && hasRunnableJobs;
-        CancelEncodeButton.IsEnabled = encodeRunning;
-        RemoveDraftButton.IsEnabled = !encodeRunning && DraftQueueList.SelectedItem is QueueDraft;
-        ClearDraftsButton.IsEnabled = !encodeRunning && draftQueue.Count > 0;
-        StageQueueButton.IsEnabled = !encodeRunning && selectedSourcePaths.Count > 0;
+        bool hasRunnableJobs = draftQueue.Any(item => item.IsPending);
+        StartEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady && hasRunnableJobs;
+        StartQueueEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady && hasRunnableJobs;
+        CancelEncodeButton.IsEnabled = encodeRunning && !encodeStopRequested;
+        PauseQueueButton.IsEnabled = encodeRunning && !encodeScanning && !encodeStopRequested;
+        PauseQueueButton.Label = encodePaused ? "Resume" : "Pause";
+        PauseQueueButton.Icon = new SymbolIcon(encodePaused ? Symbol.Play : Symbol.Pause);
+        bool editable = !encodeRunning && !preparingEncodeQueue;
+        var selected = DraftQueueList.SelectedItem as QueueDraft;
+        int selectedIndex = selected is null ? -1 : draftQueue.IndexOf(selected);
+        ResetQueueJobButton.IsEnabled = editable && selected?.HasVideoConfiguration == true && selected.State != "Waiting";
+        MoveQueueUpButton.IsEnabled = editable && selectedIndex > 0;
+        MoveQueueDownButton.IsEnabled = editable && selectedIndex >= 0 && selectedIndex < draftQueue.Count - 1;
+        OpenQueueSourceButton.IsEnabled = editable && selected is not null;
+        OpenQueueOutputButton.IsEnabled = selected is not null && !string.IsNullOrWhiteSpace(selected.DestinationPath);
+        RemoveDraftButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && DraftQueueList.SelectedItem is QueueDraft;
+        ClearDraftsButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && draftQueue.Count > 0;
+        StageQueueButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && selectedSourcePaths.Count > 0;
     }
 }

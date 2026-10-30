@@ -50,7 +50,15 @@ public sealed partial class MainWindow
                 string path = Path.Combine(DiagnosticsFolder, "native.log");
                 if (File.Exists(path) && new FileInfo(path).Length > 2 * 1024 * 1024)
                     File.Move(path, path + ".previous", overwrite: true);
-                File.AppendAllText(path, $"{DateTimeOffset.Now:O} {args.Message}{Environment.NewLine}");
+                string line = $"{DateTimeOffset.Now:O} {args.Message}{Environment.NewLine}";
+                File.AppendAllText(path, line);
+                if (activeQueueLogPath is { } jobPath)
+                {
+                    Directory.CreateDirectory(Path.GetDirectoryName(jobPath)!);
+                    if (File.Exists(jobPath) && new FileInfo(jobPath).Length > 2 * 1024 * 1024)
+                        File.Move(jobPath, jobPath + ".previous", overwrite: true);
+                    File.AppendAllText(jobPath, line);
+                }
             }
         }
         catch (Exception failure) when (failure is IOException or UnauthorizedAccessException)
@@ -82,8 +90,19 @@ public sealed partial class MainWindow
             Directory.CreateDirectory(DiagnosticsFolder);
             string path = Path.Combine(DiagnosticsFolder, "last-encode-error.txt");
             string recent;
-            lock (NativeLogLock) recent = string.Join(Environment.NewLine, RecentNativeMessages);
-            File.WriteAllText(path, $"{DateTimeOffset.Now:O}\n{message}\n{error}\nRecent native messages:\n{recent}");
+            string? jobPath;
+            lock (NativeLogLock)
+            {
+                recent = string.Join(Environment.NewLine, RecentNativeMessages);
+                jobPath = activeQueueLogPath;
+            }
+            string report = $"{DateTimeOffset.Now:O}\n{message}\n{error}\nRecent native messages:\n{recent}";
+            File.WriteAllText(path, report);
+            if (jobPath is not null)
+            {
+                path = Path.ChangeExtension(jobPath, ".error.txt");
+                File.WriteAllText(path, report);
+            }
             return message + " Diagnostic: " + path;
         }
         catch (Exception failure) when (failure is IOException or UnauthorizedAccessException)

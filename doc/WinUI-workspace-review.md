@@ -132,3 +132,29 @@ Visual density and responsive breakpoints require checking in the next batched W
 7. These changes still require one batched Windows build and the reported error-3 reproduction before encode reliability can be declared.
 
 The editor review also corrected earlier group-disabling code: panel containers are now wrapped in non-focusable ContentControl gates, keeping native disabled/focus behaviour for their child controls. The earlier StackPanel.IsEnabled assignments were invalid for WinUI. This was checked against Microsoft's Control.IsEnabled API documentation, alongside the structural validation; it does not substitute for compiling the application.
+
+## Queue management follow-up
+
+- Replaced the full-width draft list and technical InfoBar with compact status rows, native command bars and a selected-job details card. Wide windows use list/details columns; narrow windows stack them. Summary, Statistics and Activity Log are functional views.
+- Queue records now have stable IDs, notifications and persisted Waiting/Scanning/Encoding/Paused/Completed/Failed/Canceled/Interrupted states, progress, FPS, ETA, timestamps, output size and failure information. Source-only entries are explicitly marked Needs setup.
+- Startup converts unfinished active states to Interrupted, preserving the job and requiring an explicit reset. A failed queue JSON read does not overwrite the original file during initialization.
+- Start only selects configured Waiting jobs. Completed, failed and canceled jobs do not rerun automatically. Reset/Retry explicitly returns a configured job to Waiting; existing-output replacement still requires the existing confirmation.
+- Added real Pause/Resume calls, persisted selected-job retry/reset and queue reordering, opening source in Workspace and opening the output folder. Mutating actions are blocked while preflight or an encode run is active.
+- Per-job log, exact submitted JSON and error report live under diagnostics/jobs using the stable ID. Logs are bounded/rotated, Activity Log shows a bounded live tail, and an older job's failure no longer points only at a global report overwritten by the next job.
+- Runtime state is saved on transitions and checkpointed during progress. Late callbacks from an older native instance are ignored. Non-finite native progress/FPS values are sanitized before persistence/UI updates.
+- Preflight errors are attached to the affected job; output paths must be absolute filenames in an existing directory, unique among waiting jobs, and cannot overwrite any existing queued source. Output existence/size is verified before marking Completed.
+- The selected-job Summary preserves declared snapshot options before scanning and adds resolved filter/track information after native job construction. Unresolved preset-derived details are labeled as preset rules, not guessed.
+- Remaining Queue work: complete round-trip Edit restoring every saved field into Workspace, completion actions (When Done), queue import/export, richer pass/frame statistics and selection/batch commands. Opening a source is not presented as a full Edit operation.
+- This stage does not fix or verify the previously reported native error 3; it improves job-specific diagnostics and state handling.
+- XAML, names and handler references were checked. No C# compilation, native encode or Actions run was performed; the next batched Windows build must validate the runtime paths.
+
+### Next Windows Queue validation
+
+1. Load legacy drafts and stateful records; restart with Scanning/Encoding/Paused records and confirm Interrupted without automatic rerun.
+2. Run two distinct-output jobs through successful completion; confirm only Waiting jobs start, states/timestamps/output sizes persist and Completed jobs remain skipped on the next Start.
+3. Reproduce native error 3, missing sources, invalid destinations and duplicate outputs; confirm the correct row, error code/report and log are retained while later jobs remain waiting.
+4. Pause/resume, stop while scanning/encoding/paused, then restart/reset; confirm former-instance callbacks cannot change the new job.
+5. Reorder, remove, clear and retry outside a run; verify mutation is blocked during overwrite confirmation and native execution.
+6. Select different jobs while another encodes; check that statistics/logs belong to the selected job and that each job's diagnostics survive subsequent failures.
+7. Check log rotation, missing diagnostics and unwritable persistence folders; UI should stay responsive and errors must be visible.
+8. Check light/dark themes, native command overflow, keyboard operation and short/narrow window layouts.

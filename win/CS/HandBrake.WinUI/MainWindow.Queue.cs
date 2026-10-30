@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
@@ -16,8 +17,38 @@ namespace HandBrake.WinUI;
 /// The complete audio, subtitle, geometry and filter job graph must be built
 /// and validated before the encode action can be enabled.
 /// </summary>
-public sealed class QueueDraft
+public sealed class QueueDraft : INotifyPropertyChanged
 {
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string State { get; set; } = "Waiting";
+    public double Progress { get; set; }
+    public double AverageFps { get; set; }
+    public double? RemainingSeconds { get; set; }
+    public DateTimeOffset? StartedAt { get; set; }
+    public DateTimeOffset? FinishedAt { get; set; }
+    public long? OutputBytes { get; set; }
+    public string? LastError { get; set; }
+    public int? NativeErrorCode { get; set; }
+    public string? ResolvedSummary { get; set; }
+    public event PropertyChangedEventHandler? PropertyChanged;
+    public void NotifyRuntimeChanged()
+    {
+        foreach (string name in new[] { nameof(State), nameof(StateText), nameof(StateIcon), nameof(Progress), nameof(RowSummary), nameof(OutputName) })
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+    }
+    [JsonIgnore] public bool IsPending => HasVideoConfiguration && State == "Waiting";
+    [JsonIgnore] public Symbol StateIcon => !HasVideoConfiguration ? Symbol.OpenFile : State switch
+    {
+        "Completed" => Symbol.Accept, "Failed" or "Interrupted" => Symbol.Important,
+        "Paused" => Symbol.Pause, "Encoding" => Symbol.Play, "Scanning" => Symbol.Find,
+        "Canceled" => Symbol.Cancel, _ => Symbol.Clock
+    };
+    [JsonIgnore] public string StateText => !HasVideoConfiguration ? "Needs setup" : State;
+    [JsonIgnore] public string OutputName => string.IsNullOrWhiteSpace(DestinationPath) ? DisplayName : Path.GetFileName(DestinationPath);
+    [JsonIgnore] public string RowSummary => StateText + (State is "Scanning" or "Encoding" or "Paused" ? $" · {Progress:0}%" : "") + (string.IsNullOrEmpty(PresetName) ? "" : " · " + PresetName);
+    [JsonIgnore] public string JobLogPath => Path.Combine(Path.GetDirectoryName(AppPreferences.StorageFile)!, "diagnostics", "jobs", Id.ToString("N") + ".log");
+    [JsonIgnore] public string JobJsonPath => Path.ChangeExtension(JobLogPath, ".json");
+
     public string? NativePresetJson { get; set; }
     public EncodeSelection? Selection { get; set; }
     public bool UsePresetAudio { get; set; }
@@ -59,13 +90,13 @@ public sealed class QueueDraft
         ? $"Title {TitleIndex} · {PresetName} · {VideoEncoder} · " +
           (VideoRateControl == "ConstantQuality"
               ? $"quality {VideoQuality:0.##}" : $"{VideoBitrateKbps} kbps") +
-          $" · {Container} · ready to encode"
-        : "Source-only draft · scan a title and select a native preset to configure";
+          $" · {Container} · {StateText}"
+        : "Open the source in Workspace to configure this job.";
 
     [JsonIgnore]
     public string DestinationSummary => string.IsNullOrWhiteSpace(DestinationPath)
         ? "No destination configured"
-        : "Suggested destination: " + DestinationPath;
+        : "Destination: " + DestinationPath;
 }
 
 public sealed partial class MainWindow
@@ -78,6 +109,7 @@ public sealed partial class MainWindow
     private void InitializeDraftQueue()
     {
         DraftQueueList.ItemsSource = draftQueue;
+        bool loadedQueue = false;
         try
         {
             if (File.Exists(DraftQueueFile))
@@ -85,15 +117,30 @@ public sealed partial class MainWindow
                 var saved = JsonSerializer.Deserialize<QueueDraft[]>(File.ReadAllText(DraftQueueFile));
                 if (saved is not null)
                 {
-                    foreach (var item in saved.Where(x => !string.IsNullOrWhiteSpace(x.SourcePath)))
+                    loadedQueue = true;
+                    foreach (var item in saved.Where(x => x is not null && !string.IsNullOrWhiteSpace(x.SourcePath)))
+                    {
+                        if (item.Id == Guid.Empty || draftQueue.Any(previous => previous.Id == item.Id)) item.Id = Guid.NewGuid();
+                        if (item.State is "Scanning" or "Encoding" or "Paused")
+                        {
+                            item.State = "Interrupted";
+                            item.FinishedAt = DateTimeOffset.Now;
+                            item.LastError = "The previous session ended before this job completed. Reset it to retry.";
+                        }
+                        if (item.State is not ("Waiting" or "Completed" or "Failed" or "Canceled" or "Interrupted")) item.State = "Waiting";
                         draftQueue.Add(item);
+                    }
                 }
             }
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or JsonException)
         {
-            QueueStatusText.Text = "Unable to load saved queue drafts: " + ex.Message;
+            QueueStatusText.Text = "Unable to load saved queue: " + ex.Message;
+            QueueStorageWarning.Message = QueueStatusText.Text;
+            QueueStorageWarning.IsOpen = true;
         }
+        InitializeQueueLogRefresh();
+        if (loadedQueue) SaveDraftQueue();
         UpdateQueueUi();
         UpdateEncodeControls();
     }
@@ -166,6 +213,7 @@ public sealed partial class MainWindow
 
     private void StageQueue_Click(object sender, RoutedEventArgs e)
     {
+        if (encodeRunning || preparingEncodeQueue) return;
         int added = 0, updated = 0, configured = 0;
         bool singleSource = selectedSourcePaths.Count == 1;
 
@@ -176,7 +224,7 @@ public sealed partial class MainWindow
 
             QueueDraft draft;
             try { draft = CreateDraft(path, singleSource); }
-            catch (Exception error) when (error is InvalidOperationException or IOException or UnauthorizedAccessException or System.Text.DecoderFallbackException)
+            catch (Exception error) when (error is InvalidOperationException or IOException or UnauthorizedAccessException or ArgumentException)
             {
                 QueueStatusText.Text = error.Message;
                 return;
@@ -191,7 +239,8 @@ public sealed partial class MainWindow
                 QueueDraft previous = draftQueue[i];
                 if (!string.Equals(previous.SourcePath, path, StringComparison.OrdinalIgnoreCase))
                     continue;
-                if (previous.TitleIndex == draft.TitleIndex ||
+                if ((previous.State == "Waiting" && previous.TitleIndex == draft.TitleIndex &&
+                    string.Equals(previous.DestinationPath, draft.DestinationPath, StringComparison.OrdinalIgnoreCase)) ||
                     (previous.TitleIndex is null && draft.TitleIndex.HasValue))
                 {
                     existing = i;
@@ -201,6 +250,7 @@ public sealed partial class MainWindow
 
             if (existing >= 0)
             {
+                draft.Id = draftQueue[existing].Id;
                 draftQueue[existing] = draft;
                 updated++;
             }
@@ -212,10 +262,10 @@ public sealed partial class MainWindow
         }
 
         QueueStatusText.Text = added + updated > 0
-            ? $"Staged {added} new, updated {updated} source(s); {configured} with native preset/video settings. No encoding has started."
+            ? $"Added {added} job(s), updated {updated}; {configured} ready."
             : "No accessible sources to stage.";
         if (added + updated > 0 && configured == 0)
-            QueueStatusText.Text += " To configure a draft, scan one source, select a title, and choose a compatible native preset/encoder.";
+            QueueStatusText.Text += " Open a source in Workspace, scan it and choose compatible output settings.";
         SaveDraftQueue();
         UpdateQueueUi();
         AppNavigation.SelectedItem = AppNavigation.MenuItems[1];
@@ -226,41 +276,46 @@ public sealed partial class MainWindow
 
     private void RemoveDraft_Click(object sender, RoutedEventArgs e)
     {
+        if (encodeRunning || preparingEncodeQueue) return;
         if (DraftQueueList.SelectedItem is not QueueDraft draft) return;
         draftQueue.Remove(draft);
-        QueueStatusText.Text = "Draft removed.";
+        QueueStatusText.Text = "Job removed.";
         SaveDraftQueue();
         UpdateQueueUi();
     }
 
     private async void ClearDrafts_Click(object sender, RoutedEventArgs e)
     {
-        if (draftQueue.Count == 0) return;
+        if (encodeRunning || preparingEncodeQueue || draftQueue.Count == 0) return;
         var dialog = new ContentDialog
         {
             XamlRoot = WindowRoot.XamlRoot,
-            Title = "Clear staged sources?",
+            Title = "Clear the queue?",
             Content = "This removes the WinUI draft queue only. No source files will be deleted.",
-            PrimaryButtonText = "Clear drafts",
+            PrimaryButtonText = "Clear queue",
             CloseButtonText = "Cancel",
             DefaultButton = ContentDialogButton.Close
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
+        if (encodeRunning || preparingEncodeQueue) return;
         draftQueue.Clear();
-        QueueStatusText.Text = "Draft queue cleared.";
+        QueueStatusText.Text = "Queue cleared.";
         SaveDraftQueue();
         UpdateQueueUi();
     }
 
     private void UpdateQueueUi()
     {
-        int configured = draftQueue.Count(x => x.HasVideoConfiguration);
-        QueueCountText.Text = draftQueue.Count == 0
-            ? "No staged sources"
-            : $"{draftQueue.Count} draft(s) · {configured} configured · none running";
-        RemoveDraftButton.IsEnabled = DraftQueueList.SelectedItem is QueueDraft;
-        ClearDraftsButton.IsEnabled = draftQueue.Count > 0;
+        int waiting = draftQueue.Count(job => job.IsPending);
+        int completed = draftQueue.Count(job => job.State == "Completed");
+        int failed = draftQueue.Count(job => job.State is "Failed" or "Interrupted");
+        int setup = draftQueue.Count(job => !job.HasVideoConfiguration);
+        QueueCountText.Text = $"{draftQueue.Count} job(s) · {waiting} waiting · {completed} completed · {failed} need attention" +
+            (setup > 0 ? $" · {setup} need setup" : "") +
+            (encodeRunning ? encodePaused ? " · paused" : " · running" : "");
+        if (DraftQueueList.SelectedItem is null && draftQueue.Count > 0) DraftQueueList.SelectedIndex = 0;
         UpdateEncodeControls();
+        RefreshQueueDetails();
     }
 
     private void SaveDraftQueue()
@@ -273,10 +328,13 @@ public sealed partial class MainWindow
             File.WriteAllText(temp, JsonSerializer.Serialize(draftQueue.ToArray(),
                 new JsonSerializerOptions { WriteIndented = true }));
             File.Move(temp, DraftQueueFile, overwrite: true);
+            QueueStorageWarning.IsOpen = false;
         }
         catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
         {
-            QueueStatusText.Text = "Unable to save queue drafts: " + ex.Message;
+            QueueStatusText.Text = "Unable to save queue: " + ex.Message;
+            QueueStorageWarning.Message = QueueStatusText.Text;
+            QueueStorageWarning.IsOpen = true;
         }
     }
 }
