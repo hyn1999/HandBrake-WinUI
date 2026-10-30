@@ -8,28 +8,9 @@ namespace HandBrake.WinUI;
 
 public sealed partial class MainWindow
 {
-    // Compact layout is scoped to the editor. It retains native templates and focus states.
+    // Compatibility entry point; shared density and row behavior live in Design.
     private static Grid CompactRow(params FrameworkElement[] fields)
-    {
-        var grid = new Grid { ColumnSpacing = 12, RowSpacing = 8, Margin = new Thickness(0, 4, 0, 8) };
-        foreach (var field in fields)
-        {
-            field.VerticalAlignment = VerticalAlignment.Center;
-            grid.Children.Add(field);
-        }
-        int previousColumns = -1;
-        grid.SizeChanged += (_, args) =>
-        {
-            int columns = args.NewSize.Width >= 900 ? fields.Length : args.NewSize.Width >= 560 ? Math.Min(2, fields.Length) : 1;
-            if (columns == previousColumns) return;
-            previousColumns = columns;
-            grid.ColumnDefinitions.Clear(); grid.RowDefinitions.Clear();
-            for (int column = 0; column < columns; column++) grid.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
-            for (int row = 0; row < (fields.Length + columns - 1) / columns; row++) grid.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
-            for (int i = 0; i < fields.Length; i++) { Grid.SetColumn(fields[i], i % columns); Grid.SetRow(fields[i], i / columns); }
-        };
-        return grid;
-    }
+        => Design.CompactUi.FormRow(fields);
 
     private async void BrowseDestination_Click(object sender, RoutedEventArgs args)
     {

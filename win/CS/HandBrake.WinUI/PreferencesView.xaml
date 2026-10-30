@@ -4,13 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     SizeChanged="PreferencesView_SizeChanged">
     <UserControl.Resources>
-        <Style x:Key="PreferencesCardStyle" TargetType="Border">
-            <Setter Property="Padding" Value="16" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
-            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
-        </Style>
+        <Style x:Key="PreferencesCardStyle" TargetType="Border" BasedOn="{StaticResource HBCompactCardStyle}"/>
     </UserControl.Resources>
     <Grid ColumnSpacing="16">
         <Grid.ColumnDefinitions>
@@ -263,4 +257,5 @@
         </Grid>
     </Grid>
 </UserControl>
+
 

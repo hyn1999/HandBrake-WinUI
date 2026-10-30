@@ -26,14 +26,14 @@ public sealed partial class MainWindow
     {
         presetMenuItems.Clear();
         var menu = new MenuFlyout();
-        reloadPresetItem = new MenuFlyoutItem { Text = "Reload selected preset" };
+        reloadPresetItem = Design.CompactUi.MenuItem(new MenuFlyoutItem { Text = "Reload selected preset" });
         reloadPresetItem.Click += (_, _) =>
         {
             ActivePresetChoice = nativePresetChoices.FirstOrDefault(item => item.Key == ActivePresetChoice?.Key)
                 ?? ActivePresetChoice;
             ApplyNativePreset();
         };
-        makeDefaultPresetItem = new MenuFlyoutItem { Text = "Set selected preset as default" };
+        makeDefaultPresetItem = Design.CompactUi.MenuItem(new MenuFlyoutItem { Text = "Set selected preset as default" });
         makeDefaultPresetItem.Click += (_, _) => SetDefaultPreset();
         ToolTipService.SetToolTip(makeDefaultPresetItem, "Use this preset's saved definition when the app starts.");
         menu.Items.Add(reloadPresetItem);
@@ -41,10 +41,10 @@ public sealed partial class MainWindow
         menu.Items.Add(new MenuFlyoutSeparator());
         foreach (var category in nativePresetChoices.GroupBy(choice => choice.Category))
         {
-            var group = new MenuFlyoutSubItem { Text = category.Key, MinHeight = 30, Padding = new Thickness(12, 4, 12, 4) };
+            var group = Design.CompactUi.MenuItem(new MenuFlyoutSubItem { Text = category.Key });
             foreach (var choice in category)
             {
-                var item = new ToggleMenuFlyoutItem { Text = choice.Preset.PresetName, MinHeight = 30, Padding = new Thickness(12, 4, 12, 4) };
+                var item = Design.CompactUi.MenuItem(new ToggleMenuFlyoutItem { Text = choice.Preset.PresetName });
                 string description = PresetHelp(choice);
                 ToolTipService.SetToolTip(item, new ToolTip
                 {

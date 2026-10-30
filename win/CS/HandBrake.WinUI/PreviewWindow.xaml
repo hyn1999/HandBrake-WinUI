@@ -13,13 +13,13 @@
         </Grid>
         <Grid Grid.Row="1" ColumnSpacing="12">
             <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-            <Button x:Name="PreviousButton" Click="Previous_Click" IsEnabled="False"
+            <Button x:Name="PreviousButton" Style="{StaticResource HBCompactIconButtonStyle}" Click="Previous_Click" IsEnabled="False"
                     AutomationProperties.Name="Previous preview frame" ToolTipService.ToolTip="Previous frame">
                 <SymbolIcon Symbol="Back"/>
             </Button>
             <TextBlock x:Name="FrameStatus" Grid.Column="1" Text="No frame" VerticalAlignment="Center"
                        HorizontalAlignment="Center" TextTrimming="CharacterEllipsis"/>
-            <Button x:Name="NextButton" Grid.Column="2" Click="Next_Click" IsEnabled="False"
+            <Button x:Name="NextButton" Style="{StaticResource HBCompactIconButtonStyle}" Grid.Column="2" Click="Next_Click" IsEnabled="False"
                     AutomationProperties.Name="Next preview frame" ToolTipService.ToolTip="Next frame">
                 <SymbolIcon Symbol="Forward"/>
             </Button>
