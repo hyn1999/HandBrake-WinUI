@@ -117,7 +117,7 @@
                                 <Button x:Name="CancelScanButton" Grid.Column="1"
                                         Visibility="Collapsed" Click="CancelScan_Click">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <SymbolIcon Symbol="Cancel" FontSize="16"/><TextBlock Text="Cancel scan" VerticalAlignment="Center"/>
+                                        <Viewbox Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Cancel"/></Viewbox><TextBlock Text="Cancel scan" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
                             </Grid>
@@ -377,7 +377,7 @@
                                                 IsEnabled="False" Width="32" Height="32" Padding="6"
                                                 AutomationProperties.Name="Expand preview"
                                                 ToolTipService.ToolTip="Open a larger preview window">
-                                            <SymbolIcon Symbol="FullScreen" FontSize="16"/>
+                                            <Viewbox Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="FullScreen"/></Viewbox>
                                         </Button>
                                     </Grid>
                                     <Grid Grid.Row="1" RowSpacing="8">
@@ -415,7 +415,7 @@
                                             <Button x:Name="PreviousPreviewButton" IsEnabled="False" Click="PreviousPreview_Click"
                                                     Width="32" Height="32" Padding="6"
                                                     AutomationProperties.Name="Previous preview frame" ToolTipService.ToolTip="Previous frame">
-                                                <SymbolIcon Symbol="Back" FontSize="16"/>
+                                                <Viewbox Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Back"/></Viewbox>
                                             </Button>
                                             <TextBlock x:Name="PreviewFrameCounterText" Grid.Column="1"
                                                        Text="No frame" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
@@ -424,7 +424,7 @@
                                             <Button x:Name="NextPreviewButton" Grid.Column="2" IsEnabled="False" Click="NextPreview_Click"
                                                     Width="32" Height="32" Padding="6"
                                                     AutomationProperties.Name="Next preview frame" ToolTipService.ToolTip="Next frame">
-                                                <SymbolIcon Symbol="Forward" FontSize="16"/>
+                                                <Viewbox Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Forward"/></Viewbox>
                                             </Button>
                                         </Grid>
                                     </Grid>
@@ -459,7 +459,7 @@
                                 </StackPanel>
                                 <Button Grid.Column="1" Click="BrowseDestination_Click" VerticalAlignment="Center" ToolTipService.ToolTip="Choose the output folder">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
-                                        <SymbolIcon Symbol="Folder" FontSize="16"/><TextBlock Text="Browse…" VerticalAlignment="Center"/>
+                                        <Viewbox Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Folder"/></Viewbox><TextBlock Text="Browse…" VerticalAlignment="Center"/>
                                     </StackPanel>
                                 </Button>
 
@@ -501,7 +501,7 @@
                                         <DataTemplate>
                                             <Grid ColumnSpacing="10" Padding="6,8" ToolTipService.ToolTip="{Binding DestinationPath}">
                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                                <SymbolIcon Symbol="{Binding StateIcon}" FontSize="16" VerticalAlignment="Center"/>
+                                                <Viewbox Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="{Binding StateIcon}" VerticalAlignment="Center"/></Viewbox>
                                                 <StackPanel Grid.Column="1" Spacing="2">
                                                     <TextBlock Text="{Binding OutputName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                                     <TextBlock Text="{Binding RowSummary}" FontSize="12" TextTrimming="CharacterEllipsis"
@@ -528,7 +528,7 @@
                                             <AppBarButton.Icon><SymbolIcon Symbol="Up"/></AppBarButton.Icon>
                                         </AppBarButton>
                                         <AppBarButton x:Name="MoveQueueDownButton" Label="Move down" Click="MoveQueueDown_Click" IsEnabled="False">
-                                            <AppBarButton.Icon><SymbolIcon Symbol="Down"/></AppBarButton.Icon>
+                                            <AppBarButton.Icon><FontIcon Glyph="&#xE74B;"/></AppBarButton.Icon>
                                         </AppBarButton>
                                         <AppBarButton x:Name="RemoveDraftButton" Label="Remove" Click="RemoveDraft_Click" IsEnabled="False">
                                             <AppBarButton.Icon><SymbolIcon Symbol="Delete"/></AppBarButton.Icon>
@@ -616,7 +616,7 @@
                                     <Border Background="{ThemeResource AccentFillColorDefaultBrush}" Opacity="0.08" CornerRadius="6"/>
                                 </Border>
                                 <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
-                                    <SymbolIcon Symbol="OpenFile" FontSize="32" HorizontalAlignment="Center"/>
+                                    <Viewbox Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="OpenFile" HorizontalAlignment="Center"/></Viewbox>
                                     <StackPanel Spacing="4">
                                         <TextBlock Text="Drop files or folders" FontSize="18" FontWeight="SemiBold"
                                                    TextAlignment="Center" TextWrapping="Wrap" />
@@ -639,7 +639,7 @@
                                     MinHeight="68" Padding="12">
                                 <Grid ColumnSpacing="12">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <SymbolIcon Symbol="OpenFile" FontSize="20" VerticalAlignment="Center" />
+                                    <Viewbox Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="OpenFile" VerticalAlignment="Center" /></Viewbox>
                                     <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="Browse files" FontSize="14" FontWeight="SemiBold" />
                                         <TextBlock Text="Select one or more videos" FontSize="13" TextWrapping="Wrap"
@@ -651,7 +651,7 @@
                                     HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="68" Padding="12">
                                 <Grid ColumnSpacing="12">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <SymbolIcon Symbol="Folder" FontSize="20" VerticalAlignment="Center" />
+                                    <Viewbox Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Folder" VerticalAlignment="Center" /></Viewbox>
                                     <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
                                         <TextBlock Text="Browse folder" FontSize="14" FontWeight="SemiBold" />
                                         <TextBlock Text="Scan a media folder" FontSize="13" TextWrapping="Wrap"
