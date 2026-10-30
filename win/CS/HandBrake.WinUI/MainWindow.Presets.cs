@@ -142,7 +142,10 @@ public sealed partial class MainWindow
             ChapterMarkersToggle.IsChecked = activePreset.ChapterMarkers;
             MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
             if (SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: HandBrake.Interop.Interop.Json.Scan.SourceTitle title })
+            {
                 DisplayChapterEditor(title);
+                ResetManualGeometryEditor(title);
+            }
             PresetDescriptionText.Text = string.IsNullOrWhiteSpace(activePreset.PresetDescription)
                 ? choice.DisplayName
                 : choice.DisplayName + "\n" + activePreset.PresetDescription;
@@ -371,3 +374,5 @@ public sealed partial class MainWindow
         string VideoEncoder, string RateControl, double? Quality,
         int? BitrateKbps, string? Framerate, string? EncoderSpeed);
 }
+
+

@@ -52,8 +52,15 @@ public sealed partial class MainWindow
         else if (!string.IsNullOrWhiteSpace(draft.VideoEncoderSpeed))
             preset["VideoPreset"] = draft.VideoEncoderSpeed;
 
+        // Geometry is input to native preset resolution, not a replacement for
+        // its generated filters. Rotation changes crop coordinates and PAR;
+        // padding must be computed from the newly scaled image.
+        if (draft.Geometry is { } manualGeometry)
+            ApplyManualGeometry(preset, manualGeometry, title);
         var job = JsonNode.Parse(instance.CreatePresetJob(title.Index, preset.ToJsonString()))?.AsObject()
             ?? throw new InvalidOperationException("HandBrake returned no preset job.");
+        if (draft.Geometry is { } requestedGeometry)
+            VerifyResolvedGeometry(job, requestedGeometry);
         var destination = job["Destination"]!.AsObject();
         destination["File"] = preview ? string.Empty : draft.DestinationPath;
         if (draft.ChapterMarkers.HasValue) destination["ChapterMarkers"] = draft.ChapterMarkers.Value;
@@ -129,19 +136,6 @@ public sealed partial class MainWindow
                 try { filters.Add(JsonSerializer.SerializeToNode(filter, JsonSettings.Options)); }
                 finally { filter.Settings?.Dispose(); }
             }
-        }
-        if (draft.Geometry is { } geometry)
-        {
-            ValidateGeometry(geometry, title);
-            string settings = $"width={geometry.Width}:height={geometry.Height}:crop-top={geometry.Top}:crop-bottom={geometry.Bottom}:crop-left={geometry.Left}:crop-right={geometry.Right}";
-            string json = HandBrakeFilterHelpers.GenerateFilterSettingJson((int)hb_filter_ids.HB_FILTER_CROP_SCALE, null, null, settings);
-            if (string.IsNullOrWhiteSpace(json) || json.Trim() == "null") throw new InvalidOperationException("HandBrake rejected the manual geometry.");
-            foreach (var filter in filters.ToList())
-                if (filter?["ID"]?.GetValue<int>() is int id &&
-                    (id == (int)hb_filter_ids.HB_FILTER_CROP_SCALE || id == (int)hb_filter_ids.HB_FILTER_ROTATE || id == (int)hb_filter_ids.HB_FILTER_PAD))
-                    filters.Remove(filter);
-            filters.Add(new JsonObject { ["ID"] = (int)hb_filter_ids.HB_FILTER_CROP_SCALE, ["Settings"] = JsonNode.Parse(json) });
-            job["PAR"] = new JsonObject { ["Num"] = Math.Max(1, title.Geometry?.PAR?.Num ?? 1), ["Den"] = Math.Max(1, title.Geometry?.PAR?.Den ?? 1) };
         }
         job["Filters"]!["FilterList"] = new JsonArray(filters.OrderBy(filter => filter!["ID"]!.GetValue<int>()).Select(filter => filter!.DeepClone()).ToArray());
         // Empty strings are not valid presets for every encoder; absence means default.

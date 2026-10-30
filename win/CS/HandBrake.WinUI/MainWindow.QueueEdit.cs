@@ -110,7 +110,7 @@ public sealed partial class MainWindow
             CustomGeometryToggle.IsChecked = saved.Geometry is not null;
             if (saved.Geometry is { } geometry)
             {
-                ValidateGeometry(geometry, title);
+                ValidateGeometry(geometry, title, JsonNode.Parse(saved.NativePresetJson!)!.AsObject());
                 OutputWidthBox.Value = geometry.Width; OutputHeightBox.Value = geometry.Height;
                 CropTopBox.Value = geometry.Top; CropBottomBox.Value = geometry.Bottom;
                 CropLeftBox.Value = geometry.Left; CropRightBox.Value = geometry.Right;

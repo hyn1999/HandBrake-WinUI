@@ -215,13 +215,13 @@
                                                                Text="Source dimensions will appear after scanning."
                                                                TextWrapping="Wrap" />
                                                     <CheckBox x:Name="CustomGeometryToggle" Content="Override preset geometry with manual dimensions and cropping" Checked="GeometryOverride_Toggled" Unchecked="GeometryOverride_Toggled" />
-                                                    <TextBlock Text="Enter encoded pixel dimensions. Source pixel aspect ratio is retained. Re-stage the queue item after editing." TextWrapping="Wrap" />
+                                                    <TextBlock Text="Set image dimensions before borders. Preset rotation, flip and borders are retained; quarter-turn rotation inverts the source pixel aspect ratio. Crop coordinates follow the rotated image. Add to queue or save the edited job to apply changes." TextWrapping="Wrap" />
                                                     <Grid ColumnSpacing="12">
                                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                         <NumberBox x:Name="OutputWidthBox" IsEnabled="False" Header="Width (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
                                                         <NumberBox x:Name="OutputHeightBox" IsEnabled="False" Grid.Column="1" Header="Height (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
                                                     </Grid>
-                                                    <TextBlock Text="Crop edges (source pixels)" FontWeight="SemiBold" />
+                                                    <TextBlock Text="Crop edges (pixels after preset rotation)" FontWeight="SemiBold" />
                                                     <Grid ColumnSpacing="12" RowSpacing="12">
                                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
