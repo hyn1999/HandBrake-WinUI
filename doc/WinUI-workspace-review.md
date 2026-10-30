@@ -1,0 +1,160 @@
+# Workspace review against the supplied WPF screenshots
+
+## Implemented in this pass
+
+- Smaller Workspace header and spacing; scoped compact control minimum heights.
+- Adaptive native-control rows for Filters, Audio, internal and imported subtitles.
+- Wider proportional preview with hide/show control on desktop and editor/preview switching on narrow windows.
+- Editable destination plus output-folder picker. Manual paths are captured in staged jobs and must be absolute with an existing parent folder.
+- Chapter-name editors saved per job and applied to native chapter output. Re-scan rejects changed chapter counts. Old drafts retain source names.
+- Geometry and foreign-audio search dependent controls disabled until enabled.
+- Separate source facts and configured output summary. Metadata source values appear as placeholders; overrides retain existing semantics.
+- Root shortcut tooltip suppression was already committed before this pass.
+
+## Native preset pipeline follow-up
+
+- Jobs now start from libhb's `hb_preset_job_init` after scanning the exact encode instance. The handwritten approximation of preset geometry, PAR, frame-rate filters and video settings was removed.
+- Built-in presets are retained as complete JSON snapshots in staged jobs. Unknown native fields are preserved.
+- New jobs default to native audio, subtitle and effect-filter selection rules. The manual editors are enabled only when the corresponding preset-rules option is turned off.
+- Old queue records retain their manual selection semantics. Re-stage a source to opt into the new native preset defaults.
+- Preview uses the same job builder with audio and foreign-audio scanning disabled for still frames.
+- Changing encoder removes incompatible preset-specific profile, tune and private encoder arguments.
+- Native dictionaries are released through libhb; managed UTF-8 buffers are freed after calls. Submission checks hb_add_json's positive sequence ID.
+- The diagnostic job file is the exact JSON submitted, with null fields omitted consistently. Failure reports include a bounded recent native log tail.
+- Native cache fingerprints exclude managed wrappers. Recovery compares native inputs with the successful integrated build, and package validation checks required native exports.
+- These are code changes, not proof that native error 3 has been resolved. A Windows end-to-end encode is still required.
+
+## Remaining Workspace functionality
+
+This is not complete WPF parity. These must be finished before declaring the replacement ready:
+- Native encode initialization failure (error 3): diagnostic logging exists, but the cause remains unconfirmed.
+- Source selection now supports angle and full/chapter/time/frame ranges; formatted time entry and richer range presentation remain refinements.
+- Saving new presets remains; container selection and MP4 flags are now editable.
+- Full geometry editing: rotation, flip, anamorphic/PAR, scaling limits/upscaling, borders and computed final geometry display. Native preset mode now resolves these settings in libhb.
+- Manual filter algorithm selection, custom settings and colours/grayscale. Native preset effects are now retained.
+- Video options now expose frame rate/mode, colour range, speed/tune/profile/level, multi-pass, turbo, fast decode and advanced arguments. Runtime validation across encoder families remains required.
+- Multiple audio outputs per input, passthrough/fallback, mixdown, sample rate, gain, DRC and selection rules.
+- Subtitle default/selection rules and wider import support.
+- Chapter duration display and import/export.
+- Explicit metadata removal/pass-through choices.
+- High-resolution Windows icon verification at all Explorer sizes.
+
+Queue and Preferences redesign are intentionally outside this pass.
+
+## Verification
+
+XAML parsed, named event handlers resolved, and control names checked for uniqueness.
+No Windows build, Actions run or interactive runtime validation was performed. This workspace has no .NET SDK. The P/Invoke signatures and JSON value ownership were reviewed against the matching libhb headers and implementation.
+Visual density and responsive breakpoints require checking in the next batched Windows build.
+
+
+## Next batched Windows validation
+
+1. Verify all native dictionary and preset exports in the packaged hb.dll (the workflow now checks them).
+2. Scan the reported 1080p source, re-stage it with General/Fast 480p30 and all three preset-rule options enabled, and encode to a fresh writable filename.
+3. Confirm native error 0, a non-empty playable output, capped output geometry with correct aspect ratio, expected frame rate, and audio.
+4. Repeat with Fast 1080p30, a source with multiple audio/subtitle tracks, and MKV output. Compare the exact submitted job with a native preset baseline.
+5. Turn preset rules off individually: confirm custom selection/silent audio, forced/burn limits, imported SRT and selected effect filters.
+6. Check manual geometry and renamed chapters, repeated jobs, cancellation, restart, and an older queue-drafts.json file.
+7. If error 3 remains, inspect last-encode-error.txt plus native.log for the failing thread and its preceding error. Do not infer the cause from the numeric code alone.
+
+
+## Preset picker presentation
+
+- Native cascading menus group presets by their catalog category. Entries show the preset name, a selection checkmark, and the default marker.
+- Each entry and the selected-preset button expose the native description in a wrapped tooltip and accessibility help text.
+- The user-selected default is stored independently of the last-used preset. Startup selects that default; if it is missing, the native default, General/Fast 1080p30, then the first available entry are used in order.
+- Default and Modified badges remain visible next to the selected preset. Choosing a new default stores the preset definition, not the current editor overrides.
+- Modified is recalculated from current effective editor state, rather than latched on the first event. It covers video encoder/rate mode/active quality or bitrate, manual geometry, manual audio/subtitle/filter modes, chapter markers/names and metadata overrides.
+- Inactive bitrate/quality controls, dormant manual editors, opening a source, navigating tabs, destination editing and preview navigation do not dirty the preset.
+- Reload selected preset restores native rule modes and video values, clears manual geometry and metadata overrides, and restores source chapter names.
+- Returning all effective fields to their original settings clears Modified. Applying a preset suppresses intermediate change events.
+
+### Batched UI validation cases
+
+- Open each category with mouse and keyboard; inspect a long-description tooltip, selection checkmark and menu scrolling.
+- Set a different preset as default, choose another preset, restart: the saved default must be selected and marked. Invalid/missing saved keys must fall back to an available default.
+- Change RF, bitrate in bitrate mode, encoder, each native-rule toggle, geometry override, chapter markers/name and metadata. Modified must appear immediately.
+- Restore each change: Modified must clear once all effective changes are restored. Editing inactive fields must not affect it.
+- Reload a modified preset; confirm both the editor fields and staged job are restored to preset rules.
+- Check both themes, compact spacing, a narrow window and screen-reader names/help text.
+- Structural checks pass; Windows compilation and interactive checks remain for the next batched build.
+
+
+## Workspace header and preview follow-up
+
+- Primary Workspace commands now use native CommandBar/AppBarButton icons and labels, with dynamic overflow. Start Encode has one Workspace location in the toolbar; the destination footer contains the filename and folder picker.
+- Source identity and title selection occupy the next compact row. The complete truncated source path is available in a local tooltip.
+- Open, add-to-queue, encode, preview, browse, scan cancellation and frame-navigation icons use native SymbolIcon assets. Icon-only frame buttons have accessible names and tooltips.
+- Preview no longer has a fixed 220-pixel height. The image is centered and explicitly fitted to both viewport dimensions using the decoded bitmap's width/height. Frame controls remain outside that viewport, and source details have a bounded scrollable area.
+- Narrow-window preview switching works even when the preview was hidden in the wide-window layout.
+- Structural XAML and event/type references were checked. No build or Windows visual validation was run.
+- Next Windows checks: landscape/portrait/square video, short and narrow windows, resize while decoding, preview hide/show, light/dark themes, 125–200% DPI, keyboard navigation and toolbar overflow. Confirm the complete video frame remains visible and proportional.
+
+## Dedicated Preview card and window
+
+- Removed the preview show/hide command from the main toolbar. The settings card and Preview card are separate Workspace regions: side by side at wide widths, stacked at narrow widths. The existing explicit preview visibility preference is respected.
+- The Preview card owns an Open preview command. It opens or activates one resizable window showing the same decoded frame and previous/next navigation; it does not remove the inline card.
+- Frame loading, reset, failure and successful decode are reflected in both views. Closing the main window also closes the preview window. Each view fits the complete bitmap within its own viewport.
+- This window is a still-frame viewer. WPF's Encode Preview clip generation, live crop overlay and external-player integration remain unimplemented.
+- XAML and handler references for both windows were checked. No build was run. Next Windows validation must cover repeated open/close, navigation from either view, reset during decode, short/narrow layouts, theme/DPI and main-window shutdown.
+
+## Add media spacing follow-up
+
+- Preserved the source dialog width/margins and the drop zone's 240 minimum height with 24 padding; the large drag target remains available.
+- Reduced spacing inside text groups, used a 24-point heading and an icon-only accessible close button, and replaced the download arrow with a native file-opening icon.
+- Browse actions use matching 20-point icons, 12 padding, two-point title/description spacing and a 68 minimum height. Actions stack below 520 logical pixels.
+- Valid file drags highlight the dialog's drop zone with a theme Accent border and subtle tint. The whole-window feedback remains for drags outside the source dialog; feedback clears on leave, drop and dialog transitions.
+- XAML, event references and preservation of the original target dimensions were checked. No build or Windows visual validation was performed.
+
+
+## Summary, Video and source-range controls
+
+- Summary now edits MP4/MKV/WebM, MP4 web optimization/iPod flags, A/V alignment and metadata pass-through. Container compatibility checks and suggested filename extensions follow the selected format.
+- Video frame-rate choices and encoder preset/tune/profile/level choices come from the matching engine. Multi-pass and fast-decode availability follow encoder capabilities; turbo is gated by supported multi-pass and encoder family.
+- Editor options are merged into a full native preset snapshot captured with each queued job and passed to the shared encode/preview builder. Switching encoder clears incompatible tuning; reloading the base preset restores the advanced editor baseline.
+- Modified includes the effective advanced option state. Dormant MP4 or unsupported encoder flags are excluded from effective values.
+- Summary lazily resolves the actual job through libhb after edits or tab entry, showing scale/PAR, output audio/subtitle counts, foreign-audio search and filters. Scale is deliberately labeled separately from any subsequent padding or rotation.
+- Source controls expose one-based angles and full-title, inclusive chapter, seconds (exclusive end) and inclusive frame ranges. Duration uses the native 90 kHz clock; frame-based duration is explicitly estimated from average source FPS.
+- Source selection is stored separately from preset options and revalidated after the encode rescan. Legacy drafts with no selection retain the engine's full-title range.
+- Still previews navigate the scan frames independently of the selected encode range.
+- Source ranges were checked against the WPF factory and native JSON parser: time endpoints are converted to 90 kHz ticks; frame endpoints remain one-based/inclusive.
+- Structural XML, event references, snapshot wiring and range-validation calls were checked. This environment has no .NET SDK; no C# compilation, native encode or Actions run was performed.
+
+### Next Windows validation for these controls
+
+1. Reload each representative x264, x265, SVT-AV1 and hardware preset; verify controls/capabilities and Modified reset/revert behaviour.
+2. Change containers and inspect saved NativePresetJson and submitted job; confirm compatible codec enforcement, filename extensions and MP4-only option gating.
+3. Check CFR/VFR/PFR (including same-as-source), CQ/ABR, multi-pass/turbo, tunes, profiles, levels, extra options and metadata on/off in produced media.
+4. Encode nonzero time starts, a single chapter/frame, a partial chapter range, full-title and alternate DVD angles. Check selected duration and retained chapter names.
+5. Reject reversed, fractional chapter/frame, out-of-duration time and stale source ranges before native encoding.
+6. Check resolved Summary track counts/filter chain with preset and manual modes and confirm still previews remain independent of source range.
+7. These changes still require one batched Windows build and the reported error-3 reproduction before encode reliability can be declared.
+
+The editor review also corrected earlier group-disabling code: panel containers are now wrapped in non-focusable ContentControl gates, keeping native disabled/focus behaviour for their child controls. The earlier StackPanel.IsEnabled assignments were invalid for WinUI. This was checked against Microsoft's Control.IsEnabled API documentation, alongside the structural validation; it does not substitute for compiling the application.
+
+## Queue management follow-up
+
+- Replaced the full-width draft list and technical InfoBar with compact status rows, native command bars and a selected-job details card. Wide windows use list/details columns; narrow windows stack them. Summary, Statistics and Activity Log are functional views.
+- Queue records now have stable IDs, notifications and persisted Waiting/Scanning/Encoding/Paused/Completed/Failed/Canceled/Interrupted states, progress, FPS, ETA, timestamps, output size and failure information. Source-only entries are explicitly marked Needs setup.
+- Startup converts unfinished active states to Interrupted, preserving the job and requiring an explicit reset. A failed queue JSON read does not overwrite the original file during initialization.
+- Start only selects configured Waiting jobs. Completed, failed and canceled jobs do not rerun automatically. Reset/Retry explicitly returns a configured job to Waiting; existing-output replacement still requires the existing confirmation.
+- Added real Pause/Resume calls, persisted selected-job retry/reset and queue reordering, opening source in Workspace and opening the output folder. Mutating actions are blocked while preflight or an encode run is active.
+- Per-job log, exact submitted JSON and error report live under diagnostics/jobs using the stable ID. Logs are bounded/rotated, Activity Log shows a bounded live tail, and an older job's failure no longer points only at a global report overwritten by the next job.
+- Runtime state is saved on transitions and checkpointed during progress. Late callbacks from an older native instance are ignored. Non-finite native progress/FPS values are sanitized before persistence/UI updates.
+- Preflight errors are attached to the affected job; output paths must be absolute filenames in an existing directory, unique among waiting jobs, and cannot overwrite any existing queued source. Output existence/size is verified before marking Completed.
+- The selected-job Summary preserves declared snapshot options before scanning and adds resolved filter/track information after native job construction. Unresolved preset-derived details are labeled as preset rules, not guessed.
+- Remaining Queue work: complete round-trip Edit restoring every saved field into Workspace, completion actions (When Done), queue import/export, richer pass/frame statistics and selection/batch commands. Opening a source is not presented as a full Edit operation.
+- This stage does not fix or verify the previously reported native error 3; it improves job-specific diagnostics and state handling.
+- XAML, names and handler references were checked. No C# compilation, native encode or Actions run was performed; the next batched Windows build must validate the runtime paths.
+
+### Next Windows Queue validation
+
+1. Load legacy drafts and stateful records; restart with Scanning/Encoding/Paused records and confirm Interrupted without automatic rerun.
+2. Run two distinct-output jobs through successful completion; confirm only Waiting jobs start, states/timestamps/output sizes persist and Completed jobs remain skipped on the next Start.
+3. Reproduce native error 3, missing sources, invalid destinations and duplicate outputs; confirm the correct row, error code/report and log are retained while later jobs remain waiting.
+4. Pause/resume, stop while scanning/encoding/paused, then restart/reset; confirm former-instance callbacks cannot change the new job.
+5. Reorder, remove, clear and retry outside a run; verify mutation is blocked during overwrite confirmation and native execution.
+6. Select different jobs while another encodes; check that statistics/logs belong to the selected job and that each job's diagnostics survive subsequent failures.
+7. Check log rotation, missing diagnostics and unwritable persistence folders; UI should stay responsive and errors must be visible.
+8. Check light/dark themes, native command overflow, keyboard operation and short/narrow window layouts.

@@ -1,0 +1,10 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+    <!-- Merge ONLY inside a main command strip, never at application scope.
+         Native body typography/padding remain independent from Compact. -->
+    <StaticResource x:Key="ControlContentThemeFontSize" ResourceKey="BodyTextBlockFontSize"/>
+    <StaticResource x:Key="ContentControlFontSize" ResourceKey="BodyTextBlockFontSize"/>
+    <Style TargetType="TextBlock" BasedOn="{StaticResource HBMainCommandTextStyle}"/>
+    <Style TargetType="Button" BasedOn="{StaticResource HBMainCommandButtonStyle}"/>
+</ResourceDictionary>

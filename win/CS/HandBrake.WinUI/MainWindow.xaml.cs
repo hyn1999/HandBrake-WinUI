@@ -8,6 +8,7 @@ using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 using Microsoft.Windows.Storage.Pickers;
 using Windows.ApplicationModel.DataTransfer;
 using Windows.Graphics;
@@ -19,12 +20,20 @@ namespace HandBrake.WinUI;
 public sealed partial class MainWindow : Window
 {
     private bool isNarrow;
-    private bool showPreviewOnNarrow;
     private readonly List<string> selectedSourcePaths = new();
+    private Storyboard? sourcePickerAnimation;
 
     public MainWindow()
     {
         InitializeComponent();
+        InitializeAdvancedEditors();
+        InitializeSourceRangeEditor();
+        InitializePresetTracking();
+        Closed += (_, _) => detachedPreview?.Close();
+        InitializeNativeDiagnostics();
+        ExtendsContentIntoTitleBar = true;
+        SetTitleBar(AppTitleBar);
+        WindowRoot.ActualThemeChanged += (_, _) => ApplyTitleBarTheme();
         SystemBackdrop = new MicaBackdrop();
         ConfigureInitialWindowBounds();
         SettingsPanel.HostWindow = this;
@@ -34,7 +43,11 @@ public sealed partial class MainWindow : Window
         InitializeDraftQueue();
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
         InitializeSourceScanner();
+        InitializeEncodeRunner();
     }
+
+    private void AppTitleBar_PaneToggleRequested(TitleBar sender, object args)
+        => AppNavigation.IsPaneOpen = !AppNavigation.IsPaneOpen;
 
     private void ConfigureInitialWindowBounds()
     {
@@ -69,37 +82,14 @@ public sealed partial class MainWindow : Window
         try
         {
             var titleBar = AppWindow.TitleBar;
-            Color? background = SettingsPanel.Preferences.Theme switch
-            {
-                "Dark" => Color.FromArgb(255, 31, 36, 37),
-                "Light" => Color.FromArgb(255, 239, 246, 248),
-                _ => null
-            };
-            Color? foreground = SettingsPanel.Preferences.Theme switch
-            {
-                "Dark" => Color.FromArgb(255, 245, 247, 248),
-                "Light" => Color.FromArgb(255, 28, 32, 33),
-                _ => null
-            };
-            Color? hover = SettingsPanel.Preferences.Theme switch
-            {
-                "Dark" => Color.FromArgb(255, 55, 62, 63),
-                "Light" => Color.FromArgb(255, 220, 231, 234),
-                _ => null
-            };
-            Color? pressed = SettingsPanel.Preferences.Theme switch
-            {
-                "Dark" => Color.FromArgb(255, 70, 78, 79),
-                "Light" => Color.FromArgb(255, 205, 220, 224),
-                _ => null
-            };
-
-            titleBar.BackgroundColor = background;
-            titleBar.ButtonBackgroundColor = background;
-            titleBar.ForegroundColor = foreground;
-            titleBar.ButtonForegroundColor = foreground;
-            titleBar.ButtonHoverBackgroundColor = hover;
-            titleBar.ButtonPressedBackgroundColor = pressed;
+            bool dark = WindowRoot.ActualTheme == ElementTheme.Dark;
+            titleBar.ButtonBackgroundColor = Colors.Transparent;
+            titleBar.ButtonInactiveBackgroundColor = Colors.Transparent;
+            titleBar.ButtonForegroundColor = dark ? Colors.White : Colors.Black;
+            titleBar.ButtonHoverBackgroundColor = dark
+                ? Color.FromArgb(32, 255, 255, 255) : Color.FromArgb(24, 0, 0, 0);
+            titleBar.ButtonPressedBackgroundColor = dark
+                ? Color.FromArgb(48, 255, 255, 255) : Color.FromArgb(40, 0, 0, 0);
 
             string iconPath = Path.Combine(AppContext.BaseDirectory, "HandBrake-WinUI.ico");
             if (File.Exists(iconPath))
@@ -137,7 +127,19 @@ public sealed partial class MainWindow : Window
         HomePanel.Visibility = page == "workspace" ? Visibility.Visible : Visibility.Collapsed;
         QueuePanel.Visibility = page == "queue" ? Visibility.Visible : Visibility.Collapsed;
         SettingsPanel.Visibility = page == "settings" ? Visibility.Visible : Visibility.Collapsed;
-        SourcePickerOverlay.Visibility = Visibility.Collapsed;
+        HideSourcePicker();
+        UIElement? activePanel = page switch
+        {
+            "workspace" => HomePanel,
+            "queue" => QueuePanel,
+            "settings" => SettingsPanel,
+            _ => null
+        };
+        if (activePanel is not null)
+        {
+            activePanel.Opacity = 0;
+            AnimateOpacity(activePanel, 0, 1, 160);
+        }
     }
 
     private void WorkspaceGrid_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -146,47 +148,24 @@ public sealed partial class MainWindow : Window
         if (narrowNow != isNarrow)
         {
             isNarrow = narrowNow;
-            showPreviewOnNarrow = false;
         }
 
-        UpdatePreviewLayout();
-    }
-
-    private void PreviewToggle_Click(object sender, RoutedEventArgs e)
-    {
-        if (!isNarrow) return;
-        showPreviewOnNarrow = !showPreviewOnNarrow;
         UpdatePreviewLayout();
     }
 
     private void UpdatePreviewLayout()
     {
-        if (!SettingsPanel.Preferences.ShowPreviewPanel)
-        {
-            PreviewToggleButton.Visibility = Visibility.Collapsed;
-            EditorColumn.Width = new GridLength(1, GridUnitType.Star);
-            PreviewColumn.Width = new GridLength(0);
-            EditorPanel.Visibility = Visibility.Visible;
-            PreviewPanel.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        PreviewToggleButton.Visibility = isNarrow ? Visibility.Visible : Visibility.Collapsed;
-        if (isNarrow)
-        {
-            EditorColumn.Width = showPreviewOnNarrow ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-            PreviewColumn.Width = showPreviewOnNarrow ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-            EditorPanel.Visibility = showPreviewOnNarrow ? Visibility.Collapsed : Visibility.Visible;
-            PreviewPanel.Visibility = showPreviewOnNarrow ? Visibility.Visible : Visibility.Collapsed;
-            PreviewToggleButton.Content = showPreviewOnNarrow ? "Editor" : "Preview";
-        }
-        else
-        {
-            EditorColumn.Width = new GridLength(1, GridUnitType.Star);
-            PreviewColumn.Width = new GridLength(350);
-            EditorPanel.Visibility = Visibility.Visible;
-            PreviewPanel.Visibility = Visibility.Visible;
-        }
+        bool visible = SettingsPanel.Preferences.ShowPreviewPanel;
+        EditorPanel.Visibility = Visibility.Visible;
+        PreviewPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        WorkspaceEditorRow.Height = new GridLength(1, GridUnitType.Star);
+        WorkspacePreviewRow.Height = isNarrow && visible ? new GridLength(0.85, GridUnitType.Star) : new GridLength(0);
+        EditorColumn.Width = new GridLength(1, GridUnitType.Star);
+        PreviewColumn.Width = !isNarrow && visible ? new GridLength(0.8, GridUnitType.Star) : new GridLength(0);
+        Grid.SetRow(PreviewPanel, isNarrow ? 1 : 0);
+        Grid.SetColumn(PreviewPanel, isNarrow ? 0 : 1);
+        WorkspaceGrid.RowSpacing = isNarrow && visible ? 12 : 0;
+        WorkspaceGrid.ColumnSpacing = !isNarrow && visible ? 12 : 0;
     }
 
     private void ShowSourcePicker_Click(object sender, RoutedEventArgs e) => ShowSourcePicker();
@@ -194,11 +173,86 @@ public sealed partial class MainWindow : Window
     private void ShowSourcePicker()
     {
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
+        sourcePickerAnimation?.Stop();
+        ClearSourceDropFeedback();
         SourcePickerOverlay.Visibility = Visibility.Visible;
+        SourcePickerOverlay.Opacity = 0;
+        AnimateOpacity(SourcePickerOverlay, 0, 1, 180, storyboard => sourcePickerAnimation = storyboard);
     }
 
-    private void CloseSourcePicker_Click(object sender, RoutedEventArgs e)
-        => SourcePickerOverlay.Visibility = Visibility.Collapsed;
+    private void CloseSourcePicker_Click(object sender, RoutedEventArgs e) => HideSourcePicker();
+
+    private void HideSourcePicker()
+    {
+        if (SourcePickerOverlay.Visibility != Visibility.Visible) return;
+        ClearSourceDropFeedback();
+        sourcePickerAnimation?.Stop();
+        AnimateOpacity(SourcePickerOverlay, SourcePickerOverlay.Opacity, 0, 140, storyboard =>
+        {
+            sourcePickerAnimation = storyboard;
+            storyboard.Completed += (_, _) =>
+            {
+                if (SourcePickerOverlay.Opacity <= 0.01)
+                    SourcePickerOverlay.Visibility = Visibility.Collapsed;
+            };
+        });
+    }
+
+    private static void AnimateOpacity(UIElement target, double from, double to, int durationMs,
+        Action<Storyboard>? configure = null)
+    {
+        var animation = new DoubleAnimation
+        {
+            From = from,
+            To = to,
+            Duration = new Duration(TimeSpan.FromMilliseconds(
+                new Windows.UI.ViewManagement.UISettings().AnimationsEnabled ? durationMs : 0)),
+            EasingFunction = new CubicEase { EasingMode = EasingMode.EaseOut }
+        };
+        var storyboard = new Storyboard();
+        Storyboard.SetTarget(animation, target);
+        Storyboard.SetTargetProperty(animation, "Opacity");
+        storyboard.Children.Add(animation);
+        configure?.Invoke(storyboard);
+        storyboard.Begin();
+    }
+
+    private void EditorTabs_SelectionChanged(object sender, SelectionChangedEventArgs args)
+    {
+        RefreshOutputSummary();
+        if (sender is TabView tabs && tabs.SelectedItem is TabViewItem item && item.Content is UIElement content)
+            AnimateOpacity(content, 0, 1, 140);
+    }
+
+    private void OpenSource_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        ShowSourcePicker();
+    }
+
+    private void StartEncode_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (StartEncodeButton.IsEnabled) StartEncode_Click(StartEncodeButton, new RoutedEventArgs());
+    }
+
+    private void StopEncode_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (CancelEncodeButton.IsEnabled) CancelEncode_Click(CancelEncodeButton, new RoutedEventArgs());
+    }
+
+    private void Queue_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        AppNavigation.SelectedItem = AppNavigation.MenuItems[1];
+    }
+
+    private void StageQueue_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)
+    {
+        args.Handled = true;
+        if (StageQueueButton.IsEnabled) StageQueue_Click(StageQueueButton, new RoutedEventArgs());
+    }
 
     private async void OpenFiles_Click(object sender, RoutedEventArgs e) => await PickFilesAsync();
 
@@ -270,23 +324,26 @@ public sealed partial class MainWindow : Window
         if (e.DataView.Contains(StandardDataFormats.StorageItems))
         {
             e.AcceptedOperation = DataPackageOperation.Copy;
-            DropHighlight.Visibility = Visibility.Visible;
+            bool pickerVisible = SourcePickerOverlay.Visibility == Visibility.Visible;
+            SourceDropFeedback.Visibility = pickerVisible ? Visibility.Visible : Visibility.Collapsed;
+            DropHighlight.Visibility = pickerVisible ? Visibility.Collapsed : Visibility.Visible;
             e.Handled = true;
         }
         else
         {
             e.AcceptedOperation = DataPackageOperation.None;
+            ClearSourceDropFeedback();
         }
     }
 
     private void WindowRoot_DragLeave(object sender, DragEventArgs e)
     {
-        DropHighlight.Visibility = Visibility.Collapsed;
+        ClearSourceDropFeedback();
     }
 
     private async void WindowRoot_Drop(object sender, DragEventArgs e)
     {
-        DropHighlight.Visibility = Visibility.Collapsed;
+        ClearSourceDropFeedback();
         if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
 
         e.Handled = true;
@@ -305,11 +362,11 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void AcceptSourcePaths(IEnumerable<string> sourcePaths)
+    private void AcceptSourcePaths(IEnumerable<string> sourcePaths, QueueDraft? editJob = null)
     {
-        if (scanInProgress)
+        if (scanInProgress || encodeRunning)
         {
-            SourceStatusText.Text = "A scan is already running. Cancel it before opening a new source.";
+            SourceStatusText.Text = "A native scan or encode is already running. Stop it before opening a new source.";
             SourcePickerOverlay.Visibility = Visibility.Collapsed;
             return;
         }
@@ -327,6 +384,16 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        EndQueueEdit();
+        if (editJob is not null)
+        {
+            queueEditSnapshot = System.Text.Json.JsonSerializer.Deserialize<QueueDraft>(
+                System.Text.Json.JsonSerializer.Serialize(editJob));
+            CancelQueueEditButton.Visibility = Visibility.Visible;
+            StageQueueLabel.Text = "Loading job…";
+        }
+        MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
+        destinationOverride = null;
         selectedSourcePaths.Clear();
         selectedSourcePaths.AddRange(paths);
         selectedScannedTitleName = null;
@@ -345,8 +412,8 @@ public sealed partial class MainWindow : Window
         UpdateSuggestedDestination();
 
         SourceStatusText.Text = paths.Count == 1
-            ? "Source selected. Preparing HandBrake source scan..."
-            : $"{paths.Count} sources selected. Queue and encoding are not connected yet.";
+            ? "Preparing scan…"
+            : $"{paths.Count} sources selected.";
 
         SourcePickerOverlay.Visibility = Visibility.Collapsed;
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];

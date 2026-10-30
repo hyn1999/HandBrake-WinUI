@@ -4,13 +4,7 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     SizeChanged="PreferencesView_SizeChanged">
     <UserControl.Resources>
-        <Style x:Key="PreferencesCardStyle" TargetType="Border">
-            <Setter Property="Padding" Value="16" />
-            <Setter Property="CornerRadius" Value="10" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="BorderBrush" Value="{ThemeResource CardStrokeColorDefaultBrush}" />
-            <Setter Property="Background" Value="{ThemeResource CardBackgroundFillColorDefaultBrush}" />
-        </Style>
+        <Style x:Key="PreferencesCardStyle" TargetType="Border" BasedOn="{StaticResource HBCompactCardStyle}"/>
     </UserControl.Resources>
     <Grid ColumnSpacing="16">
         <Grid.ColumnDefinitions>
@@ -44,7 +38,7 @@
                 <RowDefinition Height="*" />
             </Grid.RowDefinitions>
             <StackPanel Spacing="6">
-                <TextBlock Text="Preferences" FontSize="23" FontWeight="SemiBold" />
+                <TextBlock Text="Preferences" FontSize="{StaticResource HBPageTitleFontSize}" FontWeight="SemiBold" />
                 <ComboBox x:Name="CompactCategoryPicker"
                           Visibility="Collapsed" HorizontalAlignment="Stretch"
                           SelectionChanged="CompactCategoryPicker_SelectionChanged">
@@ -163,12 +157,12 @@
                                 <NumberBox x:Name="ScanPreviewCountBox"
                                            Header="Preview samples per title"
                                            Minimum="1" Maximum="60" Value="10"
-                                           SpinButtonPlacementMode="Compact"
+                                           SpinButtonPlacementMode="Inline"
                                            ValueChanged="ScanNumber_ValueChanged" />
                                 <NumberBox x:Name="MinimumDurationBox"
                                            Header="Minimum title duration (seconds)"
                                            Minimum="0" Maximum="3600" Value="0"
-                                           SpinButtonPlacementMode="Compact"
+                                           SpinButtonPlacementMode="Inline"
                                            ValueChanged="ScanNumber_ValueChanged" />
                                 <TextBlock Text="These values are passed directly to the HandBrake source scanner on the next scan."
                                            FontSize="12" TextWrapping="Wrap"
@@ -263,3 +257,5 @@
         </Grid>
     </Grid>
 </UserControl>
+
+

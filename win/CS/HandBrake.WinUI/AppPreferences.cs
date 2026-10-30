@@ -12,6 +12,7 @@ public sealed class AppPreferences
 {
     public string Theme { get; set; } = "System";
     public string PreferredPresetKey { get; set; } = string.Empty;
+    public string DefaultPresetKey { get; set; } = string.Empty;
     public bool ShowPreviewPanel { get; set; } = true;
     public string DefaultOutputFolder { get; set; } = string.Empty;
     public bool ReplaceUnderscoresInFileNames { get; set; }
@@ -65,6 +66,7 @@ public sealed class AppPreferences
         if (Mp4Extension is not (".mp4" or ".m4v")) Mp4Extension = ".mp4";
         DefaultOutputFolder ??= string.Empty;
         PreferredPresetKey ??= string.Empty;
+        DefaultPresetKey ??= string.Empty;
         ScanPreviewCount = Math.Clamp(ScanPreviewCount, 1, 60);
         MinTitleDurationSeconds = Math.Clamp(MinTitleDurationSeconds, 0, 3600);
         ScanVerbosity = Math.Clamp(ScanVerbosity, 0, 2);

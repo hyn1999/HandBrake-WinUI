@@ -4,18 +4,34 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     xmlns:local="using:HandBrake.WinUI"
     Title="HandBrake-WinUI">
-    <Grid x:Name="WindowRoot" AllowDrop="True" DragOver="WindowRoot_DragOver"
+    <Grid x:Name="WindowRoot" KeyboardAcceleratorPlacementMode="Hidden" AllowDrop="True" DragOver="WindowRoot_DragOver"
           DragLeave="WindowRoot_DragLeave" Drop="WindowRoot_Drop">
         <Grid.KeyboardAccelerators>
-            <KeyboardAccelerator Key="O" Modifiers="Control" Invoked="OpenFiles_AcceleratorInvoked" />
-            <KeyboardAccelerator Key="O" Modifiers="Control,Shift" Invoked="OpenFolder_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="O" Modifiers="Menu" Invoked="OpenSource_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="E" Modifiers="Control" Invoked="StartEncode_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="K" Modifiers="Control" Invoked="StopEncode_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="Q" Modifiers="Control" Invoked="Queue_AcceleratorInvoked" />
+            <KeyboardAccelerator Key="A" Modifiers="Menu" Invoked="StageQueue_AcceleratorInvoked" />
         </Grid.KeyboardAccelerators>
-        <NavigationView x:Name="AppNavigation"
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TitleBar x:Name="AppTitleBar" Title="HandBrake"
+                  IsPaneToggleButtonVisible="True"
+                  PaneToggleRequested="AppTitleBar_PaneToggleRequested">
+            <TitleBar.IconSource>
+                <ImageIconSource ImageSource="ms-appx:///Assets/HandBrake.png" />
+            </TitleBar.IconSource>
+        </TitleBar>
+        <NavigationView x:Name="AppNavigation" Grid.Row="1"
                         Loaded="AppNavigation_Loaded"
                         IsBackButtonVisible="Collapsed"
                         IsSettingsVisible="False"
-                        PaneDisplayMode="Left"
-                        OpenPaneLength="216"
+                        PaneDisplayMode="Auto"
+                        IsPaneToggleButtonVisible="False"
+                        IsTitleBarAutoPaddingEnabled="False"
+                        OpenPaneLength="240"
                         SelectionChanged="AppNavigation_SelectionChanged">
             <NavigationView.MenuItems>
                 <NavigationViewItem Content="Workspace" Tag="workspace">
@@ -29,13 +45,8 @@
                 </NavigationViewItem>
             </NavigationView.MenuItems>
             <NavigationView.Content>
-                <Grid Padding="20,16,20,16">
-                    <Grid x:Name="HomePanel" RowSpacing="16">
-                        <Grid.Transitions>
-                            <TransitionCollection>
-                                <EntranceThemeTransition FromVerticalOffset="8" />
-                            </TransitionCollection>
-                        </Grid.Transitions>
+                <Grid Padding="16,12,16,12">
+                    <Grid x:Name="HomePanel" RowSpacing="{StaticResource HBSpaceRow}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -43,59 +54,83 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <!-- Top bar: source information remains visible while changing tabs. -->
-                        <Grid ColumnSpacing="12">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <TextBlock Text="Workspace" FontSize="23" FontWeight="SemiBold" />
-                                <TextBlock x:Name="SelectedFileText" Text="No source selected"
-                                           FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                <TextBlock x:Name="SelectedPathText" Text="Choose a video to begin"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           TextTrimming="CharacterEllipsis" FontSize="12" />
-                                <ComboBox x:Name="SourceTitlePicker"
-                                          Header="Detected titles" Visibility="Collapsed"
-                                          MinWidth="220" HorizontalAlignment="Left"
-                                          SelectionChanged="SourceTitlePicker_SelectionChanged" />
+                        <!-- Source header: commands, source identity, then one bounded selection group. -->
+                        <Grid x:Name="SourceHeader" RowSpacing="{StaticResource HBSpaceGroup}" SizeChanged="SourceHeader_SizeChanged">
+                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                            <StackPanel x:Name="WorkspaceCommands" Spacing="{StaticResource HBMainCommandGap}" HorizontalAlignment="Stretch">
+                                <StackPanel.Resources>
+                                    <ResourceDictionary Source="ms-appx:///Design/StandardCommands.xaml"/>
+                                </StackPanel.Resources>
+                                <Button Click="ShowSourcePicker_Click" ToolTipService.ToolTip="Open Source (Alt+O)">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
+                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="OpenFile"/></Viewbox>
+                                        <TextBlock Text="Open Source" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="StageQueueButton" Click="StageQueue_Click" IsEnabled="False"
+                                        ToolTipService.ToolTip="Add to Queue (Alt+A)">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
+                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon x:Name="StageQueueIcon" Symbol="Add"/></Viewbox>
+                                        <TextBlock x:Name="StageQueueLabel" Text="Add to Queue" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="CancelQueueEditButton" Click="CancelQueueEdit_Click" Visibility="Collapsed" ToolTipService.ToolTip="Cancel edit">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
+                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="Cancel"/></Viewbox>
+                                        <TextBlock Text="Cancel edit" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="StartEncodeButton" Click="StartEncode_Click" IsEnabled="False"
+                                        Style="{StaticResource HBMainCommandAccentButtonStyle}" ToolTipService.ToolTip="Start Encode (Ctrl+E)">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
+                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="Play"/></Viewbox>
+                                        <TextBlock Text="Start Encode" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                             </StackPanel>
-                            <Button Grid.Column="1" Content="Open source" Click="ShowSourcePicker_Click"
-                                    VerticalAlignment="Center" Style="{StaticResource AccentButtonStyle}" />
-                            <Button x:Name="StageQueueButton" Grid.Column="2" Content="Add to queue"
-                                    Click="StageQueue_Click" IsEnabled="False"
-                                    VerticalAlignment="Center"
-                                    ToolTipService.ToolTip="Stage selected source/title with its preset and video settings. Encoding is not connected yet." />
-                            <Button x:Name="PreviewToggleButton" Grid.Column="3" Content="Preview"
-                                    Click="PreviewToggle_Click" Visibility="Collapsed"
-                                    VerticalAlignment="Center" />
+                            <StackPanel Grid.Row="1" Spacing="2">
+                                <TextBlock x:Name="SelectedFileText" Text="No source selected" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="SelectedPathText" Text="Choose a video to begin"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" FontSize="{StaticResource HBCaptionFontSize}"
+                                           ToolTipService.ToolTip="{Binding Text, ElementName=SelectedPathText}"/>
+                            </StackPanel>
+                            <ContentControl x:Name="SourceRangeGate" Grid.Row="2" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch">
+                                <StackPanel x:Name="SourceRangePanel" Spacing="{StaticResource HBSpaceRow}" Visibility="Collapsed">
+                                    <ComboBox x:Name="SourceTitlePicker" Header="Title" Visibility="Collapsed"
+                                              MinWidth="0" HorizontalAlignment="Left" SelectionChanged="SourceTitlePicker_SelectionChanged"/>
+                                </StackPanel>
+                            </ContentControl>
                         </Grid>
 
                         <StackPanel Grid.Row="1" Spacing="6">
-                            <Grid ColumnSpacing="12">
+                            <Grid ColumnSpacing="{StaticResource HBSpaceGroup}">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="SourceStatusText"
-                                           Text="Open a video, select a folder, or drop files anywhere in this window."
-                                           FontSize="12" TextWrapping="Wrap"
+                                           Text=""
+                                           FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            VerticalAlignment="Center" />
                                 <Button x:Name="CancelScanButton" Grid.Column="1"
-                                        Content="Cancel scan" Visibility="Collapsed"
-                                        Click="CancelScan_Click" />
+                                        Visibility="Collapsed" Click="CancelScan_Click">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBSpaceRow}">
+                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Cancel"/></Viewbox><TextBlock Text="Cancel scan" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
                             </Grid>
                             <ProgressBar x:Name="SourceScanProgress"
                                          Visibility="Collapsed" Minimum="0" Maximum="100"
                                          Value="0" Height="4" />
                         </StackPanel>
 
-                        <Grid x:Name="WorkspaceGrid" Grid.Row="2" ColumnSpacing="16"
+                        <Grid x:Name="WorkspaceGrid" Grid.Row="2" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}"
                               SizeChanged="WorkspaceGrid_SizeChanged">
+                            <Grid.RowDefinitions>
+                                <RowDefinition x:Name="WorkspaceEditorRow" Height="*"/>
+                                <RowDefinition x:Name="WorkspacePreviewRow" Height="0"/>
+                            </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition x:Name="EditorColumn" Width="*" />
                                 <ColumnDefinition x:Name="PreviewColumn" Width="350" />
@@ -103,92 +138,102 @@
 
                             <!-- Editor: all HandBrake settings are visible as compact categories. -->
                             <Border x:Name="EditorPanel" Grid.Column="0"
-                                    CornerRadius="12" BorderThickness="1"
+                                    CornerRadius="10" BorderThickness="1"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                <Grid RowSpacing="12" Padding="16">
+                                <Grid RowSpacing="{StaticResource HBSpaceRow}" Padding="12">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
-                                    <Grid ColumnSpacing="8">
+                                    <Grid x:Name="PresetSelectorRow" ColumnSpacing="{StaticResource HBControlGap}" SizeChanged="PresetSelectorRow_SizeChanged">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Preset" VerticalAlignment="Center"
-                                                   FontWeight="SemiBold" />
-                                        <ComboBox x:Name="PresetPicker" Grid.Column="1"
-                                                  IsEnabled="False" HorizontalAlignment="Stretch"
-                                                  SelectionChanged="PresetPicker_SelectionChanged"
-                                                  AutomationProperties.Name="HandBrake encoding preset" />
+                                        <TextBlock Text="Preset" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                        <ComboBox x:Name="PresetPicker" Grid.Column="1" IsEnabled="False"
+                                                  PlaceholderText="Choose a preset" HorizontalAlignment="Left" MinWidth="0"
+                                                  Width="{StaticResource HBPresetWidth}" MaxWidth="{StaticResource HBPresetMaxWidth}"
+                                                  SelectionChanged="PresetPicker_SelectionChanged" DropDownOpened="PresetPicker_DropDownOpened"
+                                                  AutomationProperties.Name="HandBrake encoding preset"/>
+                                        <Button x:Name="ReloadPresetButton" Grid.Column="2" IsEnabled="False"
+                                                Content="Reload" Click="ReloadPreset_Click" ToolTipService.ToolTip="Reload selected preset"/>
+                                        <Button x:Name="PresetActionsButton" Grid.Column="3" IsEnabled="False"
+                                                Style="{StaticResource HBCompactIconButtonStyle}"
+                                                AutomationProperties.Name="Preset actions" ToolTipService.ToolTip="Preset actions">
+                                            <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="More"/></Viewbox>
+                                        </Button>
                                     </Grid>
 
-                                    <TabView Grid.Row="1" IsAddTabButtonVisible="False"
+                                    <TabView x:Name="EditorTabs" Grid.Row="1" SelectionChanged="EditorTabs_SelectionChanged" IsAddTabButtonVisible="False"
                                              CanDragTabs="False" CanReorderTabs="False"
                                              TabWidthMode="SizeToContent">
-                                        <TabViewItem Header="Summary" IsClosable="False">
-                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                                <StackPanel Padding="8,16,12,16" Spacing="12">
-                                                    <TextBlock Text="Output summary" FontSize="17"
-                                                               FontWeight="SemiBold" />
-                                                    <TextBlock x:Name="ScanSummaryText"
-                                                               Text="Scan a source to see actual title, duration and track counts."
-                                                               TextWrapping="Wrap" />
-                                                    <TextBlock x:Name="PresetStatusText"
-                                                               Text="Built-in presets will load from the matching HandBrake engine."
-                                                               TextWrapping="Wrap"
-                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                    <TextBlock Text="Selected preset" FontWeight="SemiBold" />
-                                                    <TextBlock x:Name="PresetDescriptionText"
-                                                               Text="No native preset loaded." TextWrapping="Wrap" />
-                                                    <TextBlock Text="Output container (from preset)" FontWeight="SemiBold" />
-                                                    <TextBlock x:Name="PresetContainerText" Text="Not available" />
-                                                    <TextBlock Text="Other preset options (audio, filters, dimensions and subtitles) are preserved in the native preset definition but are not yet editable or mapped into an encode job."
-                                                               TextWrapping="Wrap" FontSize="12"
-                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                </StackPanel>
+                                        <TabViewItem x:Name="SummaryTab" Header="Summary" IsClosable="False">
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                                <Grid Padding="{StaticResource HBCardPadding}" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                    <TextBlock x:Name="FormatSummaryLabel" Text="Format:" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="{StaticResource HBBodyFontSize}" VerticalAlignment="Top" />
+                                                    <ContentControl x:Name="ContainerEditorGate" Grid.Column="1" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch">
+                                                        <StackPanel x:Name="ContainerEditorPanel" Spacing="{StaticResource HBSpaceTight}" />
+                                                    </ContentControl>
+                                                    <TextBlock Text="Tracks:" Grid.Row="1" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="{StaticResource HBBodyFontSize}" />
+                                                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="{StaticResource HBSpaceTight}">
+                                                        <TextBlock x:Name="ConfiguredOutputText" Text="—" TextWrapping="Wrap" />
+                                                        <TextBlock x:Name="ResolvedOutputDetailsText" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                    <TextBlock Text="Filters:" Grid.Row="2" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="{StaticResource HBBodyFontSize}" />
+                                                    <TextBlock x:Name="FilterSummaryText" Grid.Row="2" Grid.Column="1" Text="—" TextWrapping="Wrap" />
+                                                    <TextBlock Text="Size:" Grid.Row="3" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="{StaticResource HBBodyFontSize}" />
+                                                    <TextBlock x:Name="SizeSummaryText" Grid.Row="3" Grid.Column="1" Text="—" TextWrapping="Wrap" />
+                                                    <TextBlock x:Name="SummaryStatusText" Grid.Row="4" Grid.ColumnSpan="2" Visibility="Collapsed" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                </Grid>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Dimensions" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
-                                                    <TextBlock Text="Dimensions" FontSize="17" FontWeight="SemiBold" />
+                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
+                                                    <TextBlock Text="Dimensions" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="SourceDimensionsText"
                                                                Text="Source dimensions will appear after scanning."
                                                                TextWrapping="Wrap" />
-                                                    <TextBlock Text="Resolution limit" />
-                                                    <ComboBox SelectedIndex="0" IsEnabled="False" HorizontalAlignment="Stretch">
-                                                        <ComboBoxItem Content="1080p HD" />
-                                                    </ComboBox>
-                                                    <TextBlock Text="Cropping" />
-                                                    <ComboBox SelectedIndex="0" IsEnabled="False" HorizontalAlignment="Stretch">
-                                                        <ComboBoxItem Content="Automatic" />
-                                                    </ComboBox>
-                                                    <TextBlock Text="Width / Height" />
-                                                    <StackPanel Orientation="Horizontal" Spacing="8">
-                                                        <NumberBox Value="1920" IsEnabled="False" Width="110" />
-                                                        <TextBlock Text="×" VerticalAlignment="Center" />
-                                                        <NumberBox Value="1080" IsEnabled="False" Width="110" />
-                                                    </StackPanel>
+                                                    <CheckBox x:Name="CustomGeometryToggle" Content="Override preset geometry with manual dimensions and cropping" Checked="GeometryOverride_Toggled" Unchecked="GeometryOverride_Toggled" />
+                                                    <TextBlock Text="Set image dimensions before borders. Preset rotation, flip and borders are retained; quarter-turn rotation inverts the source pixel aspect ratio. Crop coordinates follow the rotated image. Add to queue or save the edited job to apply changes." TextWrapping="Wrap" />
+                                                    <Grid ColumnSpacing="{StaticResource HBSpaceGroup}">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                        <NumberBox x:Name="OutputWidthBox" IsEnabled="False" Header="Width (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="OutputHeightBox" IsEnabled="False" Grid.Column="1" Header="Height (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
+                                                    </Grid>
+                                                    <TextBlock Text="Crop edges (pixels after preset rotation)" FontWeight="SemiBold" />
+                                                    <Grid ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                        <NumberBox x:Name="CropTopBox" IsEnabled="False" Header="Top" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropBottomBox" IsEnabled="False" Grid.Column="1" Header="Bottom" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropLeftBox" IsEnabled="False" Grid.Row="1" Header="Left" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropRightBox" IsEnabled="False" Grid.Row="1" Grid.Column="1" Header="Right" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                    </Grid>
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Filters" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
-                                                    <TextBlock Text="Filters" FontSize="17" FontWeight="SemiBold" />
-                                                    <CheckBox Content="Detelecine" IsEnabled="False" />
-                                                    <CheckBox Content="Deinterlace" IsEnabled="False" />
-                                                    <CheckBox Content="Denoise" IsEnabled="False" />
-                                                    <CheckBox Content="Sharpen" IsEnabled="False" />
+                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
+                                                    <TextBlock Text="Filters" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
+                                                    <TextBlock x:Name="FilterEditorStatus" Text="Filter presets and tunes require the matching native HandBrake engine." TextWrapping="Wrap" />
+                                                    <CheckBox x:Name="UsePresetFiltersToggle" Content="Use preset filters" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
+                                                    <ContentControl x:Name="FilterEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="FilterEditorPanel" Spacing="{StaticResource HBSpaceTight}" /></ContentControl>
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Video" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
-                                                    <TextBlock Text="Video encoding" FontSize="17" FontWeight="SemiBold" />
+                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
+                                                    <TextBlock Text="Video encoding" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="SourceVideoText"
                                                                Text="Source codec and frame rate will appear after scanning."
                                                                TextWrapping="Wrap" />
@@ -217,51 +262,62 @@
                                                                Value="2500" SpinButtonPlacementMode="Inline"
                                                                Visibility="Collapsed" IsEnabled="False"
                                                                ValueChanged="VideoBitrateBox_ValueChanged" />
-                                                    <TextBlock Text="Framerate and encoder tuning (from preset)"
+                                                    <ContentControl x:Name="AdvancedVideoGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="AdvancedVideoPanel" Spacing="{StaticResource HBSpaceTight}" /></ContentControl>
+                                                    <TextBlock Text="Preset reference"
                                                                FontWeight="SemiBold" />
                                                     <TextBlock x:Name="PresetVideoDetailsText"
                                                                Text="Not available" TextWrapping="Wrap" />
                                                     <TextBlock x:Name="VideoConfigurationStatusText"
                                                                Text="Select a native preset and encoder to configure a queue draft."
-                                                               FontSize="12" TextWrapping="Wrap"
+                                                               FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap"
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                     <TextBlock Text="Changing the encoder or rate control updates a draft configuration only. It does not start encoding or modify HandBrake's built-in preset."
-                                                               FontSize="12" TextWrapping="Wrap"
+                                                               FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap"
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Audio" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
-                                                    <TextBlock Text="Audio tracks" FontSize="17" FontWeight="SemiBold" />
-                                                    <StackPanel x:Name="AudioTrackList" Spacing="8">
+                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
+                                                    <TextBlock Text="Audio tracks" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
+                                                    <CheckBox x:Name="UsePresetAudioToggle" Content="Use preset audio selection and encoding rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
+                                                    <ContentControl x:Name="AudioEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="AudioTrackList" Spacing="{StaticResource HBSpaceRow}">
                                                         <TextBlock Text="Tracks will appear after scanning a source."
                                                                    TextWrapping="Wrap" />
-                                                    </StackPanel>
-                                                    <Button Content="Add track" IsEnabled="False"
-                                                            HorizontalAlignment="Left" />
+                                                    </StackPanel></ContentControl>
+                                                    <TextBlock Text="Checked tracks are included in newly staged jobs, one output per source track. Uncheck all tracks for silent output. Choose a per-track encoder and bitrate, or retain the preset audio rule. Custom encoding uses the native default mixdown and source-compatible sample rate. Passthrough, lossless and multiple outputs per track still require full rule editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Subtitles" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
-                                                    <TextBlock Text="Subtitles" FontSize="17" FontWeight="SemiBold" />
-                                                    <StackPanel x:Name="SubtitleTrackList" Spacing="8">
+                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
+                                                    <TextBlock Text="Subtitles" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
+                                                    <CheckBox x:Name="UsePresetSubtitlesToggle" Content="Use preset subtitle selection and search rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
+                                                    <ContentControl x:Name="SubtitleEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="SubtitleManualPanel" Spacing="{StaticResource HBSpaceRow}">
+                                                    <CheckBox x:Name="ForeignAudioSearchToggle" Content="Foreign Audio Search" Checked="ForeignSearch_Toggled" Unchecked="ForeignSearch_Toggled" />
+                                                    <CheckBox x:Name="ForeignAudioForcedToggle" IsEnabled="False" Content="Search forced subtitles only" IsChecked="True" />
+                                                    <CheckBox x:Name="ForeignAudioBurnToggle" IsEnabled="False" Content="Burn the search result into video" />
+                                                    <TextBlock Text="Search runs during encoding. A still preview cannot show its result. Burn-in shares the single-track limit with other subtitles." TextWrapping="Wrap" />
+                                                    <StackPanel x:Name="SubtitleTrackList" Spacing="{StaticResource HBSpaceRow}">
                                                         <TextBlock Text="Subtitle tracks will appear after scanning."
                                                                    TextWrapping="Wrap" />
                                                     </StackPanel>
-                                                    <Button Content="Add subtitle" IsEnabled="False"
-                                                            HorizontalAlignment="Left" />
+                                                    <Button Content="Import SRT files" Click="ImportSubtitle_Click" HorizontalAlignment="Left" />
+                                                    <TextBlock x:Name="SubtitleImportStatus" Text="UTF-8 SRT soft subtitles support MP4 and MKV. At most one internal or imported track may be burned into video." TextWrapping="Wrap" />
+                                                    <StackPanel x:Name="ImportedSubtitleList" Spacing="{StaticResource HBSpaceTight}" />
+                                                    <TextBlock Text="Select internal subtitle tracks to include. Soft subtitles require a compatible container. Burn-in is permanent in the output image and cannot be switched off during playback. Foreign-audio search runs during encoding. Re-stage the queue entry after editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    </StackPanel></ContentControl>
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Chapters" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
-                                                    <TextBlock Text="Chapters" FontSize="17" FontWeight="SemiBold" />
-                                                    <CheckBox Content="Create chapter markers" IsEnabled="False" />
+                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
+                                                    <TextBlock Text="Chapters" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
+                                                    <CheckBox x:Name="ChapterMarkersToggle" Content="Create chapter markers" IsChecked="True" />
+                                                    <StackPanel x:Name="ChapterEditorPanel" Spacing="{StaticResource HBSpaceTight}" />
                                                     <TextBlock x:Name="ChapterListText"
                                                                Text="Chapter titles will appear here after source scanning."
                                                                TextWrapping="Wrap" />
@@ -270,11 +326,18 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Metadata" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="6,12,10,12" Spacing="12">
-                                                    <TextBlock Text="Metadata" FontSize="17" FontWeight="SemiBold" />
-                                                    <TextBlock Text="Title" />
-                                                    <TextBox PlaceholderText="Source title" IsEnabled="False" />
-                                                    <TextBlock Text="Additional metadata will be available after scanning."
+                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
+                                                    <TextBlock Text="Metadata" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
+                                                    <TextBlock Text="Overrides apply to newly staged jobs. Leave a field empty to retain source metadata." TextWrapping="Wrap" />
+                                                    <Grid ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                        <TextBox x:Name="MetadataTitleBox" Header="Title" />
+                                                        <TextBox x:Name="MetadataArtistBox" Header="Artist" Grid.Column="1" />
+                                                        <TextBox x:Name="MetadataAlbumBox" Header="Album" Grid.Row="1" />
+                                                    </Grid>
+                                                    <TextBox x:Name="MetadataCommentBox" Header="Comment" AcceptsReturn="True" TextWrapping="Wrap" />
+                                                    <TextBlock Text="Metadata overrides are saved with each queued job."
                                                                TextWrapping="Wrap" />
                                                 </StackPanel>
                                             </ScrollViewer>
@@ -283,56 +346,91 @@
                                 </Grid>
                             </Border>
 
-                            <!-- Fixed right-hand preview, with a narrow-window fallback. -->
+                            <!-- Bounded image viewport; navigation and source details remain outside it. -->
                             <Border x:Name="PreviewPanel" Grid.Column="1"
-                                    CornerRadius="12" BorderThickness="1"
+                                    CornerRadius="10" BorderThickness="1"
                                     BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                     Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                                <Grid Padding="12" RowSpacing="12">
+                                <Grid Padding="12" RowSpacing="{StaticResource HBSpaceGroup}">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="*" />
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="Preview" FontSize="17" FontWeight="SemiBold" />
-                                    <Border Grid.Row="1" Background="{ThemeResource LayerFillColorDefaultBrush}"
-                                            CornerRadius="8" MinHeight="190" VerticalAlignment="Stretch">
-                                        <Grid>
-                                            <Image x:Name="PreviewFrameImage" Stretch="Uniform"
-                                                   Visibility="Collapsed" />
-                                            <StackPanel x:Name="PreviewPlaceholder"
-                                                        HorizontalAlignment="Center" VerticalAlignment="Center"
-                                                        Spacing="8" Margin="12">
-                                                <SymbolIcon Symbol="Pictures" />
-                                                <TextBlock Text="Video frame preview"
-                                                           HorizontalAlignment="Center" />
-                                                <TextBlock x:Name="PreviewPlaceholderText"
-                                                           Text="Scan a source, then generate a frame."
-                                                           TextWrapping="Wrap" TextAlignment="Center"
-                                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            </StackPanel>
+                                    <Grid ColumnSpacing="{StaticResource HBSpaceRow}">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Preview" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <Button x:Name="OpenPreviewWindowButton" Grid.Column="1" Click="OpenPreviewWindow_Click"
+                                                IsEnabled="False" Style="{StaticResource HBCompactIconButtonStyle}"
+                                                AutomationProperties.Name="Expand preview"
+                                                ToolTipService.ToolTip="Open a larger preview window">
+                                            <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="FullScreen"/></Viewbox>
+                                        </Button>
+                                    </Grid>
+                                    <Grid Grid.Row="1" RowSpacing="{StaticResource HBSpaceRow}">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="Auto" />
+                                        </Grid.RowDefinitions>
+                                        <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
+                                                CornerRadius="8" MinHeight="0" VerticalAlignment="Stretch">
+                                            <Grid x:Name="PreviewViewport" MinWidth="0" MinHeight="0"
+                                                  SizeChanged="PreviewViewport_SizeChanged">
+                                                <Image x:Name="PreviewFrame" Stretch="Uniform"
+                                                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                                                       Visibility="Collapsed" />
+                                                <StackPanel x:Name="PreviewPlaceholder"
+                                                            HorizontalAlignment="Center"
+                                                            VerticalAlignment="Center"
+                                                            Spacing="{StaticResource HBSpaceRow}" Margin="16">
+                                                    <SymbolIcon Symbol="Pictures" />
+                                                    <TextBlock x:Name="PreviewPlaceholderText"
+                                                               Text="Choose a source to decode a real frame"
+                                                               TextWrapping="Wrap" TextAlignment="Center" />
+                                                    <TextBlock Text="Decoded by the native HandBrake engine"
+                                                               TextWrapping="Wrap" TextAlignment="Center"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                        <Grid Grid.Row="1" ColumnSpacing="{StaticResource HBSpaceRow}">
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto" />
+                                                <ColumnDefinition Width="*" />
+                                                <ColumnDefinition Width="Auto" />
+                                            </Grid.ColumnDefinitions>
+                                            <Button x:Name="PreviousPreviewButton" IsEnabled="False" Click="PreviousPreview_Click"
+                                                    Style="{StaticResource HBCompactIconButtonStyle}"
+                                                    AutomationProperties.Name="Previous preview frame" ToolTipService.ToolTip="Previous frame">
+                                                <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Back"/></Viewbox>
+                                            </Button>
+                                            <TextBlock x:Name="PreviewFrameCounterText" Grid.Column="1"
+                                                       Text="No frame" VerticalAlignment="Center" TextTrimming="CharacterEllipsis"
+                                                       HorizontalAlignment="Center"
+                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <Button x:Name="NextPreviewButton" Grid.Column="2" IsEnabled="False" Click="NextPreview_Click"
+                                                    Style="{StaticResource HBCompactIconButtonStyle}"
+                                                    AutomationProperties.Name="Next preview frame" ToolTipService.ToolTip="Next frame">
+                                                <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Forward"/></Viewbox>
+                                            </Button>
                                         </Grid>
-                                    </Border>
-                                    <StackPanel Grid.Row="2" Spacing="8">
-                                        <Button x:Name="GeneratePreviewButton" Content="Generate preview frame"
-                                                HorizontalAlignment="Stretch" IsEnabled="False"
-                                                Click="GeneratePreview_Click" />
+                                    </Grid>
+                                    <ScrollViewer Grid.Row="2" MaxHeight="100" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                    <StackPanel Spacing="{StaticResource HBSpaceTight}">
                                         <TextBlock Text="Source details" FontWeight="SemiBold" />
                                         <TextBlock x:Name="PreviewSourceText" Text="No source selected"
                                                    TextWrapping="Wrap" />
                                         <TextBlock x:Name="PreviewMetadataText"
                                                    Text="Scan a video to display its properties."
                                                    TextWrapping="Wrap" />
-                                        <TextBlock x:Name="PreviewStatusText" Text="Preview is waiting for a scanned title."
-                                                   FontSize="12" TextWrapping="Wrap"
-                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
+                                    </ScrollViewer>
                                 </Grid>
                             </Border>
                         </Grid>
 
-                        <!-- Persistent action bar. Nonfunctional controls are deliberately disabled. -->
-                        <Border Grid.Row="3" CornerRadius="12" Padding="12"
+                        <!-- Destination stays editable; encode commands have one home in the toolbar. -->
+                        <Border Grid.Row="3" CornerRadius="10" Padding="10"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
@@ -342,75 +440,135 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Spacing="2">
-                                    <TextBlock Text="Destination" FontSize="12"
+                                    <TextBlock Text="Destination" FontSize="{StaticResource HBCaptionFontSize}"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    <TextBlock Text="Choose a source to prepare an output filename"
-                                               TextTrimming="CharacterEllipsis"
-                                               x:Name="DestinationText" />
+                                    <TextBox PlaceholderText="Choose a source to prepare an output filename" MaxWidth="10000" HorizontalAlignment="Stretch" x:Name="DestinationText" TextChanged="Destination_Changed" />
                                 </StackPanel>
-                                <Button x:Name="StartEncodeButton" Grid.Column="1" Content="Start Encode"
-                                        Click="StartEncode_Click" IsEnabled="False"
-                                        ToolTipService.ToolTip="Encode the selected title with the active native HandBrake preset." />
+                                <Button Grid.Column="1" Click="BrowseDestination_Click" VerticalAlignment="Center" ToolTipService.ToolTip="Choose the output folder">
+                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBSpaceRow}">
+                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Folder"/></Viewbox><TextBlock Text="Browse…" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+
                             </Grid>
                         </Border>
                     </Grid>
 
-                    <Grid x:Name="QueuePanel" Visibility="Collapsed" RowSpacing="12">
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="Auto" />
-                        </Grid.RowDefinitions>
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Queue" FontSize="23" FontWeight="SemiBold" />
-                            <TextBlock x:Name="QueueCountText" Text="No staged sources"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                    <Grid x:Name="QueuePanel" Visibility="Collapsed" RowSpacing="{StaticResource HBSpaceRow}">
+                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                        <StackPanel Spacing="{StaticResource HBSpaceTight}">
+                            <TextBlock Text="Queue" FontSize="{StaticResource HBPageTitleFontSize}" FontWeight="SemiBold"/>
+                            <TextBlock x:Name="QueueCountText" Text="No jobs" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
                         </StackPanel>
-                        <InfoBar Grid.Row="1" IsOpen="True" IsClosable="False"
-                                 Severity="Informational" Title="Draft queue"
-                                 Message="Staged sources can include a scanned title, native preset and video settings. These are configuration drafts, not runnable encode jobs. Start Encode remains disabled until full job construction and validation are implemented." />
-                        <Border Grid.Row="2" CornerRadius="12" Padding="12"
-                                BorderThickness="1"
-                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                                Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
-                            <ListView x:Name="DraftQueueList" SelectionMode="Single"
-                                      SelectionChanged="DraftQueueList_SelectionChanged">
-                                <ListView.ItemTemplate>
-                                    <DataTemplate>
-                                        <StackPanel Spacing="4" Padding="6">
-                                            <TextBlock Text="{Binding DisplayName}" FontWeight="SemiBold" />
-                                            <TextBlock Text="{Binding SourcePath}" FontSize="12"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock Text="{Binding ConfigurationSummary}" FontSize="12"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                            <TextBlock Text="{Binding DestinationSummary}" FontSize="12"
-                                                       TextWrapping="Wrap"
-                                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                        </StackPanel>
-                                    </DataTemplate>
-                                </ListView.ItemTemplate>
-                            </ListView>
-                        </Border>
-                        <Grid Grid.Row="3" ColumnSpacing="10">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="*" />
-                                <ColumnDefinition Width="Auto" />
-                                <ColumnDefinition Width="Auto" />
-                            </Grid.ColumnDefinitions>
-                            <TextBlock x:Name="QueueStatusText" VerticalAlignment="Center"
-                                       FontSize="12" TextWrapping="Wrap"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                       Text="Choose a source in Workspace, then Add to queue." />
-                            <Button x:Name="RemoveDraftButton" Grid.Column="1"
-                                    Content="Remove selected" IsEnabled="False"
-                                    Click="RemoveDraft_Click" />
-                            <Button x:Name="ClearDraftsButton" Grid.Column="2"
-                                    Content="Clear drafts" IsEnabled="False"
-                                    Click="ClearDrafts_Click" />
+                        <CommandBar Grid.Row="1" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True" Background="Transparent">
+                            <CommandBar.Resources>
+                                <ResourceDictionary Source="ms-appx:///Design/StandardCommands.xaml"/>
+                            </CommandBar.Resources>
+                            <AppBarButton x:Name="StartQueueEncodeButton" Label="Start queue" Click="StartEncode_Click" IsEnabled="False">
+                                <AppBarButton.Icon><SymbolIcon Symbol="Play"/></AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarButton x:Name="PauseQueueButton" Label="Pause" Click="PauseQueue_Click" IsEnabled="False">
+                                <AppBarButton.Icon><SymbolIcon Symbol="Pause"/></AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarButton x:Name="CancelEncodeButton" Label="Stop" Click="CancelEncode_Click" IsEnabled="False">
+                                <AppBarButton.Icon><SymbolIcon Symbol="Stop"/></AppBarButton.Icon>
+                            </AppBarButton>
+                            <AppBarSeparator/>
+                            <AppBarButton x:Name="ClearDraftsButton" Label="Clear queue" Click="ClearDrafts_Click" IsEnabled="False">
+                                <AppBarButton.Icon><SymbolIcon Symbol="Delete"/></AppBarButton.Icon>
+                            </AppBarButton>
+                        </CommandBar>
+                        <Grid x:Name="QueueBody" Grid.Row="2" ColumnSpacing="{StaticResource HBSpaceGroup}" SizeChanged="QueueBody_SizeChanged">
+                            <Grid.ColumnDefinitions><ColumnDefinition x:Name="QueueListColumn" Width="0.65*"/><ColumnDefinition x:Name="QueueDetailColumn" Width="*"/></Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions><RowDefinition x:Name="QueueListRow" Height="*"/><RowDefinition x:Name="QueueDetailRow" Height="0"/></Grid.RowDefinitions>
+                            <Border CornerRadius="10" BorderThickness="1" Padding="4"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                <ListView x:Name="DraftQueueList" SelectionMode="Single" SelectionChanged="DraftQueueList_SelectionChanged">
+                                    <ListView.ItemContainerStyle>
+                                        <Style TargetType="ListViewItem"><Setter Property="HorizontalContentAlignment" Value="Stretch"/></Style>
+                                    </ListView.ItemContainerStyle>
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <Grid ColumnSpacing="10" Padding="6,8" ToolTipService.ToolTip="{Binding DestinationPath}">
+                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="{Binding StateIcon}" VerticalAlignment="Center"/></Viewbox>
+                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                    <TextBlock Text="{Binding OutputName}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                                    <TextBlock Text="{Binding RowSummary}" FontSize="{StaticResource HBCaptionFontSize}" TextTrimming="CharacterEllipsis"
+                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </Border>
+                            <Border x:Name="QueueDetailsCard" Grid.Column="1" CornerRadius="10" Padding="12" BorderThickness="1"
+                                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">
+                                <Grid RowSpacing="{StaticResource HBSpaceRow}">
+                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                    <TextBlock x:Name="QueueSelectedTitle" Text="Select a job" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                    <CommandBar Grid.Row="1" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True" Background="Transparent">
+                            <CommandBar.Resources>
+                                <ResourceDictionary Source="ms-appx:///Design/StandardCommands.xaml"/>
+                            </CommandBar.Resources>
+                                        <AppBarButton x:Name="EditQueueJobButton" Label="Edit" Click="EditQueueJob_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><SymbolIcon Symbol="Edit"/></AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <AppBarButton x:Name="ResetQueueJobButton" Label="Reset / Retry" Click="ResetQueueJob_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><SymbolIcon Symbol="Refresh"/></AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <AppBarButton x:Name="MoveQueueUpButton" Label="Move up" Click="MoveQueueUp_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><SymbolIcon Symbol="Up"/></AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <AppBarButton x:Name="MoveQueueDownButton" Label="Move down" Click="MoveQueueDown_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><FontIcon Glyph="&#xE74B;"/></AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <AppBarButton x:Name="RemoveDraftButton" Label="Remove" Click="RemoveDraft_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><SymbolIcon Symbol="Delete"/></AppBarButton.Icon>
+                                        </AppBarButton>
+                                        <CommandBar.SecondaryCommands>
+                                            <AppBarButton x:Name="OpenQueueSourceButton" Label="Open source in Workspace" Click="OpenQueueSource_Click" IsEnabled="False"/>
+                                            <AppBarButton x:Name="OpenQueueOutputButton" Label="Open output folder" Click="OpenQueueOutput_Click" IsEnabled="False"/>
+                                        </CommandBar.SecondaryCommands>
+                                    </CommandBar>
+                                    <TabView x:Name="QueueDetailTabs" Grid.Row="2" IsAddTabButtonVisible="False" CanDragTabs="False" CanReorderTabs="False"
+                                             TabWidthMode="SizeToContent" SelectionChanged="QueueDetailTabs_SelectionChanged">
+                                        <TabViewItem Header="Summary" IsClosable="False">
+                                            <ScrollViewer>
+                                                <StackPanel Spacing="{StaticResource HBSpaceGroup}" Padding="4,12">
+                                                    <InfoBar x:Name="QueueJobError" IsOpen="False" IsClosable="False" Severity="Error" Title="Job needs attention"/>
+                                                    <StackPanel x:Name="QueueSummaryFields" Spacing="{StaticResource HBSpaceRow}"/>
+                                                </StackPanel>
+                                            </ScrollViewer>
+                                        </TabViewItem>
+                                        <TabViewItem Header="Statistics" IsClosable="False">
+                                            <ScrollViewer>
+                                            <StackPanel Spacing="{StaticResource HBSpaceGroup}" Padding="4,12">
+                                                <ProgressBar x:Name="QueueJobProgress" Minimum="0" Maximum="100"/>
+                                                <TextBlock x:Name="QueueJobStatsText" Text="No statistics available." TextWrapping="Wrap"/>
+                                            </StackPanel>
+                                            </ScrollViewer>
+                                        </TabViewItem>
+                                        <TabViewItem Header="Activity Log" IsClosable="False">
+                                            <Grid RowSpacing="{StaticResource HBSpaceRow}" Padding="4,8">
+                                                <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
+                                                <Button Content="Refresh log" Click="RefreshQueueLog_Click"/>
+                                                <TextBox x:Name="QueueJobLogText" Grid.Row="1" IsReadOnly="True" AcceptsReturn="True" TextWrapping="Wrap"
+                                                         MaxWidth="100000" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                                                         FontFamily="Consolas" FontSize="{StaticResource HBCaptionFontSize}" ScrollViewer.VerticalScrollBarVisibility="Auto"/>
+                                            </Grid>
+                                        </TabViewItem>
+                                    </TabView>
+                                </Grid>
+                            </Border>
                         </Grid>
+                        <StackPanel Grid.Row="3" Spacing="{StaticResource HBSpaceTight}">
+                            <InfoBar x:Name="QueueStorageWarning" IsOpen="False" IsClosable="False" Severity="Warning"
+                                     Title="Queue storage is unavailable"/>
+                            <TextBlock x:Name="QueueStatusText" FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap" Text="Add a configured source to begin."
+                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+                            <ProgressBar x:Name="QueueEncodeProgress" Height="4" Minimum="0" Maximum="100" Value="0" Visibility="Collapsed"/>
+                        </StackPanel>
                     </Grid>
 
                     <local:PreferencesView x:Name="SettingsPanel" Visibility="Collapsed" />
@@ -418,81 +576,95 @@
             </NavigationView.Content>
         </NavigationView>
         <!-- Fluent source dialog: source selection stays in the Workspace context. -->
-        <Grid x:Name="SourcePickerOverlay" Visibility="Collapsed"
+        <Grid x:Name="SourcePickerOverlay" Grid.Row="1" Visibility="Collapsed"
               Background="#77000000" Opacity="1">
             <Grid.Transitions>
                 <TransitionCollection>
                     <EntranceThemeTransition FromVerticalOffset="12" />
                 </TransitionCollection>
             </Grid.Transitions>
-            <Border MaxWidth="620" HorizontalAlignment="Center" VerticalAlignment="Center"
+            <Border MaxWidth="760" Margin="24" HorizontalAlignment="Stretch" VerticalAlignment="Center"
                     Background="{ThemeResource AcrylicInAppFillColorDefaultBrush}"
-                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
-                    BorderThickness="1" CornerRadius="16" Padding="24">
-                <StackPanel Spacing="18">
-                    <Grid ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="Auto" />
-                        </Grid.ColumnDefinitions>
-                        <StackPanel Spacing="4">
-                            <TextBlock Text="Add media" FontSize="24" FontWeight="SemiBold" />
-                            <TextBlock Text="Choose what you want HandBrake to scan."
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                        <Button Grid.Column="1" Content="Close" Click="CloseSourcePicker_Click"
-                                VerticalAlignment="Top" />
-                    </Grid>
-                    <Grid ColumnSpacing="12">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="*" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Button Grid.Column="0" Click="OpenFiles_Click" HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch" Padding="16">
-                            <StackPanel Spacing="10" HorizontalAlignment="Left">
-                                <FontIcon Glyph="&#xE8A5;" FontSize="24" />
-                                <TextBlock Text="Video files" FontWeight="SemiBold" FontSize="16" />
-                                <TextBlock Text="Select one or more videos" FontSize="12"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Text="Ctrl + O" FontSize="12" />
+                    BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="12">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="640">
+                    <StackPanel Padding="24" Spacing="24">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                            <StackPanel Spacing="{StaticResource HBSpaceTight}">
+                                <TextBlock Text="Add media" FontSize="24" FontWeight="SemiBold" />
+                                <TextBlock Text="Drop media below or browse for a source." FontSize="13"
+                                           TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
-                        </Button>
-                        <Button Grid.Column="1" Click="OpenFolder_Click" HorizontalAlignment="Stretch"
-                                VerticalAlignment="Stretch" Padding="16">
-                            <StackPanel Spacing="10" HorizontalAlignment="Left">
-                                <FontIcon Glyph="&#xE8B7;" FontSize="24" />
-                                <TextBlock Text="Video folder" FontWeight="SemiBold" FontSize="16" />
-                                <TextBlock Text="Scan a folder for media" FontSize="12"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           TextWrapping="Wrap" />
-                                <TextBlock Text="Ctrl + Shift + O" FontSize="12" />
-                            </StackPanel>
-                        </Button>
-                    </Grid>
-                    <Border Background="{ThemeResource LayerFillColorDefaultBrush}"
-                            CornerRadius="10" Padding="18">
-                        <StackPanel HorizontalAlignment="Center" Spacing="8">
-                            <SymbolIcon Symbol="OpenFile" />
-                            <TextBlock Text="Or drop files and folders here"
-                                       FontSize="15" FontWeight="SemiBold" TextAlignment="Center" />
-                            <TextBlock Text="HandBrake will scan the selected source and detect titles."
-                                       FontSize="12" TextWrapping="Wrap" TextAlignment="Center"
-                                       Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                        </StackPanel>
-                    </Border>
-                </StackPanel>
+                            <Button Grid.Column="1" Content="Close" Click="CloseSourcePicker_Click"
+                                    VerticalAlignment="Top"
+                                    AutomationProperties.Name="Close Add media" />
+                        </Grid>
+                        <Border MinHeight="240" Padding="24" CornerRadius="8" BorderThickness="1"
+                                BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                                Background="{ThemeResource LayerFillColorDefaultBrush}">
+                            <Grid>
+                                <Border x:Name="SourceDropFeedback" Visibility="Collapsed" IsHitTestVisible="False"
+                                        Margin="-24" CornerRadius="8" BorderThickness="2"
+                                        BorderBrush="{ThemeResource AccentFillColorDefaultBrush}">
+                                    <Border Background="{ThemeResource AccentFillColorDefaultBrush}" Opacity="0.08" CornerRadius="6"/>
+                                </Border>
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="{StaticResource HBSpaceRow}">
+                                    <Viewbox Width="32" Height="32" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="OpenFile" HorizontalAlignment="Center"/></Viewbox>
+                                    <StackPanel Spacing="{StaticResource HBSpaceTight}">
+                                        <TextBlock Text="Drop files or folders" FontSize="18" FontWeight="SemiBold"
+                                                   TextAlignment="Center" TextWrapping="Wrap" />
+                                        <TextBlock Text="HandBrake scans your media to detect video titles." FontSize="13"
+                                                   TextAlignment="Center" TextWrapping="Wrap"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+                        <Grid x:Name="SourceBrowseActions" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}"
+                              SizeChanged="SourceBrowseActions_SizeChanged">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/><ColumnDefinition x:Name="SourceBrowseSecondColumn" Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/><RowDefinition x:Name="SourceBrowseSecondRow" Height="0"/>
+                            </Grid.RowDefinitions>
+                            <Button Click="OpenFiles_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                    Style="{StaticResource HBMediaSourceButtonStyle}">
+                                <Grid ColumnSpacing="{StaticResource HBSpaceGroup}">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <Viewbox Width="{StaticResource HBMediaSourceIconSize}" Height="{StaticResource HBMediaSourceIconSize}" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="OpenFile" VerticalAlignment="Center" /></Viewbox>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Browse files" FontSize="{StaticResource HBBodyFontSize}" FontWeight="SemiBold" />
+                                        <TextBlock Text="Select one or more videos" FontSize="13" TextWrapping="Wrap"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                            <Button x:Name="SourceBrowseFolderButton" Grid.Column="1" Click="OpenFolder_Click"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Style="{StaticResource HBMediaSourceButtonStyle}">
+                                <Grid ColumnSpacing="{StaticResource HBSpaceGroup}">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                    <Viewbox Width="{StaticResource HBMediaSourceIconSize}" Height="{StaticResource HBMediaSourceIconSize}" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Folder" VerticalAlignment="Center" /></Viewbox>
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Browse folder" FontSize="{StaticResource HBBodyFontSize}" FontWeight="SemiBold" />
+                                        <TextBlock Text="Scan a media folder" FontSize="13" TextWrapping="Wrap"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                </Grid>
+                            </Button>
+                        </Grid>
+                    </StackPanel>
+                </ScrollViewer>
             </Border>
         </Grid>
 
         <!-- Hit-test transparent feedback while dragging from File Explorer. -->
-        <Border x:Name="DropHighlight" Visibility="Collapsed"
+        <Border x:Name="DropHighlight" Grid.Row="1" Visibility="Collapsed"
                 IsHitTestVisible="False" Margin="12" CornerRadius="12"
                 BorderThickness="3" BorderBrush="{ThemeResource AccentFillColorDefaultBrush}"
                 Background="#330080C0">
             <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center"
-                        Spacing="12" Margin="16">
+                        Spacing="{StaticResource HBSpaceGroup}" Margin="16">
                 <SymbolIcon Symbol="OpenFile" />
                 <TextBlock Text="Drop to open source"
                            FontSize="22" FontWeight="SemiBold"

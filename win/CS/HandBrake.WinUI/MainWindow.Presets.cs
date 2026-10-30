@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using HandBrake.Interop.Interop;
 using HandBrake.Interop.Interop.Interfaces.Model.Encoders;
 using HandBrake.Interop.Interop.Json.Presets;
@@ -20,17 +21,19 @@ public sealed partial class MainWindow
     private sealed class NativePresetChoice
     {
         public required string Key { get; init; }
+        public required string Category { get; init; }
         public required string DisplayName { get; init; }
         public required HBPreset Preset { get; init; }
+        public required string Json { get; init; }
     }
 
     private bool presetLoadAttempted;
     private bool updatingVideoEditor;
     private HBPreset? activePreset;
     private readonly List<HBVideoEncoder> nativeVideoEncoders = new();
+    private readonly List<NativePresetChoice> nativePresetChoices = new();
 
-    private NativePresetChoice? ActivePresetChoice
-        => (PresetPicker.SelectedItem as ComboBoxItem)?.Tag as NativePresetChoice;
+    private NativePresetChoice? ActivePresetChoice { get; set; }
 
     private HBVideoEncoder? ActiveVideoEncoder
         => (VideoEncoderPicker.SelectedItem as ComboBoxItem)?.Tag as HBVideoEncoder;
@@ -42,7 +45,7 @@ public sealed partial class MainWindow
 
         if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll")))
         {
-            PresetStatusText.Text = "Native presets unavailable: the matching hb.dll is missing. No sample presets are substituted.";
+            SourceStatusText.Text = "Native presets unavailable: the matching hb.dll is missing. No sample presets are substituted.";
             return;
         }
 
@@ -51,25 +54,27 @@ public sealed partial class MainWindow
             // HandBrakePresetService requires hb_init, not just hb_global_init.
             // Reuse the same native instance later for source scanning.
             scanInstance ??= CreateScanInstance();
-            var categories = HandBrakePresetService.GetBuiltInPresets();
-            if (categories is null) throw new InvalidOperationException("libhb returned no preset catalog.");
+            using var catalog = JsonDocument.Parse(HandBrakePresetService.GetBuiltInPresetsJson());
 
             var choices = new List<NativePresetChoice>();
-            foreach (var category in categories)
+            foreach (var categoryJson in catalog.RootElement.EnumerateArray())
             {
-                if (category.ChildrenArray is null) continue;
-                foreach (var preset in category.ChildrenArray)
+                if (!categoryJson.TryGetProperty("ChildrenArray", out var children)) continue;
+                string categoryName = categoryJson.GetProperty("PresetName").GetString() ?? "Other";
+                foreach (var presetJson in children.EnumerateArray())
                 {
+                    var preset = presetJson.Deserialize<HBPreset>();
                     if (preset is null || preset.Folder || preset.PresetDisabled ||
                         string.IsNullOrWhiteSpace(preset.PresetName))
                         continue;
 
-                    string categoryName = category.PresetName ?? "Other";
                     choices.Add(new NativePresetChoice
                     {
                         Key = categoryName + "/" + preset.PresetName,
+                        Category = categoryName,
                         DisplayName = categoryName + " / " + preset.PresetName,
-                        Preset = preset
+                        Preset = preset,
+                        Json = presetJson.GetRawText()
                     });
                 }
             }
@@ -77,13 +82,14 @@ public sealed partial class MainWindow
             if (choices.Count == 0)
                 throw new InvalidOperationException("No usable built-in presets were returned by libhb.");
 
+            nativePresetChoices.Clear();
+            nativePresetChoices.AddRange(choices);
             nativeVideoEncoders.Clear();
             nativeVideoEncoders.AddRange(HandBrakeEncoderHelpers.VideoEncoders);
             if (nativeVideoEncoders.Count == 0)
                 throw new InvalidOperationException("libhb returned no video encoders.");
 
             updatingVideoEditor = true;
-            PresetPicker.Items.Clear();
             VideoEncoderPicker.Items.Clear();
 
             foreach (var encoder in nativeVideoEncoders)
@@ -95,38 +101,33 @@ public sealed partial class MainWindow
                 });
             }
 
-            foreach (var choice in choices)
-            {
-                PresetPicker.Items.Add(new ComboBoxItem { Content = choice.DisplayName, Tag = choice });
-            }
-
-            string preferred = SettingsPanel.Preferences.PreferredPresetKey;
-            int chosen = choices.FindIndex(x => x.Key == preferred);
-            if (chosen < 0) chosen = choices.FindIndex(x => x.Preset.Default);
-            if (chosen < 0) chosen = choices.FindIndex(x => x.Preset.PresetName == "Fast 1080p30");
-            PresetPicker.SelectedIndex = chosen < 0 ? 0 : chosen;
+            BuildPresetPicker();
+            ActivePresetChoice = GetDefaultPreset();
             PresetPicker.IsEnabled = true;
             updatingVideoEditor = false;
             ApplyNativePreset();
-            PresetStatusText.Text = $"{choices.Count} real built-in presets and {nativeVideoEncoders.Count} encoder definitions loaded from libhb.";
+            InitializeFilterEditor();
+            UpdateQueueUi();
         }
         catch (Exception ex)
         {
             updatingVideoEditor = false;
             activePreset = null;
+            ActivePresetChoice = null;
+            PresetPicker.PlaceholderText = "Presets unavailable";
+            PresetPicker.Items.Clear();
+            presetPickerItems.Clear();
+            PresetActionsButton.IsEnabled = false;
+            ReloadPresetButton.IsEnabled = false;
+            nativePresetChoices.Clear();
             PresetPicker.IsEnabled = false;
             VideoEncoderPicker.IsEnabled = false;
             VideoRateModePicker.IsEnabled = false;
             VideoQualitySlider.IsEnabled = false;
             VideoBitrateBox.IsEnabled = false;
-            PresetStatusText.Text = "Could not load presets from the matching native HandBrake engine: " + ex.Message;
+            SourceStatusText.Text = "Could not load presets from the matching native HandBrake engine: " + ex.Message;
+            UpdateQueueUi();
         }
-    }
-
-    private void PresetPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (updatingVideoEditor) return;
-        ApplyNativePreset();
     }
 
     private void ApplyNativePreset()
@@ -134,14 +135,19 @@ public sealed partial class MainWindow
         var choice = ActivePresetChoice;
         if (choice is null) return;
         activePreset = choice.Preset;
-
         updatingVideoEditor = true;
         try
         {
-            PresetDescriptionText.Text = string.IsNullOrWhiteSpace(activePreset.PresetDescription)
-                ? choice.DisplayName
-                : choice.DisplayName + "\n" + activePreset.PresetDescription;
-            PresetContainerText.Text = FormatPresetContainer(activePreset.FileFormat);
+            UsePresetAudioToggle.IsChecked = UsePresetSubtitlesToggle.IsChecked = UsePresetFiltersToggle.IsChecked = true;
+            CustomGeometryToggle.IsChecked = false;
+            foreach (var editor in filterEditors) editor.Enabled.IsChecked = false;
+            ChapterMarkersToggle.IsChecked = activePreset.ChapterMarkers;
+            MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
+            if (SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: HandBrake.Interop.Interop.Json.Scan.SourceTitle title })
+            {
+                DisplayChapterEditor(title);
+                ResetManualGeometryEditor(title);
+            }
             PresetVideoDetailsText.Text =
                 $"Frame rate: {DisplayPresetFramerate(activePreset.VideoFramerate)} " +
                 $"({activePreset.VideoFramerateMode ?? "preset default"})\n" +
@@ -183,6 +189,7 @@ public sealed partial class MainWindow
                 VideoBitrateBox.IsEnabled = false;
                 PresetVideoDetailsText.Text += "\nThe preset's encoder is not listed by this native build.";
             }
+            LoadAdvancedPreset();
             UpdateVideoModeControls();
         }
         finally
@@ -191,7 +198,8 @@ public sealed partial class MainWindow
         }
 
         UpdateSuggestedDestination();
-        UpdateEncodeAvailability();
+        RefreshOutputSummary();
+        UpdatePresetPresentation();
 
         var prefs = SettingsPanel.Preferences;
         if (prefs.PreferredPresetKey != choice.Key)
@@ -200,7 +208,7 @@ public sealed partial class MainWindow
             try { prefs.Save(); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                PresetStatusText.Text = "Preset selected but could not save preference: " + ex.Message;
+                SourceStatusText.Text = "Preset selected but could not save preference: " + ex.Message;
             }
         }
     }
@@ -224,9 +232,12 @@ public sealed partial class MainWindow
         try
         {
             ConfigureVideoEncoder();
+            ConfigureAdvancedEncoder();
             UpdateVideoModeControls();
         }
         finally { updatingVideoEditor = false; }
+        RefreshOutputSummary();
+        UpdatePresetPresentation();
     }
 
     private void ConfigureVideoEncoder()
@@ -269,10 +280,12 @@ public sealed partial class MainWindow
     {
         if (updatingVideoEditor) return;
         UpdateVideoModeControls();
+        RefreshOutputSummary();
     }
 
     private void UpdateVideoModeControls()
     {
+        UpdateAdvancedAvailability();
         bool hasEncoder = ActiveVideoEncoder is not null;
         bool quality = VideoRateModePicker.SelectedIndex == 0;
         bool bitrate = VideoRateModePicker.SelectedIndex == 1;
@@ -287,11 +300,11 @@ public sealed partial class MainWindow
             ? "Select a native preset to configure the video."
             : encoder is null
                 ? "This preset's encoder is unavailable in the native build. Select another encoder."
-                : !IsContainerCompatible(FormatPresetContainer(choice.Preset.FileFormat), encoder)
+                : !IsContainerCompatible(CurrentContainer, encoder)
                     ? "This encoder cannot be used with the preset's output container. Select a compatible encoder."
                     : VideoRateModePicker.SelectedIndex < 0
                         ? "Select a supported rate-control mode to configure this draft."
-                        : "Video settings can be staged as a queue draft. Actual encoding is not yet enabled.";
+                        : "Ready to add this native preset and video configuration to the encode queue.";
     }
 
     private static bool IsContainerCompatible(string container, HBVideoEncoder encoder)
@@ -305,12 +318,12 @@ public sealed partial class MainWindow
 
     private void VideoQualitySlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
-        if (!updatingVideoEditor) UpdateVideoQualityText();
+        if (!updatingVideoEditor) { UpdateVideoQualityText(); RefreshOutputSummary(); }
     }
 
     private void VideoBitrateBox_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs e)
     {
-        // The queue reads the latest validated numeric value when staging.
+        if (!updatingVideoEditor) RefreshOutputSummary();
     }
 
     private void UpdateVideoQualityText()
@@ -338,7 +351,7 @@ public sealed partial class MainWindow
 
         // Native encoder capabilities are muxer-specific. Do not stage a
         // video configuration the selected HandBrake container cannot mux.
-        string container = FormatPresetContainer(preset.Preset.FileFormat);
+        string container = CurrentContainer;
         if (!IsContainerCompatible(container, encoder)) return false;
 
         settings = new VideoDraftSettings(
@@ -349,8 +362,8 @@ public sealed partial class MainWindow
             quality ? "ConstantQuality" : "AverageBitrate",
             quality ? VideoQualitySlider.Value : null,
             bitrate ? (int)Math.Round(VideoBitrateBox.Value) : null,
-            preset.Preset.VideoFramerate,
-            preset.Preset.VideoPreset);
+            ChoiceValue(frameRatePicker),
+            ChoiceValue(speedPicker));
         return true;
     }
 
@@ -359,3 +372,5 @@ public sealed partial class MainWindow
         string VideoEncoder, string RateControl, double? Quality,
         int? BitrateKbps, string? Framerate, string? EncoderSpeed);
 }
+
+
