@@ -172,6 +172,7 @@ public sealed partial class MainWindow : Window
     {
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
         sourcePickerAnimation?.Stop();
+        ClearSourceDropFeedback();
         SourcePickerOverlay.Visibility = Visibility.Visible;
         SourcePickerOverlay.Opacity = 0;
         AnimateOpacity(SourcePickerOverlay, 0, 1, 180, storyboard => sourcePickerAnimation = storyboard);
@@ -182,6 +183,7 @@ public sealed partial class MainWindow : Window
     private void HideSourcePicker()
     {
         if (SourcePickerOverlay.Visibility != Visibility.Visible) return;
+        ClearSourceDropFeedback();
         sourcePickerAnimation?.Stop();
         AnimateOpacity(SourcePickerOverlay, SourcePickerOverlay.Opacity, 0, 140, storyboard =>
         {
@@ -320,23 +322,26 @@ public sealed partial class MainWindow : Window
         if (e.DataView.Contains(StandardDataFormats.StorageItems))
         {
             e.AcceptedOperation = DataPackageOperation.Copy;
-            DropHighlight.Visibility = Visibility.Visible;
+            bool pickerVisible = SourcePickerOverlay.Visibility == Visibility.Visible;
+            SourceDropFeedback.Visibility = pickerVisible ? Visibility.Visible : Visibility.Collapsed;
+            DropHighlight.Visibility = pickerVisible ? Visibility.Collapsed : Visibility.Visible;
             e.Handled = true;
         }
         else
         {
             e.AcceptedOperation = DataPackageOperation.None;
+            ClearSourceDropFeedback();
         }
     }
 
     private void WindowRoot_DragLeave(object sender, DragEventArgs e)
     {
-        DropHighlight.Visibility = Visibility.Collapsed;
+        ClearSourceDropFeedback();
     }
 
     private async void WindowRoot_Drop(object sender, DragEventArgs e)
     {
-        DropHighlight.Visibility = Visibility.Collapsed;
+        ClearSourceDropFeedback();
         if (!e.DataView.Contains(StandardDataFormats.StorageItems)) return;
 
         e.Handled = true;

@@ -549,40 +549,67 @@
                     <StackPanel Padding="24" Spacing="24">
                         <Grid ColumnSpacing="16">
                             <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                            <StackPanel Spacing="8">
-                                <TextBlock Text="Add media" Style="{ThemeResource TitleTextBlockStyle}" />
-                                <TextBlock Text="Drop media below or browse for a source." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="Add media" FontSize="24" FontWeight="SemiBold" />
+                                <TextBlock Text="Drop media below or browse for a source." FontSize="13"
+                                           TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
-                            <Button Grid.Column="1" Content="Close" Click="CloseSourcePicker_Click" VerticalAlignment="Top" />
+                            <Button Grid.Column="1" Click="CloseSourcePicker_Click" VerticalAlignment="Top"
+                                    Width="32" Height="32" Padding="6"
+                                    AutomationProperties.Name="Close Add media" ToolTipService.ToolTip="Close">
+                                <SymbolIcon Symbol="Cancel" FontSize="16"/>
+                            </Button>
                         </Grid>
                         <Border MinHeight="240" Padding="24" CornerRadius="8" BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 Background="{ThemeResource LayerFillColorDefaultBrush}">
-                            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="12">
-                                <FontIcon Glyph="&#xE896;" FontSize="40" HorizontalAlignment="Center" />
-                                <TextBlock Text="Drop files or folders here" Style="{ThemeResource SubtitleTextBlockStyle}" TextAlignment="Center" TextWrapping="Wrap" />
-                                <TextBlock Text="HandBrake scans your media to detect video titles." TextAlignment="Center" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                            </StackPanel>
+                            <Grid>
+                                <Border x:Name="SourceDropFeedback" Visibility="Collapsed" IsHitTestVisible="False"
+                                        Margin="-24" CornerRadius="8" BorderThickness="2"
+                                        BorderBrush="{ThemeResource AccentFillColorDefaultBrush}">
+                                    <Border Background="{ThemeResource AccentFillColorDefaultBrush}" Opacity="0.08" CornerRadius="6"/>
+                                </Border>
+                                <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8">
+                                    <SymbolIcon Symbol="OpenFile" FontSize="32" HorizontalAlignment="Center"/>
+                                    <StackPanel Spacing="4">
+                                        <TextBlock Text="Drop files or folders" FontSize="18" FontWeight="SemiBold"
+                                                   TextAlignment="Center" TextWrapping="Wrap" />
+                                        <TextBlock Text="HandBrake scans your media to detect video titles." FontSize="13"
+                                                   TextAlignment="Center" TextWrapping="Wrap"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
                         </Border>
-                        <Grid ColumnSpacing="16">
-                            <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                            <Button Click="OpenFiles_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16">
+                        <Grid x:Name="SourceBrowseActions" ColumnSpacing="12" RowSpacing="12"
+                              SizeChanged="SourceBrowseActions_SizeChanged">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/><ColumnDefinition x:Name="SourceBrowseSecondColumn" Width="*"/>
+                            </Grid.ColumnDefinitions>
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/><RowDefinition x:Name="SourceBrowseSecondRow" Height="0"/>
+                            </Grid.RowDefinitions>
+                            <Button Click="OpenFiles_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+                                    MinHeight="68" Padding="12">
                                 <Grid ColumnSpacing="12">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <SymbolIcon Symbol="OpenFile" VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="1" Spacing="4">
-                                        <TextBlock Text="Browse files" FontWeight="SemiBold" />
-                                        <TextBlock Text="Select one or more videos" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <SymbolIcon Symbol="OpenFile" FontSize="20" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Browse files" FontSize="14" FontWeight="SemiBold" />
+                                        <TextBlock Text="Select one or more videos" FontSize="13" TextWrapping="Wrap"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                 </Grid>
                             </Button>
-                            <Button Grid.Column="1" Click="OpenFolder_Click" HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" Padding="16">
+                            <Button x:Name="SourceBrowseFolderButton" Grid.Column="1" Click="OpenFolder_Click"
+                                    HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch" MinHeight="68" Padding="12">
                                 <Grid ColumnSpacing="12">
                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                    <SymbolIcon Symbol="Folder" VerticalAlignment="Center" />
-                                    <StackPanel Grid.Column="1" Spacing="4">
-                                        <TextBlock Text="Browse folder" FontWeight="SemiBold" />
-                                        <TextBlock Text="Scan a media folder" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                    <SymbolIcon Symbol="Folder" FontSize="20" VerticalAlignment="Center" />
+                                    <StackPanel Grid.Column="1" Spacing="2" VerticalAlignment="Center">
+                                        <TextBlock Text="Browse folder" FontSize="14" FontWeight="SemiBold" />
+                                        <TextBlock Text="Scan a media folder" FontSize="13" TextWrapping="Wrap"
+                                                   Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                     </StackPanel>
                                 </Grid>
                             </Button>

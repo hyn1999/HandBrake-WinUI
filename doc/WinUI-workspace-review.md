@@ -98,3 +98,11 @@ Visual density and responsive breakpoints require checking in the next batched W
 - Frame loading, reset, failure and successful decode are reflected in both views. Closing the main window also closes the preview window. Each view fits the complete bitmap within its own viewport.
 - This window is a still-frame viewer. WPF's Encode Preview clip generation, live crop overlay and external-player integration remain unimplemented.
 - XAML and handler references for both windows were checked. No build was run. Next Windows validation must cover repeated open/close, navigation from either view, reset during decode, short/narrow layouts, theme/DPI and main-window shutdown.
+
+## Add media spacing follow-up
+
+- Preserved the source dialog width/margins and the drop zone's 240 minimum height with 24 padding; the large drag target remains available.
+- Reduced spacing inside text groups, used a 24-point heading and an icon-only accessible close button, and replaced the download arrow with a native file-opening icon.
+- Browse actions use matching 20-point icons, 12 padding, two-point title/description spacing and a 68 minimum height. Actions stack below 520 logical pixels.
+- Valid file drags highlight the dialog's drop zone with a theme Accent border and subtle tint. The whole-window feedback remains for drags outside the source dialog; feedback clears on leave, drop and dialog transitions.
+- XAML, event references and preservation of the original target dimensions were checked. No build or Windows visual validation was performed.
