@@ -139,7 +139,7 @@ public sealed partial class MainWindow
                 var duration = FormatDuration(title.Duration);
                 SourceTitlePicker.Items.Add(new ComboBoxItem
                 {
-                    Content = $"Title {title.Index}: {title.Name ?? Path.GetFileName(title.Path)} · {duration}",
+                    Content = $"{title.Index}: {title.Name ?? Path.GetFileName(title.Path)} · {duration}",
                     Tag = title
                 });
             }
@@ -155,7 +155,7 @@ public sealed partial class MainWindow
 
             int index = scannedTitles.FindIndex(t => t.Index == mainFeature);
             SourceTitlePicker.SelectedIndex = index >= 0 ? index : 0;
-            SourceStatusText.Text = $"Scan complete · {scannedTitles.Count} title(s) detected by HandBrake.";
+            SourceStatusText.Text = $"Scan complete · {scannedTitles.Count} title(s).";
             RestoreQueueEditAfterScan();
         });
     }

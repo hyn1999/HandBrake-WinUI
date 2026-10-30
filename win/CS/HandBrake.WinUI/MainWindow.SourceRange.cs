@@ -14,7 +14,7 @@ public sealed partial class MainWindow
     private readonly ComboBox sourceRangePicker = new() { Header = "Range" };
     private readonly NumberBox rangeStartBox = new() { Header = "Start", SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
     private readonly NumberBox rangeEndBox = new() { Header = "End", SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
-    private readonly TextBlock rangeDurationText = new() { Text = "Scan a title to choose its range.", TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
+    private readonly TextBlock rangeDurationText = new() { Text = "—", TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center };
     private bool updatingSourceSelection;
     private Grid? rangeBoundsPanel;
 
@@ -22,10 +22,15 @@ public sealed partial class MainWindow
     {
         updatingSourceSelection = true;
         PopulateChoices(sourceRangePicker, new[] { ("Full title", "all"), ("Chapters", "chapter"), ("Seconds", "time"), ("Frames", "frame") }, "all");
-        SourceRangePanel.Children.Add(CompactRow(anglePicker, sourceRangePicker, rangeDurationText));
-        rangeBoundsPanel = CompactRow(rangeStartBox, rangeEndBox);
+        rangeBoundsPanel = new Grid { ColumnSpacing = 12 };
+        rangeBoundsPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        rangeBoundsPanel.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        rangeStartBox.HorizontalAlignment = rangeEndBox.HorizontalAlignment = HorizontalAlignment.Stretch;
+        rangeStartBox.MaxWidth = rangeEndBox.MaxWidth = double.PositiveInfinity;
+        Grid.SetColumn(rangeEndBox, 1);
+        rangeBoundsPanel.Children.Add(rangeStartBox); rangeBoundsPanel.Children.Add(rangeEndBox);
         rangeBoundsPanel.Visibility = Visibility.Collapsed;
-        SourceRangePanel.Children.Add(rangeBoundsPanel);
+        InitializeSourceHeaderHelp();
         sourceRangePicker.SelectionChanged += (_, _) =>
         {
             if (!updatingSourceSelection && SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: SourceTitle title })
@@ -66,8 +71,8 @@ public sealed partial class MainWindow
             string type = ChoiceValue(sourceRangePicker);
             bool full = type == "all", time = type == "time";
             if (rangeBoundsPanel is not null) rangeBoundsPanel.Visibility = full ? Visibility.Collapsed : Visibility.Visible;
-            rangeStartBox.Header = time ? "Start (seconds)" : "Start (inclusive)";
-            rangeEndBox.Header = time ? "End (seconds, exclusive)" : "End (inclusive)";
+            rangeStartBox.Header = time ? "Start (seconds)" : "Start";
+            rangeEndBox.Header = time ? "End (seconds)" : "End";
             rangeStartBox.Minimum = rangeEndBox.Minimum = time ? 0 : 1;
             rangeStartBox.Maximum = rangeEndBox.Maximum = time ? Math.Max(1, SourceSeconds(title)) : int.MaxValue;
             rangeStartBox.SmallChange = rangeEndBox.SmallChange = time ? 0.1 : 1;
@@ -77,6 +82,7 @@ public sealed partial class MainWindow
                 : time ? SourceSeconds(title) : Math.Max(1, Math.Floor(SourceSeconds(title) * fps));
         }
         finally { updatingSourceSelection = false; }
+        LayoutSourceHeader();
         UpdateRangeDuration();
     }
 
@@ -119,7 +125,7 @@ public sealed partial class MainWindow
         {
             var selection = ReadSourceSelection(title);
             double seconds = SourceSeconds(title);
-            string prefix = "Duration: ";
+            string prefix = "";
             if (selection.Type == "time") seconds = selection.End - selection.Start;
             if (selection.Type == "chapter")
                 seconds = title.ChapterList.Skip((int)selection.Start - 1).Take((int)(selection.End - selection.Start + 1))
@@ -129,9 +135,9 @@ public sealed partial class MainWindow
                 double fps = title.FrameRate is { Den: > 0 } rate ? (double)rate.Num / rate.Den : 0;
                 if (fps <= 0) { rangeDurationText.Text = "Frame duration is unavailable."; return; }
                 seconds = (selection.End - selection.Start + 1) / fps;
-                prefix = "Estimated duration: ";
+                prefix = "≈ ";
             }
-            rangeDurationText.Text = prefix + TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss\.fff");
+            rangeDurationText.Text = prefix + TimeSpan.FromSeconds(seconds).ToString(@"hh\:mm\:ss");
         }
         catch (InvalidOperationException error) { rangeDurationText.Text = error.Message; }
     }

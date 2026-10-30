@@ -576,5 +576,6 @@ public sealed partial class MainWindow
         ClearDraftsButton.IsEnabled = editable && draftQueue.Count > 0;
         StageQueueButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && selectedSourcePaths.Count > 0 &&
             (queueEditSnapshot is null || queueEditReady && !scanInProgress);
+        LayoutSourceHeader();
     }
 }

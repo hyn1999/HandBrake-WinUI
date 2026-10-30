@@ -39,15 +39,16 @@ public sealed partial class MainWindow
     {
         queueEditSnapshot = null;
         queueEditReady = false;
-        StageQueueButton.Label = "Add to queue";
-        ToolTipService.SetToolTip(StageQueueButton, "Add the configured title to the queue");
+        StageQueueLabel.Text = "Add to Queue";
+        StageQueueIcon.Symbol = Symbol.Add;
+        ToolTipService.SetToolTip(StageQueueButton, "Add to Queue (Alt+A)");
         CancelQueueEditButton.Visibility = Visibility.Collapsed;
     }
 
     private void CancelQueueEdit_Click(object sender, RoutedEventArgs args)
     {
         EndQueueEdit();
-        SourceStatusText.Text = "Queue edit canceled. The original job is unchanged.";
+        SourceStatusText.Text = "Edit canceled.";
         UpdateQueueUi();
     }
 
@@ -182,9 +183,10 @@ public sealed partial class MainWindow
             if (!JsonNode.DeepEquals(expected, actual))
                 throw new InvalidOperationException("This editor cannot restore every saved setting without changes.");
             queueEditReady = true;
-            SourceStatusText.Text = $"Editing queued job: {saved.OutputName}. Save changes updates the original; Cancel edit leaves it unchanged.";
-            StageQueueButton.Label = "Save changes";
-            ToolTipService.SetToolTip(StageQueueButton, "Save changes to the original queued job");
+            SourceStatusText.Text = $"Editing: {saved.OutputName}";
+            StageQueueLabel.Text = "Save changes";
+            StageQueueIcon.Symbol = Symbol.Save;
+            ToolTipService.SetToolTip(StageQueueButton, "Save changes (Alt+A)");
             UpdatePresetPresentation(); RefreshOutputSummary(); UpdateEncodeControls();
             _ = LoadPreviewAsync(title);
         }

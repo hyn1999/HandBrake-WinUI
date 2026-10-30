@@ -390,7 +390,7 @@ public sealed partial class MainWindow : Window
             queueEditSnapshot = System.Text.Json.JsonSerializer.Deserialize<QueueDraft>(
                 System.Text.Json.JsonSerializer.Serialize(editJob));
             CancelQueueEditButton.Visibility = Visibility.Visible;
-            StageQueueButton.Label = "Loading job…";
+            StageQueueLabel.Text = "Loading job…";
         }
         MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
         destinationOverride = null;
@@ -412,8 +412,8 @@ public sealed partial class MainWindow : Window
         UpdateSuggestedDestination();
 
         SourceStatusText.Text = paths.Count == 1
-            ? "Source selected. Preparing HandBrake source scan..."
-            : $"{paths.Count} sources selected. Open and scan one source at a time to configure each encode job.";
+            ? "Preparing scan…"
+            : $"{paths.Count} sources selected.";
 
         SourcePickerOverlay.Visibility = Visibility.Collapsed;
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];

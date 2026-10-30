@@ -61,46 +61,66 @@
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <!-- Fluent commands overflow automatically as the window narrows. -->
-                        <Grid RowSpacing="8">
+                        <!-- Source header: commands, source identity, then one bounded selection group. -->
+                        <Grid x:Name="SourceHeader" RowSpacing="12" SizeChanged="SourceHeader_SizeChanged">
+                            <Grid.Resources>
+                                <Style TargetType="Button">
+                                    <Setter Property="MinHeight" Value="32"/>
+                                    <Setter Property="Padding" Value="12,5"/>
+                                    <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}"/>
+                                </Style>
+                                <Style TargetType="ComboBox">
+                                    <Setter Property="MinHeight" Value="32"/>
+                                    <Setter Property="HorizontalAlignment" Value="Left"/>
+                                    <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}"/>
+                                </Style>
+                                <Style TargetType="NumberBox">
+                                    <Setter Property="MinHeight" Value="32"/>
+                                    <Setter Property="CornerRadius" Value="{ThemeResource ControlCornerRadius}"/>
+                                </Style>
+                            </Grid.Resources>
                             <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                            <CommandBar x:Name="WorkspaceCommands" DefaultLabelPosition="Right"
-                                        IsDynamicOverflowEnabled="True" Background="Transparent">
-                                <AppBarButton Label="Open source" Click="ShowSourcePicker_Click"
-                                              ToolTipService.ToolTip="Open source (Alt+O)">
-                                    <AppBarButton.Icon><SymbolIcon Symbol="OpenFile"/></AppBarButton.Icon>
-                                </AppBarButton>
-                                <AppBarButton x:Name="StageQueueButton" Label="Add to queue"
-                                              Click="StageQueue_Click" IsEnabled="False"
-                                              ToolTipService.ToolTip="Add the configured title to the queue">
-                                    <AppBarButton.Icon><SymbolIcon Symbol="Add"/></AppBarButton.Icon>
-                                </AppBarButton>
-                                <AppBarButton x:Name="CancelQueueEditButton" Label="Cancel edit" Click="CancelQueueEdit_Click" Visibility="Collapsed">
-                                    <AppBarButton.Icon><SymbolIcon Symbol="Cancel"/></AppBarButton.Icon>
-                                </AppBarButton>
-                                <AppBarButton x:Name="StartEncodeButton" Label="Start Encode"
-                                              Click="StartEncode_Click" IsEnabled="False"
-                                              Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
-                                              ToolTipService.ToolTip="Start configured queue jobs">
-                                    <AppBarButton.Icon><SymbolIcon Symbol="Play"/></AppBarButton.Icon>
-                                </AppBarButton>
-                            </CommandBar>
-                            <Grid Grid.Row="1" ColumnSpacing="12">
-                                <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
-                                <StackPanel Spacing="2" VerticalAlignment="Center">
-                                    <TextBlock x:Name="SelectedFileText" Text="No source selected"
-                                               FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
-                                    <TextBlock x:Name="SelectedPathText" Text="Choose a video to begin"
-                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                               TextTrimming="CharacterEllipsis" FontSize="12"
-                                               ToolTipService.ToolTip="{Binding Text, ElementName=SelectedPathText}" />
+                            <StackPanel x:Name="WorkspaceCommands" Spacing="8" HorizontalAlignment="Stretch">
+                                <Button Click="ShowSourcePicker_Click" ToolTipService.ToolTip="Open Source (Alt+O)">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Viewbox Width="16" Height="16"><SymbolIcon Symbol="OpenFile"/></Viewbox>
+                                        <TextBlock Text="Open Source" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="StageQueueButton" Click="StageQueue_Click" IsEnabled="False"
+                                        ToolTipService.ToolTip="Add to Queue (Alt+A)">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Viewbox Width="16" Height="16"><SymbolIcon x:Name="StageQueueIcon" Symbol="Add"/></Viewbox>
+                                        <TextBlock x:Name="StageQueueLabel" Text="Add to Queue" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="CancelQueueEditButton" Click="CancelQueueEdit_Click" Visibility="Collapsed" ToolTipService.ToolTip="Cancel edit">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Viewbox Width="16" Height="16"><SymbolIcon Symbol="Cancel"/></Viewbox>
+                                        <TextBlock Text="Cancel edit" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                                <Button x:Name="StartEncodeButton" Click="StartEncode_Click" IsEnabled="False"
+                                        Style="{StaticResource AccentButtonStyle}" CornerRadius="{ThemeResource ControlCornerRadius}"
+                                        MinHeight="32" Padding="12,5" ToolTipService.ToolTip="Start Encode (Ctrl+E)">
+                                    <StackPanel Orientation="Horizontal" Spacing="8">
+                                        <Viewbox Width="16" Height="16"><SymbolIcon Symbol="Play"/></Viewbox>
+                                        <TextBlock Text="Start Encode" VerticalAlignment="Center"/>
+                                    </StackPanel>
+                                </Button>
+                            </StackPanel>
+                            <StackPanel Grid.Row="1" Spacing="2">
+                                <TextBlock x:Name="SelectedFileText" Text="No source selected" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock x:Name="SelectedPathText" Text="Choose a video to begin"
+                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" FontSize="12"
+                                           ToolTipService.ToolTip="{Binding Text, ElementName=SelectedPathText}"/>
+                            </StackPanel>
+                            <ContentControl x:Name="SourceRangeGate" Grid.Row="2" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch">
+                                <StackPanel x:Name="SourceRangePanel" Spacing="8" Visibility="Collapsed">
+                                    <ComboBox x:Name="SourceTitlePicker" Header="Title" Visibility="Collapsed"
+                                              MinWidth="0" HorizontalAlignment="Left" SelectionChanged="SourceTitlePicker_SelectionChanged"/>
                                 </StackPanel>
-                                <ComboBox x:Name="SourceTitlePicker" Grid.Column="1"
-                                          Header="Title" Visibility="Collapsed"
-                                          MinWidth="180" MaxWidth="360" HorizontalAlignment="Left"
-                                          SelectionChanged="SourceTitlePicker_SelectionChanged" />
-                            </Grid>
-                            <ContentControl x:Name="SourceRangeGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch" Grid.Row="2"><StackPanel x:Name="SourceRangePanel" Spacing="4" Visibility="Collapsed" /></ContentControl>
+                            </ContentControl>
                         </Grid>
 
                         <StackPanel Grid.Row="1" Spacing="6">
@@ -110,12 +130,13 @@
                                     <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <TextBlock x:Name="SourceStatusText"
-                                           Text="Open a video, select a folder, or drop files anywhere in this window."
+                                           Text=""
                                            FontSize="12" TextWrapping="Wrap"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            VerticalAlignment="Center" />
                                 <Button x:Name="CancelScanButton" Grid.Column="1"
-                                        Visibility="Collapsed" Click="CancelScan_Click">
+                                        Visibility="Collapsed" Click="CancelScan_Click" CornerRadius="{ThemeResource ControlCornerRadius}"
+                                        MinHeight="32" Padding="12,5">
                                     <StackPanel Orientation="Horizontal" Spacing="8">
                                         <Viewbox Width="16" Height="16" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Cancel"/></Viewbox><TextBlock Text="Cancel scan" VerticalAlignment="Center"/>
                                     </StackPanel>
