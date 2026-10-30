@@ -90,6 +90,34 @@ public static partial class CompactUi
         }
     };
 
+    public static ComboBoxItem PresetItem(string caption, object value) => new()
+    {
+        Content = caption, Tag = value, Style = Resource<Style>("HBCompactPresetItemStyle")
+    };
+
+    public static ComboBoxItem PresetCategory(string caption) => new()
+    {
+        Content = caption, IsEnabled = false, IsTabStop = false,
+        Style = Resource<Style>("HBCompactPresetCategoryStyle")
+    };
+
+    public static void SizeComboBoxPopup(ComboBox picker, IEnumerable<ComboBoxItem> items)
+    {
+        if (picker.XamlRoot is not { } root) return;
+        picker.MaxDropDownHeight = Math.Max(0, root.Size.Height * Resource<double>("HBPopupHeightFraction"));
+        // Bound item measure without replacing/accessing private popup parts.
+        // Leave room for native popup padding and its vertical scrollbar.
+        double popupWidth = Math.Min(Resource<double>("HBPopupPreferredWidth"), Resource<double>("HBPopupMaxWidth"));
+        double bodyWidth = Math.Max(0, Math.Min(popupWidth,
+            Math.Max(0, root.Size.Width - 2 * GroupGap)) - 2 * GroupGap);
+        foreach (var item in items)
+        {
+            item.MinWidth = 0;
+            item.Width = bodyWidth;
+            item.MaxWidth = bodyWidth;
+        }
+    }
+
     /// <summary>Size a future picker presenter; native popup placement/scrolling stays native.</summary>
     public static void SizePickerPopup(FrameworkElement anchor, FrameworkElement presenter)
     {

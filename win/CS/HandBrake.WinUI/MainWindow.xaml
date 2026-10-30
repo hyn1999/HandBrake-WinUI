@@ -146,34 +146,27 @@
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
-                                    <Grid ColumnSpacing="{StaticResource HBSpaceRow}">
+                                    <Grid x:Name="PresetSelectorRow" ColumnSpacing="{StaticResource HBControlGap}" SizeChanged="PresetSelectorRow_SizeChanged">
                                         <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="*" />
-                                            <ColumnDefinition Width="Auto" />
-                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Preset" VerticalAlignment="Center" FontWeight="SemiBold" />
-                                        <DropDownButton x:Name="PresetPicker" Grid.Column="1"
-                                                        IsEnabled="False" HorizontalAlignment="Stretch"
-                                                        HorizontalContentAlignment="Left"
-                                                        AutomationProperties.Name="HandBrake encoding preset">
-                                            <TextBlock x:Name="PresetSelectionText" Text="Choose a preset"
-                                                       TextTrimming="CharacterEllipsis" />
-                                        </DropDownButton>
-                                        <Border x:Name="DefaultPresetBadge" Grid.Column="2" Visibility="Collapsed"
-                                                ToolTipService.ToolTip="This preset is selected when the app starts."
-                                                VerticalAlignment="Center" CornerRadius="4" Padding="8,3"
-                                                Background="{ThemeResource SubtleFillColorSecondaryBrush}">
-                                            <TextBlock Text="Default" FontSize="{StaticResource HBCaptionFontSize}" />
-                                        </Border>
-                                        <Border x:Name="ModifiedPresetBadge" Grid.Column="3" Visibility="Collapsed"
-                                                ToolTipService.ToolTip="Settings differ from this preset. Use Reload selected preset to restore them."
-                                                VerticalAlignment="Center" CornerRadius="4" Padding="8,3"
-                                                Background="{ThemeResource SubtleFillColorSecondaryBrush}">
-                                            <TextBlock Text="Modified" FontSize="{StaticResource HBCaptionFontSize}"
-                                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
-                                        </Border>
+                                        <TextBlock Text="Preset" VerticalAlignment="Center" FontWeight="SemiBold"/>
+                                        <ComboBox x:Name="PresetPicker" Grid.Column="1" IsEnabled="False"
+                                                  PlaceholderText="Choose a preset" HorizontalAlignment="Left" MinWidth="0"
+                                                  Width="{StaticResource HBPresetWidth}" MaxWidth="{StaticResource HBPresetMaxWidth}"
+                                                  SelectionChanged="PresetPicker_SelectionChanged" DropDownOpened="PresetPicker_DropDownOpened"
+                                                  AutomationProperties.Name="HandBrake encoding preset"/>
+                                        <Button x:Name="ReloadPresetButton" Grid.Column="2" IsEnabled="False"
+                                                Content="Reload" Click="ReloadPreset_Click" ToolTipService.ToolTip="Reload selected preset"/>
+                                        <Button x:Name="PresetActionsButton" Grid.Column="3" IsEnabled="False"
+                                                Style="{StaticResource HBCompactIconButtonStyle}"
+                                                AutomationProperties.Name="Preset actions" ToolTipService.ToolTip="Preset actions">
+                                            <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="More"/></Viewbox>
+                                        </Button>
                                     </Grid>
 
                                     <TabView x:Name="EditorTabs" Grid.Row="1" SelectionChanged="EditorTabs_SelectionChanged" IsAddTabButtonVisible="False"

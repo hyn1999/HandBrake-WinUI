@@ -101,7 +101,7 @@ public sealed partial class MainWindow
                 });
             }
 
-            BuildPresetMenu();
+            BuildPresetPicker();
             ActivePresetChoice = GetDefaultPreset();
             PresetPicker.IsEnabled = true;
             updatingVideoEditor = false;
@@ -115,8 +115,11 @@ public sealed partial class MainWindow
             updatingVideoEditor = false;
             activePreset = null;
             ActivePresetChoice = null;
-            DefaultPresetBadge.Visibility = ModifiedPresetBadge.Visibility = Visibility.Collapsed;
-            PresetSelectionText.Text = "Presets unavailable";
+            PresetPicker.PlaceholderText = "Presets unavailable";
+            PresetPicker.Items.Clear();
+            presetPickerItems.Clear();
+            PresetActionsButton.IsEnabled = false;
+            ReloadPresetButton.IsEnabled = false;
             nativePresetChoices.Clear();
             PresetPicker.IsEnabled = false;
             VideoEncoderPicker.IsEnabled = false;

@@ -7,5 +7,5 @@ Read Design/README.md before adding or changing UI.
 - Preserve native WinUI control templates, font family/weight, theme brushes, corners, focus/interaction states and text scaling. Compact changes size/spacing, not those visual rules. Do not invent default-style resource keys: inspect the actual control style before deriving from it.
 - Keep encoding rules, task state and native-engine mappings outside Design.
 - Treat width, wrapping and feature visibility as layout concerns. Use FieldWidthRole for semantic field sizes and AlignedFormRow for new forms with shared label/body rows. FormRow remains a legacy adapter; WrapFields handles bounded header/command groups.
-- Read doc/winui-preset-picker-plan.md for the agreed pending preset redesign. A density change alone does not complete that plan.
+- Read doc/winui-preset-picker-plan.md for the implemented picker and pending runtime checks/Save New Preset work. Do not reintroduce lateral category menus or treat Set as default as Save New Preset.
 - Follow the session's build policy: batch Windows builds after coherent changes; do not dispatch a build for each UI edit. Report static checks separately from compilation and runtime verification.

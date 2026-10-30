@@ -1,19 +1,36 @@
-# Preset picker visual decision (pending implementation)
+# Preset picker implementation and remaining work
 
-Recorded from the user's WPF/WinUI comparison; implement after the shared Compact foundation.
+The picker is now a native ComboBox with a single flat scrolling list. Category names are disabled, non-tab-stop ComboBoxItem headings using a category content template. They cannot become an active preset through the selection handler. There are no lateral category flyouts. This is a native ComboBox implementation with in-list visual headers, not a claim that ComboBox supports ListView-style semantic grouping.
 
-- Replace nested category submenus with one bounded-height, single-column scrolling picker. Categories are non-selectable in-list headers with visual separation.
-- Keep a normal WinUI combo-style closed selector, with bounded width. Do not build a pseudo-combo from an unrelated control template.
-- Show names without repeated category prefixes in the grouped list; provide category in the selected field's tooltip when useful.
-- Reuse each native preset's description for its tooltip.
-- Move Reload / Set as default into a separate adjacent management menu.
-- Put status text in the preset title itself, removing separate Default/Modified badges: Fast 1080p30 (Default), (Modified), or (Default, Modified).
-- Default follows the saved user default, or the native HandBrake default for a fresh configuration. Never hard-code Fast 1080p30 as permanently default after the user chooses another.
-- Modified describes the currently selected task's settings only; other saved presets must not become modified. Reload clears modifications; selecting a preset restores its saved definition.
-- Use the Design Compact tokens/styles and native keyboard selection/focus behavior. Do not repeat menu heights/paddings per item or add lateral popups.
+Preset choices keep string Content for native text search and a trimming content template for display. Each item retains its category/native description tooltip. Closed and open item captions include (Default), (Modified) or (Default, Modified). Category prefixes appear in help/automation names rather than every visible item. Separate status badges were removed.
 
-Acceptance: compact placement on narrow/wide windows, grouped scrolling, clear current selection, keyboard navigation, native tooltip descriptions, default persistence, modified/reload behavior and correct labels when both states apply.
+A guarded synchronization path updates captions and native selection without reapplying settings. Catalog items are matched by stable key, so a queued job's detached native preset snapshot is not replaced by a catalog definition merely because its selection display refreshes. Default is persisted using the existing user-default/native-default rules; Reload restores the catalog definition and clears current modifications.
 
-Status: design recorded, not yet implemented. This commit only centralizes density and existing menu sizing; it does not claim the grouped picker is complete.
+## Commands and the WPF reference
 
-Shared profile update: use 13 text, minimum 28 single-line items, HBPresetWidth/HBPresetMaxWidth for the closed field, and SizePickerPopup for 360–420 popup width and a 60%-of-root height limit. Use a separate management command role; keep main Workspace commands standard-sized. These resources do not themselves implement the pending grouped picker.
+The later WPF screenshot clarified the source layout: picker, Reload, Save New Preset. Reload is now a real inline command adjacent to the picker. Set as default remains a distinct action in the adjacent ellipsis management menu; it is not a substitute for Save New Preset.
+
+Save New Preset remains unimplemented. A correct implementation requires durable user-preset storage and full task-to-preset export, including audio/subtitle/filter/geometry rules. The existing GetEditorPresetJson captures only part of that task graph. No placeholder Save button or silently incomplete saved preset is added in this change.
+
+## Sizing and native behavior
+
+The closed field uses the shared preferred width and shrinks to leave room for its inline commands. A trailing flexible column absorbs unused row space so the commands stay adjacent. The native dropdown MaxDropDownHeight is computed as 60% of XamlRoot height when opened. Shared item widths constrain measure around the popup-width preference while leaving room for native padding/scrollbars. The native popup still owns final placement, chrome and scrolling; exact outer width needs Windows inspection rather than assumptions about internal template parts.
+
+All density values and content templates are in Design. No native ControlTemplate is copied or replaced. Existing TabView settings tabs are unchanged; a SelectorBar-based visual proposal is separate from this implementation.
+
+## Validation
+
+Performed: XML and HB resource checks, unique XAML-name/event-handler checks, native ComboBox selection/mapping review, and checks that removed DropDownButton/badge members have no source references. No .NET compilation, Windows UI test or build was run.
+
+For the next aggregate build:
+
+- Open every category, scroll and select a real preset; headers must be skipped by mouse/keyboard and never apply settings.
+- Verify keyboard arrows, text search, Escape and selected-item visibility on opening.
+- Verify default-only, modified-only and combined captions in both the closed field and dropdown; switch presets and Reload.
+- Set a different default and restart; the persisted default must be marked, with no permanent hard-coded default label.
+- Open Queue Edit and change one value; presentation refresh must retain the saved snapshot and unrelated fields.
+- Verify tooltips show full category/name/status/description when the visible caption is trimmed.
+- Resize the settings card and window; inspect popup height/width, row adjacency, scrolling and enlarged text.
+- Test unavailable native presets: picker/actions/Reload disabled with an appropriate placeholder.
+
+Status: picker/labels/native grouping-by-headers and inline Reload implemented in source; runtime acceptance pending. Save New Preset remains a separate functional gap.

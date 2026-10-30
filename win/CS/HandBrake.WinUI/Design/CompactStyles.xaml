@@ -56,6 +56,25 @@
         <Setter Property="MinHeight" Value="{StaticResource HBControlMinHeight}"/>
         <Setter Property="Padding" Value="{StaticResource HBMenuItemPadding}"/>
     </Style>
+    <DataTemplate x:Key="HBPresetNameTemplate">
+        <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" FontSize="{StaticResource HBBodyFontSize}"/>
+    </DataTemplate>
+    <DataTemplate x:Key="HBPresetCategoryTemplate">
+        <Border BorderThickness="0,1,0,0" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
+                Padding="{StaticResource HBPresetGroupPadding}">
+            <TextBlock Text="{Binding}" Style="{StaticResource BodyStrongTextBlockStyle}"
+                       FontSize="{StaticResource HBBodyFontSize}" Foreground="{ThemeResource TextFillColorSecondaryBrush}"/>
+        </Border>
+    </DataTemplate>
+    <Style x:Key="HBCompactPresetItemStyle" TargetType="ComboBoxItem" BasedOn="{StaticResource DefaultComboBoxItemStyle}">
+        <Setter Property="MinHeight" Value="{StaticResource HBControlMinHeight}"/>
+        <Setter Property="FontSize" Value="{StaticResource HBBodyFontSize}"/>
+        <Setter Property="Padding" Value="{StaticResource HBMenuItemPadding}"/>
+        <Setter Property="ContentTemplate" Value="{StaticResource HBPresetNameTemplate}"/>
+    </Style>
+    <Style x:Key="HBCompactPresetCategoryStyle" TargetType="ComboBoxItem" BasedOn="{StaticResource HBCompactPresetItemStyle}">
+        <Setter Property="ContentTemplate" Value="{StaticResource HBPresetCategoryTemplate}"/>
+    </Style>
     <Style x:Key="HBCompactDropDownButtonStyle" TargetType="DropDownButton" BasedOn="{StaticResource DefaultDropDownButtonStyle}">
         <Setter Property="MinHeight" Value="{StaticResource HBControlMinHeight}"/>
         <Setter Property="Padding" Value="{StaticResource HBButtonPadding}"/>

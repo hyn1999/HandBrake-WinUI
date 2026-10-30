@@ -98,7 +98,7 @@ HBTabPreferredHeight = 32 is a design target only. Native TabView geometry/selec
 
 The shared profile is active application-wide; source header widths, its tooltip content, Workspace/Queue standard command scopes, page title sizes and preset tooltip/menu metrics are wired to the new roles. Feature-specific legacy inline font sizes, card layouts and field headers still need their section-by-section review; changing tokens is not a full UI redesign.
 
-The single-popup grouped preset picker and inline Default/Modified labels remain pending under doc/winui-preset-picker-plan.md. Its size constraints are now available in this library, but its menu structure has not been replaced here.
+The native single-list ComboBox preset picker now uses PresetItem/PresetCategory recipes and shared name/category content templates. SizeComboBoxPopup applies the shared height limit and bounded item measure using public APIs, without modifying private popup parts. Default/Modified captions and inline Reload are implemented; native keyboard/scrolling and exact outer popup bounds need Windows acceptance. Save New Preset remains a separate functional gap under doc/winui-preset-picker-plan.md.
 
 ## Sources and verification
 

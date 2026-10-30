@@ -40,6 +40,7 @@
     <Thickness x:Key="HBComboBoxPadding">10,3,0,3</Thickness>
     <Thickness x:Key="HBIconButtonPadding">4</Thickness>
     <Thickness x:Key="HBMenuItemPadding">12,3,12,3</Thickness>
+    <Thickness x:Key="HBPresetGroupPadding">0,4,0,4</Thickness>
     <Thickness x:Key="HBCardPadding">12</Thickness>
     <Thickness x:Key="HBFormRowMargin">0,0,0,8</Thickness>
     <StaticResource x:Key="HBCardCornerRadius" ResourceKey="OverlayCornerRadius"/>
