@@ -554,11 +554,9 @@
                                 <TextBlock Text="Drop media below or browse for a source." FontSize="13"
                                            TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                             </StackPanel>
-                            <Button Grid.Column="1" Click="CloseSourcePicker_Click" VerticalAlignment="Top"
-                                    Width="32" Height="32" Padding="6"
-                                    AutomationProperties.Name="Close Add media" ToolTipService.ToolTip="Close">
-                                <SymbolIcon Symbol="Cancel" FontSize="16"/>
-                            </Button>
+                            <Button Grid.Column="1" Content="Close" Click="CloseSourcePicker_Click"
+                                    VerticalAlignment="Top" MinHeight="32" Padding="12,4"
+                                    AutomationProperties.Name="Close Add media" />
                         </Grid>
                         <Border MinHeight="240" Padding="24" CornerRadius="8" BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
