@@ -20,7 +20,6 @@ namespace HandBrake.WinUI;
 public sealed partial class MainWindow : Window
 {
     private bool isNarrow;
-    private bool showPreviewOnNarrow;
     private readonly List<string> selectedSourcePaths = new();
     private Storyboard? sourcePickerAnimation;
 
@@ -28,6 +27,7 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         InitializePresetTracking();
+        Closed += (_, _) => detachedPreview?.Close();
         InitializeNativeDiagnostics();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);
@@ -146,49 +146,24 @@ public sealed partial class MainWindow : Window
         if (narrowNow != isNarrow)
         {
             isNarrow = narrowNow;
-            showPreviewOnNarrow = false;
         }
 
-        UpdatePreviewLayout();
-    }
-
-    private void PreviewToggle_Click(object sender, RoutedEventArgs e)
-    {
-        if (isNarrow) showPreviewOnNarrow = !showPreviewOnNarrow;
-        else previewHidden = !previewHidden;
         UpdatePreviewLayout();
     }
 
     private void UpdatePreviewLayout()
     {
-        if ((!isNarrow && previewHidden) || !SettingsPanel.Preferences.ShowPreviewPanel)
-        {
-            PreviewToggleButton.Visibility = SettingsPanel.Preferences.ShowPreviewPanel ? Visibility.Visible : Visibility.Collapsed;
-            PreviewToggleButton.Label = "Show preview";
-            EditorColumn.Width = new GridLength(1, GridUnitType.Star);
-            PreviewColumn.Width = new GridLength(0);
-            EditorPanel.Visibility = Visibility.Visible;
-            PreviewPanel.Visibility = Visibility.Collapsed;
-            return;
-        }
-
-        PreviewToggleButton.Visibility = Visibility.Visible;
-        if (isNarrow)
-        {
-            EditorColumn.Width = showPreviewOnNarrow ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
-            PreviewColumn.Width = showPreviewOnNarrow ? new GridLength(1, GridUnitType.Star) : new GridLength(0);
-            EditorPanel.Visibility = showPreviewOnNarrow ? Visibility.Collapsed : Visibility.Visible;
-            PreviewPanel.Visibility = showPreviewOnNarrow ? Visibility.Visible : Visibility.Collapsed;
-            PreviewToggleButton.Label = showPreviewOnNarrow ? "Editor" : "Preview";
-        }
-        else
-        {
-            EditorColumn.Width = new GridLength(1, GridUnitType.Star);
-            PreviewToggleButton.Label = "Hide preview";
-            PreviewColumn.Width = new GridLength(0.8, GridUnitType.Star);
-            EditorPanel.Visibility = Visibility.Visible;
-            PreviewPanel.Visibility = Visibility.Visible;
-        }
+        bool visible = SettingsPanel.Preferences.ShowPreviewPanel;
+        EditorPanel.Visibility = Visibility.Visible;
+        PreviewPanel.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+        WorkspaceEditorRow.Height = new GridLength(1, GridUnitType.Star);
+        WorkspacePreviewRow.Height = isNarrow && visible ? new GridLength(0.85, GridUnitType.Star) : new GridLength(0);
+        EditorColumn.Width = new GridLength(1, GridUnitType.Star);
+        PreviewColumn.Width = !isNarrow && visible ? new GridLength(0.8, GridUnitType.Star) : new GridLength(0);
+        Grid.SetRow(PreviewPanel, isNarrow ? 1 : 0);
+        Grid.SetColumn(PreviewPanel, isNarrow ? 0 : 1);
+        WorkspaceGrid.RowSpacing = isNarrow && visible ? 12 : 0;
+        WorkspaceGrid.ColumnSpacing = !isNarrow && visible ? 12 : 0;
     }
 
     private void ShowSourcePicker_Click(object sender, RoutedEventArgs e) => ShowSourcePicker();

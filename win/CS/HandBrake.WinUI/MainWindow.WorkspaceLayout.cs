@@ -84,7 +84,6 @@ public sealed partial class MainWindow
         PreviewFrame.Height = bitmap.PixelHeight * scale;
     }
 
-    private bool previewHidden;
     private readonly List<TextBox> chapterNameEditors = new();
     private void GeometryOverride_Toggled(object sender, RoutedEventArgs args)
     {

@@ -90,3 +90,11 @@ Visual density and responsive breakpoints require checking in the next batched W
 - Narrow-window preview switching works even when the preview was hidden in the wide-window layout.
 - Structural XAML and event/type references were checked. No build or Windows visual validation was run.
 - Next Windows checks: landscape/portrait/square video, short and narrow windows, resize while decoding, preview hide/show, light/dark themes, 125–200% DPI, keyboard navigation and toolbar overflow. Confirm the complete video frame remains visible and proportional.
+
+## Dedicated Preview card and window
+
+- Removed the preview show/hide command from the main toolbar. The settings card and Preview card are separate Workspace regions: side by side at wide widths, stacked at narrow widths. The existing explicit preview visibility preference is respected.
+- The Preview card owns an Open preview command. It opens or activates one resizable window showing the same decoded frame and previous/next navigation; it does not remove the inline card.
+- Frame loading, reset, failure and successful decode are reflected in both views. Closing the main window also closes the preview window. Each view fits the complete bitmap within its own viewport.
+- This window is a still-frame viewer. WPF's Encode Preview clip generation, live crop overlay and external-player integration remain unimplemented.
+- XAML and handler references for both windows were checked. No build was run. Next Windows validation must cover repeated open/close, navigation from either view, reset during decode, short/narrow layouts, theme/DPI and main-window shutdown.

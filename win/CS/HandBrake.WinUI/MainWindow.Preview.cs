@@ -54,11 +54,13 @@ public sealed partial class MainWindow
         PreviewFrameCounterText.Text = "Loading preview…";
         PreviousPreviewButton.IsEnabled = false;
         NextPreviewButton.IsEnabled = false;
+        SyncDetachedPreview();
 
         if (title is null || instance is null || scanInProgress)
         {
             PreviewPlaceholderText.Text = "Scan a source to decode a real frame.";
             PreviewFrameCounterText.Text = "No frame";
+            SyncDetachedPreview();
             return;
         }
 
@@ -105,6 +107,10 @@ public sealed partial class MainWindow
             PreviewPlaceholderText.Text = "HandBrake could not decode this preview frame.";
             PreviewFrameCounterText.Text = "Preview unavailable";
             PreviewMetadataText.Text += Environment.NewLine + ex.Message;
+        }
+        finally
+        {
+            if (requestId == previewRequestId) SyncDetachedPreview();
         }
     }
 
@@ -191,5 +197,6 @@ public sealed partial class MainWindow
         PreviewFrameCounterText.Text = "No frame";
         PreviousPreviewButton.IsEnabled = false;
         NextPreviewButton.IsEnabled = false;
+        SyncDetachedPreview();
     }
 }

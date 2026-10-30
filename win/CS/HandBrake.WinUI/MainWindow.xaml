@@ -81,12 +81,6 @@
                                               ToolTipService.ToolTip="Start configured queue jobs">
                                     <AppBarButton.Icon><SymbolIcon Symbol="Play"/></AppBarButton.Icon>
                                 </AppBarButton>
-                                <AppBarSeparator/>
-                                <AppBarButton x:Name="PreviewToggleButton" Label="Preview"
-                                              Click="PreviewToggle_Click" Visibility="Collapsed"
-                                              ToolTipService.ToolTip="Show or hide the preview panel">
-                                    <AppBarButton.Icon><SymbolIcon Symbol="View"/></AppBarButton.Icon>
-                                </AppBarButton>
                             </CommandBar>
                             <Grid Grid.Row="1" ColumnSpacing="12">
                                 <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -128,8 +122,12 @@
                                          Value="0" Height="4" />
                         </StackPanel>
 
-                        <Grid x:Name="WorkspaceGrid" Grid.Row="2" ColumnSpacing="12"
+                        <Grid x:Name="WorkspaceGrid" Grid.Row="2" ColumnSpacing="12" RowSpacing="12"
                               SizeChanged="WorkspaceGrid_SizeChanged">
+                            <Grid.RowDefinitions>
+                                <RowDefinition x:Name="WorkspaceEditorRow" Height="*"/>
+                                <RowDefinition x:Name="WorkspacePreviewRow" Height="0"/>
+                            </Grid.RowDefinitions>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition x:Name="EditorColumn" Width="*" />
                                 <ColumnDefinition x:Name="PreviewColumn" Width="350" />
@@ -365,7 +363,17 @@
                                         <RowDefinition Height="*" />
                                         <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
-                                    <TextBlock Text="Preview" FontSize="17" FontWeight="SemiBold" />
+                                    <Grid ColumnSpacing="8">
+                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                        <TextBlock Text="Preview" FontSize="17" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                        <Button x:Name="OpenPreviewWindowButton" Grid.Column="1" Click="OpenPreviewWindow_Click"
+                                                IsEnabled="False" ToolTipService.ToolTip="Open a larger preview window">
+                                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                                <SymbolIcon Symbol="FullScreen" FontSize="16"/>
+                                                <TextBlock Text="Open preview" VerticalAlignment="Center"/>
+                                            </StackPanel>
+                                        </Button>
+                                    </Grid>
                                     <Grid Grid.Row="1" RowSpacing="8">
                                         <Grid.RowDefinitions>
                                             <RowDefinition Height="*" />
