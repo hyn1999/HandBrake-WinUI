@@ -362,7 +362,7 @@ public sealed partial class MainWindow : Window
         }
     }
 
-    private void AcceptSourcePaths(IEnumerable<string> sourcePaths)
+    private void AcceptSourcePaths(IEnumerable<string> sourcePaths, QueueDraft? editJob = null)
     {
         if (scanInProgress || encodeRunning)
         {
@@ -384,6 +384,14 @@ public sealed partial class MainWindow : Window
             return;
         }
 
+        EndQueueEdit();
+        if (editJob is not null)
+        {
+            queueEditSnapshot = System.Text.Json.JsonSerializer.Deserialize<QueueDraft>(
+                System.Text.Json.JsonSerializer.Serialize(editJob));
+            CancelQueueEditButton.Visibility = Visibility.Visible;
+            StageQueueButton.Label = "Loading job…";
+        }
         MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
         destinationOverride = null;
         selectedSourcePaths.Clear();

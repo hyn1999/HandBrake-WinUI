@@ -225,7 +225,7 @@ public sealed partial class MainWindow
 
     private void ResetQueueJob_Click(object sender, RoutedEventArgs args)
     {
-        if (encodeRunning || preparingEncodeQueue || DraftQueueList.SelectedItem is not QueueDraft { HasVideoConfiguration: true } job) return;
+        if (encodeRunning || preparingEncodeQueue || queueEditSnapshot is not null || DraftQueueList.SelectedItem is not QueueDraft { HasVideoConfiguration: true } job) return;
         job.State = "Waiting";
         job.Progress = job.AverageFps = 0;
         job.RemainingSeconds = null;
@@ -243,7 +243,7 @@ public sealed partial class MainWindow
     private void MoveQueueDown_Click(object sender, RoutedEventArgs args) => MoveSelectedQueueJob(1);
     private void MoveSelectedQueueJob(int offset)
     {
-        if (encodeRunning || preparingEncodeQueue || DraftQueueList.SelectedItem is not QueueDraft job) return;
+        if (encodeRunning || preparingEncodeQueue || queueEditSnapshot is not null || DraftQueueList.SelectedItem is not QueueDraft job) return;
         int index = draftQueue.IndexOf(job), target = index + offset;
         if (target < 0 || target >= draftQueue.Count) return;
         draftQueue.Move(index, target);
@@ -271,7 +271,7 @@ public sealed partial class MainWindow
 
     private void OpenQueueSource_Click(object sender, RoutedEventArgs args)
     {
-        if (encodeRunning || preparingEncodeQueue || DraftQueueList.SelectedItem is not QueueDraft job) return;
+        if (encodeRunning || preparingEncodeQueue || queueEditSnapshot is not null || DraftQueueList.SelectedItem is not QueueDraft job) return;
         AcceptSourcePaths(new[] { job.SourcePath });
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
     }

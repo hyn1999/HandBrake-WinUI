@@ -19,6 +19,9 @@ namespace HandBrake.WinUI;
 /// </summary>
 public sealed class QueueDraft : INotifyPropertyChanged
 {
+    public int SnapshotVersion { get; set; } = 1;
+    // Preserve future/extension fields when an entry is edited by this version.
+    [JsonExtensionData] public Dictionary<string, JsonElement>? AdditionalData { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
     public string State { get; set; } = "Waiting";
     public double Progress { get; set; }
@@ -214,6 +217,7 @@ public sealed partial class MainWindow
     private void StageQueue_Click(object sender, RoutedEventArgs e)
     {
         if (encodeRunning || preparingEncodeQueue) return;
+        if (queueEditSnapshot is not null) { SaveQueueEdit(); return; }
         int added = 0, updated = 0, configured = 0;
         bool singleSource = selectedSourcePaths.Count == 1;
 
@@ -276,7 +280,7 @@ public sealed partial class MainWindow
 
     private void RemoveDraft_Click(object sender, RoutedEventArgs e)
     {
-        if (encodeRunning || preparingEncodeQueue) return;
+        if (encodeRunning || preparingEncodeQueue || queueEditSnapshot is not null) return;
         if (DraftQueueList.SelectedItem is not QueueDraft draft) return;
         draftQueue.Remove(draft);
         QueueStatusText.Text = "Job removed.";
@@ -286,7 +290,7 @@ public sealed partial class MainWindow
 
     private async void ClearDrafts_Click(object sender, RoutedEventArgs e)
     {
-        if (encodeRunning || preparingEncodeQueue || draftQueue.Count == 0) return;
+        if (encodeRunning || preparingEncodeQueue || queueEditSnapshot is not null || draftQueue.Count == 0) return;
         var dialog = new ContentDialog
         {
             XamlRoot = WindowRoot.XamlRoot,
@@ -297,7 +301,7 @@ public sealed partial class MainWindow
             DefaultButton = ContentDialogButton.Close
         };
         if (await dialog.ShowAsync() != ContentDialogResult.Primary) return;
-        if (encodeRunning || preparingEncodeQueue) return;
+        if (encodeRunning || preparingEncodeQueue || queueEditSnapshot is not null) return;
         draftQueue.Clear();
         QueueStatusText.Text = "Queue cleared.";
         SaveDraftQueue();

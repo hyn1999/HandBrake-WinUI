@@ -27,7 +27,12 @@ public sealed partial class MainWindow
         presetMenuItems.Clear();
         var menu = new MenuFlyout();
         reloadPresetItem = new MenuFlyoutItem { Text = "Reload selected preset" };
-        reloadPresetItem.Click += (_, _) => ApplyNativePreset();
+        reloadPresetItem.Click += (_, _) =>
+        {
+            ActivePresetChoice = nativePresetChoices.FirstOrDefault(item => item.Key == ActivePresetChoice?.Key)
+                ?? ActivePresetChoice;
+            ApplyNativePreset();
+        };
         makeDefaultPresetItem = new MenuFlyoutItem { Text = "Set selected preset as default" };
         makeDefaultPresetItem.Click += (_, _) => SetDefaultPreset();
         ToolTipService.SetToolTip(makeDefaultPresetItem, "Use this preset's saved definition when the app starts.");
@@ -131,9 +136,10 @@ public sealed partial class MainWindow
     private void UpdatePresetPresentation()
     {
         if (updatingVideoEditor || ActivePresetChoice is not { } choice) return;
-        bool modified = IsPresetModified(choice);
+        var referenceChoice = nativePresetChoices.FirstOrDefault(item => item.Key == choice.Key) ?? choice;
+        bool modified = IsPresetModified(referenceChoice);
         var defaultPreset = GetDefaultPreset();
-        bool isDefault = choice == defaultPreset;
+        bool isDefault = choice.Key == defaultPreset?.Key;
         PresetSelectionText.Text = choice.DisplayName;
         DefaultPresetBadge.Visibility = isDefault ? Visibility.Visible : Visibility.Collapsed;
         ModifiedPresetBadge.Visibility = modified ? Visibility.Visible : Visibility.Collapsed;
@@ -149,9 +155,9 @@ public sealed partial class MainWindow
         }
         foreach (var entry in presetMenuItems)
         {
-            entry.Value.IsChecked = entry.Key == choice;
+            entry.Value.IsChecked = entry.Key.Key == choice.Key;
             entry.Value.Text = entry.Key.Preset.PresetName + (entry.Key == defaultPreset ? " (Default)" : "") +
-                (entry.Key == choice && modified ? " (Modified)" : "");
+                (entry.Key.Key == choice.Key && modified ? " (Modified)" : "");
         }
         if (makeDefaultPresetItem is not null) makeDefaultPresetItem.IsEnabled = !isDefault;
         if (reloadPresetItem is not null) reloadPresetItem.IsEnabled = modified;

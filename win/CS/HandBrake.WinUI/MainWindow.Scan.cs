@@ -156,6 +156,7 @@ public sealed partial class MainWindow
             int index = scannedTitles.FindIndex(t => t.Index == mainFeature);
             SourceTitlePicker.SelectedIndex = index >= 0 ? index : 0;
             SourceStatusText.Text = $"Scan complete · {scannedTitles.Count} title(s) detected by HandBrake.";
+            RestoreQueueEditAfterScan();
         });
     }
 
@@ -214,7 +215,9 @@ public sealed partial class MainWindow
         MetadataCommentBox.PlaceholderText = title.MetaData?.GetValueOrDefault("Comment") ?? "Keep source comment";
         RefreshOutputSummary();
 
-        _ = LoadPreviewAsync(title);
+        // Queue restoration changes title, preset and overlays together. Decode
+        // only after its consistency check, rather than an intermediate frame.
+        if (queueEditSnapshot is null || queueEditReady) _ = LoadPreviewAsync(title);
     }
 
     private static void AddDetailLine(StackPanel panel, string content)
@@ -294,5 +297,3 @@ public sealed partial class MainWindow
         }
     }
 }
-
-

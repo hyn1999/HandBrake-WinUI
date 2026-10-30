@@ -31,23 +31,28 @@ public sealed partial class MainWindow
             {
                 ValidateSubtitleFile(file.Path);
                 if (importedSubtitleEditors.Any(editor => string.Equals(editor.Path, file.Path, StringComparison.OrdinalIgnoreCase))) continue;
-                var language = new TextBox { Header = "Language (3-letter ISO code)", Text = "und", MaxLength = 3 };
-                var name = new TextBox { Header = "Output track name", Text = Path.GetFileNameWithoutExtension(file.Path) };
-                var offset = new NumberBox { Header = "Offset (milliseconds)", Value = 0, Minimum = -3600000, Maximum = 3600000, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
-                var burn = new CheckBox { Content = "Burn into video" };
-                var remove = new Button { Content = "Remove" };
-                var row = new StackPanel { Spacing = 4 };
-                row.Children.Add(new TextBlock { Text = file.Path, TextTrimming = TextTrimming.CharacterEllipsis });
-                row.Children.Add(CompactRow(language, name, offset, burn, remove));
-                var card = new Border { Padding = new Thickness(4), Child = row };
-                var editor = new ImportEditor(file.Path, language, name, offset, burn, card);
-                remove.Click += (_, _) => { importedSubtitleEditors.Remove(editor); ImportedSubtitleList.Children.Remove(card); };
-                importedSubtitleEditors.Add(editor);
-                ImportedSubtitleList.Children.Add(card);
+                AddImportedSubtitleEditor(new ImportedSubtitle(file.Path, "und", Path.GetFileNameWithoutExtension(file.Path), 0));
             }
             SubtitleImportStatus.Text = "Imported SRT tracks will be captured when you stage the selected title. Files remain at their original paths.";
         }
         catch (Exception error) { SubtitleImportStatus.Text = "Unable to import subtitles: " + error.Message; }
+    }
+
+    private void AddImportedSubtitleEditor(ImportedSubtitle import)
+    {
+        var language = new TextBox { Header = "Language (3-letter ISO code)", Text = import.Language, MaxLength = 3 };
+        var name = new TextBox { Header = "Output track name", Text = import.Name };
+        var offset = new NumberBox { Header = "Offset (milliseconds)", Value = import.Offset, Minimum = -3600000, Maximum = 3600000, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
+        var burn = new CheckBox { Content = "Burn into video", IsChecked = import.Burn };
+        var remove = new Button { Content = "Remove" };
+        var row = new StackPanel { Spacing = 4 };
+        row.Children.Add(new TextBlock { Text = import.Path, TextTrimming = TextTrimming.CharacterEllipsis });
+        row.Children.Add(CompactRow(language, name, offset, burn, remove));
+        var card = new Border { Padding = new Thickness(4), Child = row };
+        var editor = new ImportEditor(import.Path, language, name, offset, burn, card);
+        remove.Click += (_, _) => { importedSubtitleEditors.Remove(editor); ImportedSubtitleList.Children.Remove(card); };
+        importedSubtitleEditors.Add(editor);
+        ImportedSubtitleList.Children.Add(card);
     }
 
     private static void ValidateSubtitleFile(string path)

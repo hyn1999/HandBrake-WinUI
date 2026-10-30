@@ -54,7 +54,7 @@ public sealed partial class MainWindow
 
     private async void StartEncode_Click(object sender, RoutedEventArgs e)
     {
-        if (encodeRunning || preparingEncodeQueue) return;
+        if (encodeRunning || preparingEncodeQueue || queueEditSnapshot is not null) return;
         preparingEncodeQueue = true;
         UpdateEncodeControls();
         try
@@ -557,24 +557,24 @@ public sealed partial class MainWindow
             nativePresetChoices.Count > 0;
         bool hasRunnableJobs = draftQueue.Any(item => item.IsPending);
         StartEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady &&
-            (hasRunnableJobs || CanCaptureCurrentTask());
-        StartQueueEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady && hasRunnableJobs;
+            queueEditSnapshot is null && (hasRunnableJobs || CanCaptureCurrentTask());
+        StartQueueEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady && hasRunnableJobs && queueEditSnapshot is null;
         CancelEncodeButton.IsEnabled = encodeRunning && !encodeStopRequested;
         PauseQueueButton.IsEnabled = encodeRunning && !encodeScanning && !encodeStopRequested;
         PauseQueueButton.Label = encodePaused ? "Resume" : "Pause";
         PauseQueueButton.Icon = new SymbolIcon(encodePaused ? Symbol.Play : Symbol.Pause);
-        bool editable = !encodeRunning && !preparingEncodeQueue;
+        bool editable = !encodeRunning && !preparingEncodeQueue && queueEditSnapshot is null;
         var selected = DraftQueueList.SelectedItem as QueueDraft;
         int selectedIndex = selected is null ? -1 : draftQueue.IndexOf(selected);
         ResetQueueJobButton.IsEnabled = editable && selected?.HasVideoConfiguration == true && selected.State != "Waiting";
         MoveQueueUpButton.IsEnabled = editable && selectedIndex > 0;
         MoveQueueDownButton.IsEnabled = editable && selectedIndex >= 0 && selectedIndex < draftQueue.Count - 1;
         OpenQueueSourceButton.IsEnabled = editable && selected is not null;
+        EditQueueJobButton.IsEnabled = editable && !scanInProgress && selected?.HasVideoConfiguration == true;
         OpenQueueOutputButton.IsEnabled = selected is not null && !string.IsNullOrWhiteSpace(selected.DestinationPath);
-        RemoveDraftButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && DraftQueueList.SelectedItem is QueueDraft;
-        ClearDraftsButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && draftQueue.Count > 0;
-        StageQueueButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && selectedSourcePaths.Count > 0;
+        RemoveDraftButton.IsEnabled = editable && DraftQueueList.SelectedItem is QueueDraft;
+        ClearDraftsButton.IsEnabled = editable && draftQueue.Count > 0;
+        StageQueueButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && selectedSourcePaths.Count > 0 &&
+            (queueEditSnapshot is null || queueEditReady && !scanInProgress);
     }
 }
-
-

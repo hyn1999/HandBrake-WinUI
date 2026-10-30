@@ -75,6 +75,9 @@
                                               ToolTipService.ToolTip="Add the configured title to the queue">
                                     <AppBarButton.Icon><SymbolIcon Symbol="Add"/></AppBarButton.Icon>
                                 </AppBarButton>
+                                <AppBarButton x:Name="CancelQueueEditButton" Label="Cancel edit" Click="CancelQueueEdit_Click" Visibility="Collapsed">
+                                    <AppBarButton.Icon><SymbolIcon Symbol="Cancel"/></AppBarButton.Icon>
+                                </AppBarButton>
                                 <AppBarButton x:Name="StartEncodeButton" Label="Start Encode"
                                               Click="StartEncode_Click" IsEnabled="False"
                                               Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}"
@@ -515,6 +518,9 @@
                                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="*"/></Grid.RowDefinitions>
                                     <TextBlock x:Name="QueueSelectedTitle" Text="Select a job" FontSize="17" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
                                     <CommandBar Grid.Row="1" DefaultLabelPosition="Right" IsDynamicOverflowEnabled="True" Background="Transparent">
+                                        <AppBarButton x:Name="EditQueueJobButton" Label="Edit" Click="EditQueueJob_Click" IsEnabled="False">
+                                            <AppBarButton.Icon><SymbolIcon Symbol="Edit"/></AppBarButton.Icon>
+                                        </AppBarButton>
                                         <AppBarButton x:Name="ResetQueueJobButton" Label="Reset / Retry" Click="ResetQueueJob_Click" IsEnabled="False">
                                             <AppBarButton.Icon><SymbolIcon Symbol="Refresh"/></AppBarButton.Icon>
                                         </AppBarButton>
