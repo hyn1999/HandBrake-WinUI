@@ -35,12 +35,11 @@ public sealed partial class MainWindow
                 var name = new TextBox { Header = "Output track name", Text = Path.GetFileNameWithoutExtension(file.Path) };
                 var offset = new NumberBox { Header = "Offset (milliseconds)", Value = 0, Minimum = -3600000, Maximum = 3600000, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
                 var burn = new CheckBox { Content = "Burn into video" };
-                var row = new StackPanel { Spacing = 8 };
-                row.Children.Add(new TextBlock { Text = file.Path, TextWrapping = TextWrapping.Wrap });
-                row.Children.Add(language); row.Children.Add(name); row.Children.Add(offset); row.Children.Add(burn);
-                var remove = new Button { Content = "Remove imported subtitle" };
-                row.Children.Add(remove);
-                var card = new Border { Padding = new Thickness(16), Child = row };
+                var remove = new Button { Content = "Remove" };
+                var row = new StackPanel { Spacing = 4 };
+                row.Children.Add(new TextBlock { Text = file.Path, TextTrimming = TextTrimming.CharacterEllipsis });
+                row.Children.Add(CompactRow(language, name, offset, burn, remove));
+                var card = new Border { Padding = new Thickness(4), Child = row };
                 var editor = new ImportEditor(file.Path, language, name, offset, burn, card);
                 remove.Click += (_, _) => { importedSubtitleEditors.Remove(editor); ImportedSubtitleList.Children.Remove(card); };
                 importedSubtitleEditors.Add(editor);

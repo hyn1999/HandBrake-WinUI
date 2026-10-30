@@ -45,10 +45,10 @@ public sealed partial class MainWindow
                 tune.SelectedIndex = tune.Items.Count > 0 ? 0 : -1;
                 enabled.Checked += (_, _) => { preset.IsEnabled = preset.Items.Count > 0; tune.IsEnabled = tune.Items.Count > 0; };
                 enabled.Unchecked += (_, _) => { preset.IsEnabled = false; tune.IsEnabled = false; };
-                var card = new StackPanel { Spacing = 8 };
-                card.Children.Add(enabled);
-                if (preset.Items.Count > 0) card.Children.Add(preset);
-                if (tune.Items.Count > 0) card.Children.Add(tune);
+                var fields = new List<FrameworkElement> { enabled };
+                if (preset.Items.Count > 0) fields.Add(preset);
+                if (tune.Items.Count > 0) fields.Add(tune);
+                var card = CompactRow(fields.ToArray());
                 FilterEditorPanel.Children.Add(card);
                 filterEditors.Add(new FilterEditor(id, enabled, preset, tune));
             }

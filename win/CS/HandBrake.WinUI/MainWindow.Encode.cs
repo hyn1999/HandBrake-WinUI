@@ -458,6 +458,8 @@ public sealed partial class MainWindow
             ? preset.PicturePARWidth : title.Geometry?.PAR?.Num ?? 1;
         int parDen = draft.Geometry is null && preset.PicturePARHeight > 0
             ? preset.PicturePARHeight : title.Geometry?.PAR?.Den ?? 1;
+        if (draft.ChapterNames is not null && draft.ChapterNames.Count != (title.ChapterList?.Count ?? 0))
+            throw new InvalidOperationException("The source chapter list changed. Re-scan and stage this job again.");
         int chapterCount = Math.Max(1, title.ChapterList?.Count ?? 1);
         bool constantQuality = draft.VideoRateControl == "ConstantQuality";
 
@@ -489,7 +491,7 @@ public sealed partial class MainWindow
                 ChapterMarkers = draft.ChapterMarkers ?? preset.ChapterMarkers,
                 AlignAVStart = preset.AlignAVStart,
                 ChapterList = (title.ChapterList ?? new List<SourceChapter>())
-                    .Select(chapter => new Chapter { Name = chapter.Name })
+                    .Select((chapter, index) => new Chapter { Name = draft.ChapterNames is null ? chapter.Name : draft.ChapterNames[index] })
                     .ToList()
             },
             Filters = new Filters { FilterList = filters.Concat(BuildFilterOverrides(draft.FilterOverrides)).OrderBy(filter => filter.ID).ToList() },
@@ -594,4 +596,3 @@ public sealed partial class MainWindow
         StageQueueButton.IsEnabled = !encodeRunning && selectedSourcePaths.Count > 0;
     }
 }
-

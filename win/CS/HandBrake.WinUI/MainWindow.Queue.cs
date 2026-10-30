@@ -27,6 +27,7 @@ public sealed class QueueDraft
     public List<FilterOverride>? FilterOverrides { get; set; }
     public GeometryOverride? Geometry { get; set; }
     public bool? ChapterMarkers { get; set; }
+    public List<string>? ChapterNames { get; set; }
     public Dictionary<string, string>? MetadataOverrides { get; set; }
     public string DisplayName { get; set; } = string.Empty;
     public string SourcePath { get; set; } = string.Empty;
@@ -106,6 +107,9 @@ public sealed partial class MainWindow
             return draft;
 
         string? destination = GetSuggestedOutputPath();
+        if (destinationOverride is not null && (string.IsNullOrWhiteSpace(destination) ||
+            !Path.IsPathFullyQualified(destination) || !Directory.Exists(Path.GetDirectoryName(destination))))
+            throw new InvalidOperationException("Choose an absolute output filename in an existing folder.");
         if (string.IsNullOrWhiteSpace(destination) ||
             !Directory.Exists(Path.GetDirectoryName(destination)))
             return draft;
@@ -128,6 +132,7 @@ public sealed partial class MainWindow
             filter.Settings?.Dispose();
         draft.Geometry = ReadGeometryOverride(title);
         draft.ChapterMarkers = ChapterMarkersToggle.IsChecked == true;
+        draft.ChapterNames = chapterNameEditors.Select(editor => editor.Text.Trim()).ToList();
         draft.MetadataOverrides = new Dictionary<string, string>();
         foreach (var field in new[] {
             ("Name", MetadataTitleBox.Text), ("Artist", MetadataArtistBox.Text),
@@ -265,4 +270,3 @@ public sealed partial class MainWindow
         }
     }
 }
-

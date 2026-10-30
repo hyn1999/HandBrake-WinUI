@@ -43,14 +43,10 @@ public sealed partial class MainWindow
             encoder.SelectionChanged += (_, _) => bitrate.IsEnabled = selected.IsChecked == true && encoder.SelectedIndex > 0;
             selected.Checked += (_, _) => { encoder.IsEnabled = true; bitrate.IsEnabled = encoder.SelectedIndex > 0; };
             selected.Unchecked += (_, _) => { encoder.IsEnabled = false; bitrate.IsEnabled = false; };
-            var row = new StackPanel { Spacing = 8 };
-            row.Children.Add(selected);
-            row.Children.Add(name);
-            row.Children.Add(encoder);
-            row.Children.Add(bitrate);
+            var row = CompactRow(selected, encoder, bitrate, name);
             AudioTrackList.Children.Add(new Border
             {
-                Padding = new Thickness(16), CornerRadius = new CornerRadius(8),
+                Padding = new Thickness(4), CornerRadius = new CornerRadius(8),
                 Child = row
             });
             audioEditors.Add(new AudioEditor(track.TrackNumber, selected, name, encoder, bitrate));

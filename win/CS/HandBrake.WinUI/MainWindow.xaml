@@ -46,7 +46,14 @@
             </NavigationView.MenuItems>
             <NavigationView.Content>
                 <Grid Padding="16,12,16,12">
-                    <Grid x:Name="HomePanel" RowSpacing="12">
+                    <Grid x:Name="HomePanel" RowSpacing="8">
+                        <Grid.Resources>
+                            <Style TargetType="Button"><Setter Property="MinHeight" Value="30"/><Setter Property="Padding" Value="10,4"/></Style>
+                            <Style TargetType="ComboBox"><Setter Property="MinHeight" Value="30"/><Setter Property="MaxWidth" Value="440"/><Setter Property="HorizontalAlignment" Value="Left"/></Style>
+                            <Style TargetType="NumberBox"><Setter Property="MinHeight" Value="30"/><Setter Property="MaxWidth" Value="180"/><Setter Property="HorizontalAlignment" Value="Left"/></Style>
+                            <Style TargetType="TextBox"><Setter Property="MinHeight" Value="30"/><Setter Property="MaxWidth" Value="440"/><Setter Property="HorizontalAlignment" Value="Stretch"/></Style>
+                            <Style TargetType="CheckBox"><Setter Property="MinHeight" Value="30"/><Setter Property="Padding" Value="0"/></Style>
+                        </Grid.Resources>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
                             <RowDefinition Height="Auto" />
@@ -63,15 +70,15 @@
                                 <ColumnDefinition Width="Auto" />
                             </Grid.ColumnDefinitions>
                             <StackPanel Spacing="2" VerticalAlignment="Center">
-                                <TextBlock Text="Workspace" FontSize="23" FontWeight="SemiBold" />
+                                
                                 <TextBlock x:Name="SelectedFileText" Text="No source selected"
                                            FontWeight="SemiBold" TextTrimming="CharacterEllipsis" />
                                 <TextBlock x:Name="SelectedPathText" Text="Choose a video to begin"
                                            Foreground="{ThemeResource TextFillColorSecondaryBrush}"
                                            TextTrimming="CharacterEllipsis" FontSize="12" />
                                 <ComboBox x:Name="SourceTitlePicker"
-                                          Header="Detected titles" Visibility="Collapsed"
-                                          MinWidth="220" HorizontalAlignment="Left"
+                                          Header="Title" Visibility="Collapsed"
+                                          MinWidth="220" MaxWidth="420" HorizontalAlignment="Left"
                                           SelectionChanged="SourceTitlePicker_SelectionChanged" />
                             </StackPanel>
                             <Button Grid.Column="1" Content="Open source" ToolTipService.ToolTip="Open source (Alt+O)" Click="ShowSourcePicker_Click"
@@ -140,12 +147,14 @@
                                              TabWidthMode="SizeToContent">
                                         <TabViewItem Header="Summary" IsClosable="False">
                                             <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                                <StackPanel Padding="12,16,12,16" Spacing="16">
-                                                    <TextBlock Text="Output summary" FontSize="17"
+                                                <StackPanel Padding="12" Spacing="8">
+                                                    <TextBlock Text="Source" FontSize="17"
                                                                FontWeight="SemiBold" />
                                                     <TextBlock x:Name="ScanSummaryText"
                                                                Text="Scan a source to see actual title, duration and track counts."
                                                                TextWrapping="Wrap" />
+                                                    <TextBlock Text="Configured output" FontWeight="SemiBold" />
+                                                    <TextBlock x:Name="ConfiguredOutputText" Text="Choose a source and preset." TextWrapping="Wrap" />
                                                     <TextBlock x:Name="PresetStatusText"
                                                                Text="Built-in presets will load from the matching HandBrake engine."
                                                                TextWrapping="Wrap"
@@ -163,42 +172,42 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Dimensions" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="12,16,12,16" Spacing="16">
+                                                <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Dimensions" FontSize="17" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="SourceDimensionsText"
                                                                Text="Source dimensions will appear after scanning."
                                                                TextWrapping="Wrap" />
-                                                    <CheckBox x:Name="CustomGeometryToggle" Content="Override output dimensions and cropping" />
+                                                    <CheckBox x:Name="CustomGeometryToggle" Content="Override output dimensions and cropping" Checked="GeometryOverride_Toggled" Unchecked="GeometryOverride_Toggled" />
                                                     <TextBlock Text="Enter encoded pixel dimensions. Source pixel aspect ratio is retained. Re-stage the queue item after editing." TextWrapping="Wrap" />
                                                     <Grid ColumnSpacing="12">
                                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                                        <NumberBox x:Name="OutputWidthBox" Header="Width (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
-                                                        <NumberBox x:Name="OutputHeightBox" Grid.Column="1" Header="Height (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="OutputWidthBox" IsEnabled="False" Header="Width (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="OutputHeightBox" IsEnabled="False" Grid.Column="1" Header="Height (pixels)" Minimum="2" Maximum="16384" SpinButtonPlacementMode="Inline" />
                                                     </Grid>
                                                     <TextBlock Text="Crop edges (source pixels)" FontWeight="SemiBold" />
                                                     <Grid ColumnSpacing="12" RowSpacing="12">
                                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                                                        <NumberBox x:Name="CropTopBox" Header="Top" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
-                                                        <NumberBox x:Name="CropBottomBox" Grid.Column="1" Header="Bottom" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
-                                                        <NumberBox x:Name="CropLeftBox" Grid.Row="1" Header="Left" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
-                                                        <NumberBox x:Name="CropRightBox" Grid.Row="1" Grid.Column="1" Header="Right" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropTopBox" IsEnabled="False" Header="Top" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropBottomBox" IsEnabled="False" Grid.Column="1" Header="Bottom" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropLeftBox" IsEnabled="False" Grid.Row="1" Header="Left" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
+                                                        <NumberBox x:Name="CropRightBox" IsEnabled="False" Grid.Row="1" Grid.Column="1" Header="Right" Minimum="0" Value="0" SpinButtonPlacementMode="Inline" />
                                                     </Grid>
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Filters" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="12,16,12,16" Spacing="16">
+                                                <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Filters" FontSize="17" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="FilterEditorStatus" Text="Filter presets and tunes require the matching native HandBrake engine." TextWrapping="Wrap" />
-                                                    <StackPanel x:Name="FilterEditorPanel" Spacing="24" />
+                                                    <StackPanel x:Name="FilterEditorPanel" Spacing="4" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Video" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="12,16,12,16" Spacing="16">
+                                                <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Video encoding" FontSize="17" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="SourceVideoText"
                                                                Text="Source codec and frame rate will appear after scanning."
@@ -244,7 +253,7 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Audio" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="12,16,12,16" Spacing="16">
+                                                <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Audio tracks" FontSize="17" FontWeight="SemiBold" />
                                                     <StackPanel x:Name="AudioTrackList" Spacing="8">
                                                         <TextBlock Text="Tracks will appear after scanning a source."
@@ -256,11 +265,11 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Subtitles" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="12,16,12,16" Spacing="16">
+                                                <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Subtitles" FontSize="17" FontWeight="SemiBold" />
-                                                    <CheckBox x:Name="ForeignAudioSearchToggle" Content="Foreign Audio Search" />
-                                                    <CheckBox x:Name="ForeignAudioForcedToggle" Content="Search forced subtitles only" IsChecked="True" />
-                                                    <CheckBox x:Name="ForeignAudioBurnToggle" Content="Burn the search result into video" />
+                                                    <CheckBox x:Name="ForeignAudioSearchToggle" Content="Foreign Audio Search" Checked="ForeignSearch_Toggled" Unchecked="ForeignSearch_Toggled" />
+                                                    <CheckBox x:Name="ForeignAudioForcedToggle" IsEnabled="False" Content="Search forced subtitles only" IsChecked="True" />
+                                                    <CheckBox x:Name="ForeignAudioBurnToggle" IsEnabled="False" Content="Burn the search result into video" />
                                                     <TextBlock Text="Search runs during encoding. A still preview cannot show its result. Burn-in shares the single-track limit with other subtitles." TextWrapping="Wrap" />
                                                     <StackPanel x:Name="SubtitleTrackList" Spacing="8">
                                                         <TextBlock Text="Subtitle tracks will appear after scanning."
@@ -268,16 +277,17 @@
                                                     </StackPanel>
                                                     <Button Content="Import SRT files" Click="ImportSubtitle_Click" HorizontalAlignment="Left" />
                                                     <TextBlock x:Name="SubtitleImportStatus" Text="UTF-8 SRT soft subtitles support MP4 and MKV. At most one internal or imported track may be burned into video." TextWrapping="Wrap" />
-                                                    <StackPanel x:Name="ImportedSubtitleList" Spacing="16" />
+                                                    <StackPanel x:Name="ImportedSubtitleList" Spacing="4" />
                                                     <TextBlock Text="Select internal subtitle tracks to include. Soft subtitles require a compatible container. Burn-in is permanent in the output image and cannot be switched off during playback. Foreign-audio search runs during encoding. Re-stage the queue entry after editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Chapters" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="12,16,12,16" Spacing="16">
+                                                <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Chapters" FontSize="17" FontWeight="SemiBold" />
                                                     <CheckBox x:Name="ChapterMarkersToggle" Content="Create chapter markers" IsChecked="True" />
+                                                    <StackPanel x:Name="ChapterEditorPanel" Spacing="4" />
                                                     <TextBlock x:Name="ChapterListText"
                                                                Text="Chapter titles will appear here after source scanning."
                                                                TextWrapping="Wrap" />
@@ -286,14 +296,18 @@
                                         </TabViewItem>
                                         <TabViewItem Header="Metadata" IsClosable="False">
                                             <ScrollViewer>
-                                                <StackPanel Padding="12,16,12,16" Spacing="16">
+                                                <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Metadata" FontSize="17" FontWeight="SemiBold" />
                                                     <TextBlock Text="Overrides apply to newly staged jobs. Leave a field empty to retain source metadata." TextWrapping="Wrap" />
-                                                    <TextBox x:Name="MetadataTitleBox" Header="Title" />
-                                                    <TextBox x:Name="MetadataArtistBox" Header="Artist" />
-                                                    <TextBox x:Name="MetadataAlbumBox" Header="Album" />
+                                                    <Grid ColumnSpacing="12" RowSpacing="8">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                        <TextBox x:Name="MetadataTitleBox" Header="Title" />
+                                                        <TextBox x:Name="MetadataArtistBox" Header="Artist" Grid.Column="1" />
+                                                        <TextBox x:Name="MetadataAlbumBox" Header="Album" Grid.Row="1" />
+                                                    </Grid>
                                                     <TextBox x:Name="MetadataCommentBox" Header="Comment" AcceptsReturn="True" TextWrapping="Wrap" />
-                                                    <TextBlock Text="Additional metadata will be available after scanning."
+                                                    <TextBlock Text="Metadata overrides are saved with each queued job."
                                                                TextWrapping="Wrap" />
                                                 </StackPanel>
                                             </ScrollViewer>
@@ -376,15 +390,15 @@
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*" />
                                     <ColumnDefinition Width="Auto" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
                                 <StackPanel Spacing="2">
                                     <TextBlock Text="Destination" FontSize="12"
                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                    <TextBlock Text="Choose a source to prepare an output filename"
-                                               TextTrimming="CharacterEllipsis"
-                                               x:Name="DestinationText" />
+                                    <TextBox PlaceholderText="Choose a source to prepare an output filename" MaxWidth="10000" HorizontalAlignment="Stretch" x:Name="DestinationText" TextChanged="Destination_Changed" />
                                 </StackPanel>
-                                <Button x:Name="StartEncodeButton" Grid.Column="1" Content="Start Encode"
+                                <Button Grid.Column="1" Content="Browse…" Click="BrowseDestination_Click" VerticalAlignment="Center" />
+                                <Button x:Name="StartEncodeButton" Grid.Column="2" Content="Start Encode"
                                         IsEnabled="False" Click="StartEncode_Click"
                                         Style="{StaticResource AccentButtonStyle}"
                                         ToolTipService.ToolTip="Encode configured queue items with the native HandBrake engine." />

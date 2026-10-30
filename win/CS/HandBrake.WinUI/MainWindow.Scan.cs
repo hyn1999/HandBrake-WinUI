@@ -202,9 +202,15 @@ public sealed partial class MainWindow
             ? $"{chapterCount} chapter(s) detected in the source."
             : "No chapters detected.";
 
+        DisplayChapterEditor(title);
         DisplayAudioEditor(title);
 
         DisplaySubtitleEditor(title);
+        MetadataTitleBox.PlaceholderText = title.MetaData?.GetValueOrDefault("Name") ?? "Keep source title";
+        MetadataArtistBox.PlaceholderText = title.MetaData?.GetValueOrDefault("Artist") ?? "Keep source artist";
+        MetadataAlbumBox.PlaceholderText = title.MetaData?.GetValueOrDefault("Album") ?? "Keep source album";
+        MetadataCommentBox.PlaceholderText = title.MetaData?.GetValueOrDefault("Comment") ?? "Keep source comment";
+        RefreshOutputSummary();
 
         _ = LoadPreviewAsync(title);
     }
@@ -242,6 +248,8 @@ public sealed partial class MainWindow
         AddDetailLine(AudioTrackList, "Waiting for source scan.");
         AddDetailLine(SubtitleTrackList, "Waiting for source scan.");
         ChapterListText.Text = "Waiting for source scan.";
+        ChapterEditorPanel.Children.Clear();
+        chapterNameEditors.Clear();
     }
 
     private void ScanStartFailed(Exception error)
@@ -281,4 +289,3 @@ public sealed partial class MainWindow
         }
     }
 }
-

@@ -22,7 +22,14 @@ public sealed partial class MainWindow
 
     private string? selectedScannedTitleName;
 
-    private string? GetSuggestedOutputPath()
+    private string? destinationOverride;
+    private bool updatingDestination;
+    private string? GetSuggestedOutputPath() => destinationOverride ?? GetAutomaticOutputPath();
+    private void Destination_Changed(object sender, Microsoft.UI.Xaml.Controls.TextChangedEventArgs args)
+    {
+        if (!updatingDestination) destinationOverride = DestinationText.Text.Trim();
+    }
+    private string? GetAutomaticOutputPath()
     {
         if (selectedSourcePaths.Count == 0) return null;
 
@@ -72,8 +79,8 @@ public sealed partial class MainWindow
     {
         if (selectedSourcePaths.Count == 0) return;
         string? path = GetSuggestedOutputPath();
-        DestinationText.Text = path is null
-            ? "No safe output path available (choose a scanned title or change the output folder)"
-            : path + " (suggested only)";
+        updatingDestination = true;
+        try { DestinationText.Text = path ?? string.Empty; }
+        finally { updatingDestination = false; }
     }
 }

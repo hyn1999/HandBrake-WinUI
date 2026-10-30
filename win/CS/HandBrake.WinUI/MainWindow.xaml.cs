@@ -153,16 +153,17 @@ public sealed partial class MainWindow : Window
 
     private void PreviewToggle_Click(object sender, RoutedEventArgs e)
     {
-        if (!isNarrow) return;
-        showPreviewOnNarrow = !showPreviewOnNarrow;
+        if (isNarrow) showPreviewOnNarrow = !showPreviewOnNarrow;
+        else previewHidden = !previewHidden;
         UpdatePreviewLayout();
     }
 
     private void UpdatePreviewLayout()
     {
-        if (!SettingsPanel.Preferences.ShowPreviewPanel)
+        if (previewHidden || !SettingsPanel.Preferences.ShowPreviewPanel)
         {
-            PreviewToggleButton.Visibility = Visibility.Collapsed;
+            PreviewToggleButton.Visibility = SettingsPanel.Preferences.ShowPreviewPanel ? Visibility.Visible : Visibility.Collapsed;
+            PreviewToggleButton.Content = "Show preview";
             EditorColumn.Width = new GridLength(1, GridUnitType.Star);
             PreviewColumn.Width = new GridLength(0);
             EditorPanel.Visibility = Visibility.Visible;
@@ -170,7 +171,7 @@ public sealed partial class MainWindow : Window
             return;
         }
 
-        PreviewToggleButton.Visibility = isNarrow ? Visibility.Visible : Visibility.Collapsed;
+        PreviewToggleButton.Visibility = Visibility.Visible;
         if (isNarrow)
         {
             EditorColumn.Width = showPreviewOnNarrow ? new GridLength(0) : new GridLength(1, GridUnitType.Star);
@@ -182,7 +183,8 @@ public sealed partial class MainWindow : Window
         else
         {
             EditorColumn.Width = new GridLength(1, GridUnitType.Star);
-            PreviewColumn.Width = new GridLength(350);
+            PreviewToggleButton.Content = "Hide preview";
+            PreviewColumn.Width = new GridLength(0.8, GridUnitType.Star);
             EditorPanel.Visibility = Visibility.Visible;
             PreviewPanel.Visibility = Visibility.Visible;
         }
@@ -237,6 +239,7 @@ public sealed partial class MainWindow : Window
 
     private void EditorTabs_SelectionChanged(object sender, SelectionChangedEventArgs args)
     {
+        RefreshOutputSummary();
         if (sender is TabView tabs && tabs.SelectedItem is TabViewItem item && item.Content is UIElement content)
             AnimateOpacity(content, 0, 1, 140);
     }
@@ -399,6 +402,7 @@ public sealed partial class MainWindow : Window
         }
 
         MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
+        destinationOverride = null;
         selectedSourcePaths.Clear();
         selectedSourcePaths.AddRange(paths);
         selectedScannedTitleName = null;
@@ -432,4 +436,3 @@ public sealed partial class MainWindow : Window
         AppNavigation.SelectedItem = AppNavigation.MenuItems[0];
     }
 }
-

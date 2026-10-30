@@ -43,10 +43,8 @@ public sealed partial class MainWindow
             };
             burn.Checked += (_, _) => { defaultTrack.IsChecked = false; defaultTrack.IsEnabled = false; };
             burn.Unchecked += (_, _) => defaultTrack.IsEnabled = selected.IsChecked == true;
-            var row = new StackPanel { Spacing = 8 };
-            row.Children.Add(selected); row.Children.Add(defaultTrack); row.Children.Add(forced); row.Children.Add(burn);
-            row.Children.Add(offset); row.Children.Add(name);
-            SubtitleTrackList.Children.Add(new Border { Padding = new Thickness(16), CornerRadius = new CornerRadius(8), Child = row });
+            var row = CompactRow(selected, forced, burn, defaultTrack, offset, name);
+            SubtitleTrackList.Children.Add(new Border { Padding = new Thickness(4), CornerRadius = new CornerRadius(8), Child = row });
             subtitleEditors.Add(new SubtitleEditor(track.TrackNumber, selected, defaultTrack, forced, burn, offset, name));
         }
         if (subtitleEditors.Count == 0) AddDetailLine(SubtitleTrackList, "No internal subtitle tracks detected.");
