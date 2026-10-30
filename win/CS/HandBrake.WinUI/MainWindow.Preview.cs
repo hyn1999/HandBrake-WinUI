@@ -64,7 +64,7 @@ public sealed partial class MainWindow
 
         try
         {
-            JsonEncodeObject job = CreatePreviewJob(title);
+            string job = CreatePreviewJob(title);
             int requestedIndex = previewIndex;
 
             // libhb decoding is synchronous and can take noticeable time. Keep
@@ -107,122 +107,24 @@ public sealed partial class MainWindow
         }
     }
 
-    private JsonEncodeObject CreatePreviewJob(SourceTitle title)
+    private string CreatePreviewJob(SourceTitle title)
     {
-        HBPreset? preset = activePreset;
-        var previewSubtitles = ReadSubtitleChoices();
-        var previewImports = ReadImportedSubtitles();
-        if (previewSubtitles.Count(track => track.Burn) + previewImports.Count(track => track.Burn) > 1)
-            throw new InvalidOperationException("Select at most one subtitle for burn-in.");
-        string encoderName = ActiveVideoEncoder?.ShortName ?? preset?.VideoEncoder ?? "x264";
-        bool useQuality = VideoRateModePicker.SelectedIndex == 0;
-        bool useBitrate = VideoRateModePicker.SelectedIndex == 1;
-
-        int cropTop = title.Crop?.ElementAtOrDefault(0) ?? 0;
-        int cropBottom = title.Crop?.ElementAtOrDefault(1) ?? 0;
-        int cropLeft = title.Crop?.ElementAtOrDefault(2) ?? 0;
-        int cropRight = title.Crop?.ElementAtOrDefault(3) ?? 0;
-        int sourceWidth = title.Geometry?.Width ?? 0;
-        int sourceHeight = title.Geometry?.Height ?? 0;
-        int outputWidth = preset?.PictureWidth is > 0
-            ? preset.PictureWidth.Value
-            : Math.Max(2, sourceWidth - cropLeft - cropRight);
-        int outputHeight = preset?.PictureHeight is > 0
-            ? preset.PictureHeight.Value
-            : Math.Max(2, sourceHeight - cropTop - cropBottom);
-
-        if (ReadGeometryOverride(title) is { } geometry)
+        if (scanInstance is null || !TryGetVideoDraftSettings(out var settings))
+            throw new InvalidOperationException("Choose an available preset and encoder before previewing.");
+        var draft = new QueueDraft
         {
-            outputWidth = geometry.Width;
-            outputHeight = geometry.Height;
-            cropTop = geometry.Top;
-            cropBottom = geometry.Bottom;
-            cropLeft = geometry.Left;
-            cropRight = geometry.Right;
-        }
-
-        var filters = new List<Filter>();
-        if (sourceWidth > 0 && sourceHeight > 0)
-        {
-            string cropSettings =
-                $"width={outputWidth}:height={outputHeight}:crop-top={cropTop}:" +
-                $"crop-bottom={cropBottom}:crop-left={cropLeft}:crop-right={cropRight}";
-            string json = HandBrakeFilterHelpers.GenerateFilterSettingJson(
-                (int)hb_filter_ids.HB_FILTER_CROP_SCALE, null, null, cropSettings);
-            if (!string.IsNullOrWhiteSpace(json))
-            {
-                filters.Add(new Filter
-                {
-                    ID = (int)hb_filter_ids.HB_FILTER_CROP_SCALE,
-                    Settings = JsonDocument.Parse(json)
-                });
-            }
-        }
-
-        int parNum = CustomGeometryToggle.IsChecked != true && preset is { PicturePARWidth: > 0 } ? preset.PicturePARWidth : title.Geometry?.PAR?.Num ?? 1;
-        int parDen = CustomGeometryToggle.IsChecked != true && preset is { PicturePARHeight: > 0 } ? preset.PicturePARHeight : title.Geometry?.PAR?.Den ?? 1;
-
-        return new JsonEncodeObject
-        {
-            SequenceID = 0,
-            Audio = new Audio
-            {
-                AudioList = new List<EncodeAudioTrack>(),
-                CopyMask = preset?.AudioCopyMask?.ToArray() ?? Array.Empty<string>(),
-                FallbackEncoder = preset?.AudioEncoderFallback
-            },
-            Destination = new Destination
-            {
-                File = string.Empty,
-                Mux = string.IsNullOrWhiteSpace(preset?.FileFormat) ? "av_mp4" : preset.FileFormat,
-                Options = new Options { IpodAtom = false, Optimize = false },
-                ChapterMarkers = false,
-                AlignAVStart = false,
-                ChapterList = new List<Chapter>()
-            },
-            Filters = new Filters { FilterList = filters.Concat(BuildFilterOverrides(ReadFilterOverrides())).OrderBy(filter => filter.ID).ToList() },
-            PAR = new PAR { Num = Math.Max(1, parNum), Den = Math.Max(1, parDen) },
-            Metadata = title.MetaData ?? new Dictionary<string, string>(),
-            CoverArts = title.CoverArts ?? new List<CoverArt>(),
-            Source = new EncodeSource
-            {
-                Path = title.Path,
-                Title = title.Index,
-                Angle = 0,
-                HWDecode = 0,
-                KeepDuplicateTitles = title.KeepDuplicateTitles,
-                Range = new EncodeRange
-                {
-                    Type = "preview",
-                    Start = 0,
-                    End = 30 * 90000L,
-                    SeekPoints = Math.Max(1, SettingsPanel.Preferences.ScanPreviewCount)
-                }
-            },
-            Subtitle = new Subtitles
-            {
-                Search = new SubtitleSearch { Enable = false, Default = false, Burn = false, Forced = false },
-                SubtitleList = BuildSubtitleTracks(previewSubtitles, title, preset?.FileFormat ?? "av_mp4")
-                    .Concat(BuildImportedSubtitles(previewImports, preset?.FileFormat ?? "av_mp4")).ToList()
-            },
-            Video = new Video
-            {
-                Encoder = encoderName,
-                Level = preset?.VideoLevel,
-                Preset = preset?.VideoPreset,
-                Profile = preset?.VideoProfile,
-                Tune = preset?.VideoTune,
-                Options = preset?.VideoOptionExtra,
-                Quality = useQuality ? (decimal?)VideoQualitySlider.Value : null,
-                Bitrate = useBitrate && !double.IsNaN(VideoBitrateBox.Value)
-                    ? (int?)Math.Clamp((int)Math.Round(VideoBitrateBox.Value), 100, 200000)
-                    : null,
-                MultiPass = false,
-                Turbo = false,
-                ColorMatrixCode = preset?.VideoColorMatrixCode ?? 0,
-                HardwareDecode = 0
-            }
+            PresetKey = settings.PresetKey, NativePresetJson = ActivePresetChoice?.Json,
+            VideoEncoder = settings.VideoEncoder, VideoRateControl = settings.RateControl,
+            VideoQuality = settings.Quality, VideoBitrateKbps = settings.BitrateKbps,
+            VideoFramerate = settings.Framerate, VideoEncoderSpeed = settings.EncoderSpeed,
+            UsePresetAudio = true, UsePresetFilters = UsePresetFiltersToggle.IsChecked == true,
+            UsePresetSubtitles = UsePresetSubtitlesToggle.IsChecked == true,
+            Subtitles = UsePresetSubtitlesToggle.IsChecked == true ? new() : ReadSubtitleChoices(),
+            SubtitleImports = UsePresetSubtitlesToggle.IsChecked == true ? new() : ReadImportedSubtitles(),
+            FilterOverrides = UsePresetFiltersToggle.IsChecked == true ? new() : ReadFilterOverrides(),
+            Geometry = ReadGeometryOverride(title)
         };
+        return BuildNativeJob(draft, title, scanInstance, preview: true);
     }
 
     private static byte[] BuildBitmapFile(RawPreviewData preview)
@@ -290,4 +192,3 @@ public sealed partial class MainWindow
         NextPreviewButton.IsEnabled = false;
     }
 }
-

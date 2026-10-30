@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
 using HandBrake.Interop.Interop;
 using HandBrake.Interop.Interop.Interfaces.Model.Encoders;
 using HandBrake.Interop.Interop.Json.Presets;
@@ -22,6 +23,7 @@ public sealed partial class MainWindow
         public required string Key { get; init; }
         public required string DisplayName { get; init; }
         public required HBPreset Preset { get; init; }
+        public required string Json { get; init; }
     }
 
     private bool presetLoadAttempted;
@@ -52,25 +54,26 @@ public sealed partial class MainWindow
             // HandBrakePresetService requires hb_init, not just hb_global_init.
             // Reuse the same native instance later for source scanning.
             scanInstance ??= CreateScanInstance();
-            var categories = HandBrakePresetService.GetBuiltInPresets();
-            if (categories is null) throw new InvalidOperationException("libhb returned no preset catalog.");
+            using var catalog = JsonDocument.Parse(HandBrakePresetService.GetBuiltInPresetsJson());
 
             var choices = new List<NativePresetChoice>();
-            foreach (var category in categories)
+            foreach (var categoryJson in catalog.RootElement.EnumerateArray())
             {
-                if (category.ChildrenArray is null) continue;
-                foreach (var preset in category.ChildrenArray)
+                if (!categoryJson.TryGetProperty("ChildrenArray", out var children)) continue;
+                string categoryName = categoryJson.GetProperty("PresetName").GetString() ?? "Other";
+                foreach (var presetJson in children.EnumerateArray())
                 {
+                    var preset = presetJson.Deserialize<HBPreset>();
                     if (preset is null || preset.Folder || preset.PresetDisabled ||
                         string.IsNullOrWhiteSpace(preset.PresetName))
                         continue;
 
-                    string categoryName = category.PresetName ?? "Other";
                     choices.Add(new NativePresetChoice
                     {
                         Key = categoryName + "/" + preset.PresetName,
                         DisplayName = categoryName + " / " + preset.PresetName,
-                        Preset = preset
+                        Preset = preset,
+                        Json = presetJson.GetRawText()
                     });
                 }
             }
@@ -141,6 +144,7 @@ public sealed partial class MainWindow
         var choice = ActivePresetChoice;
         if (choice is null) return;
         activePreset = choice.Preset;
+        UsePresetAudioToggle.IsChecked = UsePresetSubtitlesToggle.IsChecked = UsePresetFiltersToggle.IsChecked = true;
         foreach (var editor in filterEditors) editor.Enabled.IsChecked = false;
         ChapterMarkersToggle.IsChecked = activePreset.ChapterMarkers;
 
@@ -200,6 +204,7 @@ public sealed partial class MainWindow
         }
 
         UpdateSuggestedDestination();
+        RefreshOutputSummary();
 
         var prefs = SettingsPanel.Preferences;
         if (prefs.PreferredPresetKey != choice.Key)
@@ -277,6 +282,7 @@ public sealed partial class MainWindow
     {
         if (updatingVideoEditor) return;
         UpdateVideoModeControls();
+        RefreshOutputSummary();
     }
 
     private void UpdateVideoModeControls()
@@ -313,12 +319,12 @@ public sealed partial class MainWindow
 
     private void VideoQualitySlider_ValueChanged(object sender, RangeBaseValueChangedEventArgs e)
     {
-        if (!updatingVideoEditor) UpdateVideoQualityText();
+        if (!updatingVideoEditor) { UpdateVideoQualityText(); RefreshOutputSummary(); }
     }
 
     private void VideoBitrateBox_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs e)
     {
-        // The queue reads the latest validated numeric value when staging.
+        if (!updatingVideoEditor) RefreshOutputSummary();
     }
 
     private void UpdateVideoQualityText()
@@ -367,4 +373,3 @@ public sealed partial class MainWindow
         string VideoEncoder, string RateControl, double? Quality,
         int? BitrateKbps, string? Framerate, string? EncoderSpeed);
 }
-

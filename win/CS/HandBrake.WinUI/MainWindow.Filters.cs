@@ -52,7 +52,7 @@ public sealed partial class MainWindow
                 FilterEditorPanel.Children.Add(card);
                 filterEditors.Add(new FilterEditor(id, enabled, preset, tune));
             }
-            FilterEditorStatus.Text = "Native filter choices loaded. Explicit selections apply to newly staged jobs and previews; preset filter import is not implemented yet.";
+            FilterEditorStatus.Text = "Use preset filters to retain the complete native filter chain. Turn it off to choose manual effect filters below; geometry is retained.";
         }
         catch (Exception error)
         {

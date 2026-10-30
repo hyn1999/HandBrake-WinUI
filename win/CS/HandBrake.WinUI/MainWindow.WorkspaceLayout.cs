@@ -44,6 +44,17 @@ public sealed partial class MainWindow
         catch (Exception error) { SourceStatusText.Text = "Unable to choose output folder: " + error.Message; }
     }
 
+    private void PresetRules_Toggled(object sender, RoutedEventArgs args)
+    {
+        if (AudioTrackList is not null && UsePresetAudioToggle is not null)
+            AudioTrackList.IsEnabled = UsePresetAudioToggle.IsChecked != true;
+        if (SubtitleManualPanel is not null && UsePresetSubtitlesToggle is not null)
+            SubtitleManualPanel.IsEnabled = UsePresetSubtitlesToggle.IsChecked != true;
+        if (FilterEditorPanel is not null && UsePresetFiltersToggle is not null)
+            FilterEditorPanel.IsEnabled = UsePresetFiltersToggle.IsChecked != true;
+        RefreshOutputSummary();
+    }
+
     private void RefreshOutputSummary()
     {
         if (ConfiguredOutputText is null || VideoRateModePicker is null || !TryGetVideoDraftSettings(out var settings)) return;
@@ -51,8 +62,9 @@ public sealed partial class MainWindow
         int audio = audioEditors.Count(editor => editor.Selected.IsChecked == true);
         string geometry = CustomGeometryToggle.IsChecked == true
             ? $"{OutputWidthBox.Value:0} × {OutputHeightBox.Value:0} (manual dimensions)" : "Dimensions from preset";
+        string audioSummary = UsePresetAudioToggle?.IsChecked == true ? "Audio: native preset rules" : $"{audio} selected audio track(s)";
         ConfiguredOutputText.Text = $"{settings.Container} · {settings.VideoEncoder} · {rate}\n" +
-            $"{audio} selected audio track(s) · {geometry}\n" +
+            $"{audioSummary} · {geometry}\n" +
             $"Chapter markers: {(ChapterMarkersToggle.IsChecked == true ? "On" : "Off")}";
     }
 

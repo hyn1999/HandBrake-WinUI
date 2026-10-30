@@ -166,6 +166,7 @@ public sealed partial class MainWindow
 
         try
         {
+            BeginEncodeDiagnostic();
             encodeInstance = new HandBrakeInstance();
             encodeInstance.Initialize(SettingsPanel.Preferences.ScanVerbosity, noHardware: true);
             encodeInstance.ScanProgress += EncodeScanProgress;
@@ -239,7 +240,7 @@ public sealed partial class MainWindow
                 encodeInstance.EncodeProgress += EncodeProgressChanged;
                 encodeInstance.EncodeCompleted += EncodeJobCompleted;
 
-                JsonEncodeObject job = BuildEncodeJob(draft, title);
+                string job = BuildEncodeJob(draft, title);
                 QueueEncodeProgress.IsIndeterminate = true;
                 QueueStatusText.Text =
                     $"Starting {activeEncodeQueueIndex + 1}/{activeEncodeQueue.Count} · {draft.DisplayName}";
@@ -332,15 +333,14 @@ public sealed partial class MainWindow
         }
     }
 
-    private JsonEncodeObject BuildEncodeJob(QueueDraft draft, SourceTitle title)
+    private string BuildEncodeJob(QueueDraft draft, SourceTitle title)
     {
-        NativePresetChoice choice = nativePresetChoices.FirstOrDefault(item => item.Key == draft.PresetKey)
-            ?? throw new InvalidOperationException("The selected native preset is no longer available.");
-        HBPreset preset = choice.Preset;
+        if (encodeInstance is null) throw new InvalidOperationException("The native HandBrake instance is unavailable.");
+        return BuildNativeJob(draft, title, encodeInstance);
+    }
 
-        if ((draft.Subtitles?.Count(track => track.Burn) ?? 0) + (draft.SubtitleImports?.Count(track => track.Burn) ?? 0) + (draft.ForeignAudioSearch && draft.ForeignAudioBurn ? 1 : 0) > 1)
-            throw new InvalidOperationException("Only one subtitle track can be burned into the video. Re-stage this job.");
-
+    private List<EncodeAudioTrack> BuildManualAudio(QueueDraft draft, SourceTitle title, HBPreset preset)
+    {
         var audioTracks = new List<EncodeAudioTrack>();
         var audioRule = preset.AudioList?.FirstOrDefault();
         string audioEncoder = !string.IsNullOrWhiteSpace(audioRule?.AudioEncoder)
@@ -387,149 +387,7 @@ public sealed partial class MainWindow
             });
         }
 
-        int cropTop = title.Crop?.ElementAtOrDefault(0) ?? 0;
-        int cropBottom = title.Crop?.ElementAtOrDefault(1) ?? 0;
-        int cropLeft = title.Crop?.ElementAtOrDefault(2) ?? 0;
-        int cropRight = title.Crop?.ElementAtOrDefault(3) ?? 0;
-        int sourceWidth = title.Geometry?.Width ?? 0;
-        int sourceHeight = title.Geometry?.Height ?? 0;
-        int width = preset.PictureWidth is > 0
-            ? preset.PictureWidth.Value
-            : Math.Max(2, sourceWidth - cropLeft - cropRight);
-        int height = preset.PictureHeight is > 0
-            ? preset.PictureHeight.Value
-            : Math.Max(2, sourceHeight - cropTop - cropBottom);
-
-        if (draft.Geometry is { } geometry)
-        {
-            ValidateGeometry(geometry, title);
-            width = geometry.Width;
-            height = geometry.Height;
-            cropTop = geometry.Top;
-            cropBottom = geometry.Bottom;
-            cropLeft = geometry.Left;
-            cropRight = geometry.Right;
-        }
-
-        var filters = new List<Filter>();
-        if (sourceWidth > 0 && sourceHeight > 0)
-        {
-            string cropSettings =
-                $"width={width}:height={height}:crop-top={cropTop}:crop-bottom={cropBottom}:" +
-                $"crop-left={cropLeft}:crop-right={cropRight}";
-            string cropJson = HandBrakeFilterHelpers.GenerateFilterSettingJson(
-                (int)hb_filter_ids.HB_FILTER_CROP_SCALE, null, null, cropSettings);
-            if (!string.IsNullOrWhiteSpace(cropJson))
-            {
-                filters.Add(new Filter
-                {
-                    ID = (int)hb_filter_ids.HB_FILTER_CROP_SCALE,
-                    Settings = JsonDocument.Parse(cropJson)
-                });
-            }
-        }
-
-        int frameRateMode = preset.VideoFramerateMode?.ToLowerInvariant() switch
-        {
-            "cfr" => 1,
-            "pfr" => 2,
-            _ => 0
-        };
-        string? frameRateName = string.IsNullOrWhiteSpace(draft.VideoFramerate)
-            ? preset.VideoFramerate : draft.VideoFramerate;
-        int nativeFrameRate = string.IsNullOrWhiteSpace(frameRateName) ||
-            frameRateName.Equals("auto", StringComparison.OrdinalIgnoreCase)
-                ? 0 : HandBrakeUnitConversionHelpers.GetFramerateFromName(frameRateName);
-        string frameRateSettings = nativeFrameRate > 0
-            ? $"mode={frameRateMode}:rate=27000000/{nativeFrameRate}"
-            : $"mode={frameRateMode}";
-        string frameRateJson = HandBrakeFilterHelpers.GenerateFilterSettingJson(
-            (int)hb_filter_ids.HB_FILTER_VFR, null, null, frameRateSettings);
-        if (!string.IsNullOrWhiteSpace(frameRateJson))
-        {
-            filters.Add(new Filter
-            {
-                ID = (int)hb_filter_ids.HB_FILTER_VFR,
-                Settings = JsonDocument.Parse(frameRateJson)
-            });
-        }
-
-        int parNum = draft.Geometry is null && preset.PicturePARWidth > 0
-            ? preset.PicturePARWidth : title.Geometry?.PAR?.Num ?? 1;
-        int parDen = draft.Geometry is null && preset.PicturePARHeight > 0
-            ? preset.PicturePARHeight : title.Geometry?.PAR?.Den ?? 1;
-        if (draft.ChapterNames is not null && draft.ChapterNames.Count != (title.ChapterList?.Count ?? 0))
-            throw new InvalidOperationException("The source chapter list changed. Re-scan and stage this job again.");
-        int chapterCount = Math.Max(1, title.ChapterList?.Count ?? 1);
-        bool constantQuality = draft.VideoRateControl == "ConstantQuality";
-
-        var metadata = title.MetaData is null
-            ? new Dictionary<string, string>() : new Dictionary<string, string>(title.MetaData);
-        if (draft.MetadataOverrides is not null)
-            foreach (var entry in draft.MetadataOverrides) metadata[entry.Key] = entry.Value;
-
-        return new JsonEncodeObject
-        {
-            SequenceID = 0,
-            Audio = new Audio
-            {
-                AudioList = audioTracks,
-                CopyMask = preset.AudioCopyMask?.ToArray() ?? Array.Empty<string>(),
-                FallbackEncoder = preset.AudioEncoderFallback
-            },
-            Destination = new Destination
-            {
-                File = draft.DestinationPath!,
-                Mux = string.IsNullOrWhiteSpace(preset.FileFormat)
-                    ? ContainerToMux(draft.Container)
-                    : preset.FileFormat,
-                Options = new Options
-                {
-                    Optimize = preset.Optimize,
-                    IpodAtom = preset.Mp4iPodCompatible
-                },
-                ChapterMarkers = draft.ChapterMarkers ?? preset.ChapterMarkers,
-                AlignAVStart = preset.AlignAVStart,
-                ChapterList = (title.ChapterList ?? new List<SourceChapter>())
-                    .Select((chapter, index) => new Chapter { Name = draft.ChapterNames is null ? chapter.Name : draft.ChapterNames[index] })
-                    .ToList()
-            },
-            Filters = new Filters { FilterList = filters.Concat(BuildFilterOverrides(draft.FilterOverrides)).OrderBy(filter => filter.ID).ToList() },
-            PAR = new PAR { Num = Math.Max(1, parNum), Den = Math.Max(1, parDen) },
-            Metadata = metadata,
-            CoverArts = title.CoverArts ?? new List<CoverArt>(),
-            Source = new EncodeSource
-            {
-                Path = title.Path,
-                Title = title.Index,
-                Angle = 0,
-                HWDecode = 0,
-                KeepDuplicateTitles = title.KeepDuplicateTitles,
-                Range = new EncodeRange { Type = "chapter", Start = 1, End = chapterCount }
-            },
-            Subtitle = new Subtitles
-            {
-                Search = new SubtitleSearch { Enable = draft.ForeignAudioSearch, Default = false, Burn = draft.ForeignAudioSearch && draft.ForeignAudioBurn, Forced = draft.ForeignAudioForced },
-                SubtitleList = BuildSubtitleTracks(draft.Subtitles, title, preset.FileFormat ?? ContainerToMux(draft.Container))
-                    .Concat(BuildImportedSubtitles(draft.SubtitleImports, preset.FileFormat ?? ContainerToMux(draft.Container))).ToList()
-            },
-            Video = new Video
-            {
-                Encoder = draft.VideoEncoder,
-                Level = preset.VideoLevel,
-                Preset = draft.VideoEncoderSpeed ?? preset.VideoPreset,
-                Profile = preset.VideoProfile,
-                Tune = preset.VideoTune,
-                Options = preset.VideoOptionExtra,
-                Quality = constantQuality && draft.VideoQuality.HasValue
-                    ? (decimal?)draft.VideoQuality.Value : null,
-                Bitrate = !constantQuality ? draft.VideoBitrateKbps : null,
-                MultiPass = !constantQuality && preset.VideoMultiPass,
-                Turbo = !constantQuality && preset.VideoTurboMultiPass,
-                ColorMatrixCode = preset.VideoColorMatrixCode,
-                HardwareDecode = 0
-            }
-        };
+        return audioTracks;
     }
 
     private static int ResolveSampleRate(string? sampleRate)

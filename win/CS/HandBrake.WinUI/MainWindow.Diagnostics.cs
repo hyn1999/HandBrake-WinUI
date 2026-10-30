@@ -1,15 +1,31 @@
 using System;
 using System.IO;
+using System.Collections.Generic;
 using System.Text.Json;
 using HandBrake.Interop.Interop;
 using HandBrake.Interop.Interop.Interfaces.EventArgs;
-using HandBrake.Interop.Interop.Json.Encode;
 
 namespace HandBrake.WinUI;
 
 public sealed partial class MainWindow
 {
     private static readonly object NativeLogLock = new();
+    private static readonly Queue<string> RecentNativeMessages = new();
+
+    private static void BeginEncodeDiagnostic()
+    {
+        lock (NativeLogLock) RecentNativeMessages.Clear();
+        try
+        {
+            Directory.CreateDirectory(DiagnosticsFolder);
+            File.Delete(Path.Combine(DiagnosticsFolder, "last-encode-job.json"));
+            File.Delete(Path.Combine(DiagnosticsFolder, "last-encode-error.txt"));
+        }
+        catch (Exception error) when (error is IOException or UnauthorizedAccessException)
+        {
+            System.Diagnostics.Debug.WriteLine("Unable to reset encode diagnostics: " + error.Message);
+        }
+    }
 
     private void InitializeNativeDiagnostics()
     {
@@ -28,6 +44,8 @@ public sealed partial class MainWindow
         {
             lock (NativeLogLock)
             {
+                RecentNativeMessages.Enqueue(args.Message);
+                while (RecentNativeMessages.Count > 100) RecentNativeMessages.Dequeue();
                 Directory.CreateDirectory(DiagnosticsFolder);
                 string path = Path.Combine(DiagnosticsFolder, "native.log");
                 if (File.Exists(path) && new FileInfo(path).Length > 2 * 1024 * 1024)
@@ -43,13 +61,13 @@ public sealed partial class MainWindow
 
     private static string DiagnosticsFolder => Path.Combine(Path.GetDirectoryName(AppPreferences.StorageFile)!, "diagnostics");
 
-    private static void SaveEncodeJobDiagnostic(JsonEncodeObject job)
+    private static void SaveEncodeJobDiagnostic(string job)
     {
         try
         {
             Directory.CreateDirectory(DiagnosticsFolder);
             File.WriteAllText(Path.Combine(DiagnosticsFolder, "last-encode-job.json"),
-                JsonSerializer.Serialize(job, new JsonSerializerOptions { WriteIndented = true }));
+                job);
         }
         catch (Exception error) when (error is IOException or UnauthorizedAccessException or JsonException or NotSupportedException)
         {
@@ -63,7 +81,9 @@ public sealed partial class MainWindow
         {
             Directory.CreateDirectory(DiagnosticsFolder);
             string path = Path.Combine(DiagnosticsFolder, "last-encode-error.txt");
-            File.WriteAllText(path, $"{DateTimeOffset.Now:O}\n{message}\n{error}");
+            string recent;
+            lock (NativeLogLock) recent = string.Join(Environment.NewLine, RecentNativeMessages);
+            File.WriteAllText(path, $"{DateTimeOffset.Now:O}\n{message}\n{error}\nRecent native messages:\n{recent}");
             return message + " Diagnostic: " + path;
         }
         catch (Exception failure) when (failure is IOException or UnauthorizedAccessException)

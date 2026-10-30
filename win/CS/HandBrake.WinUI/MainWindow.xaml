@@ -164,7 +164,7 @@
                                                                Text="No native preset loaded." TextWrapping="Wrap" />
                                                     <TextBlock Text="Output container (from preset)" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="PresetContainerText" Text="Not available" />
-                                                    <TextBlock Text="This frontend is under development. Audio, subtitles, filters and dimensions do not yet reproduce all preset behavior. Review the integration status before encoding."
+                                                    <TextBlock Text="Preset rules are resolved by the native engine. Manual audio, subtitle and filter editing supports a subset of HandBrake options."
                                                                TextWrapping="Wrap" FontSize="12"
                                                                Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
@@ -177,7 +177,7 @@
                                                     <TextBlock x:Name="SourceDimensionsText"
                                                                Text="Source dimensions will appear after scanning."
                                                                TextWrapping="Wrap" />
-                                                    <CheckBox x:Name="CustomGeometryToggle" Content="Override output dimensions and cropping" Checked="GeometryOverride_Toggled" Unchecked="GeometryOverride_Toggled" />
+                                                    <CheckBox x:Name="CustomGeometryToggle" Content="Override preset geometry with manual dimensions and cropping" Checked="GeometryOverride_Toggled" Unchecked="GeometryOverride_Toggled" />
                                                     <TextBlock Text="Enter encoded pixel dimensions. Source pixel aspect ratio is retained. Re-stage the queue item after editing." TextWrapping="Wrap" />
                                                     <Grid ColumnSpacing="12">
                                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -201,7 +201,8 @@
                                                 <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Filters" FontSize="17" FontWeight="SemiBold" />
                                                     <TextBlock x:Name="FilterEditorStatus" Text="Filter presets and tunes require the matching native HandBrake engine." TextWrapping="Wrap" />
-                                                    <StackPanel x:Name="FilterEditorPanel" Spacing="4" />
+                                                    <CheckBox x:Name="UsePresetFiltersToggle" Content="Use preset filters" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
+                                                    <StackPanel x:Name="FilterEditorPanel" Spacing="4" IsEnabled="False" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>
@@ -255,7 +256,8 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Audio tracks" FontSize="17" FontWeight="SemiBold" />
-                                                    <StackPanel x:Name="AudioTrackList" Spacing="8">
+                                                    <CheckBox x:Name="UsePresetAudioToggle" Content="Use preset audio selection and encoding rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
+                                                    <StackPanel x:Name="AudioTrackList" Spacing="8" IsEnabled="False">
                                                         <TextBlock Text="Tracks will appear after scanning a source."
                                                                    TextWrapping="Wrap" />
                                                     </StackPanel>
@@ -267,6 +269,8 @@
                                             <ScrollViewer>
                                                 <StackPanel Padding="12" Spacing="8">
                                                     <TextBlock Text="Subtitles" FontSize="17" FontWeight="SemiBold" />
+                                                    <CheckBox x:Name="UsePresetSubtitlesToggle" Content="Use preset subtitle selection and search rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
+                                                    <StackPanel x:Name="SubtitleManualPanel" Spacing="8" IsEnabled="False">
                                                     <CheckBox x:Name="ForeignAudioSearchToggle" Content="Foreign Audio Search" Checked="ForeignSearch_Toggled" Unchecked="ForeignSearch_Toggled" />
                                                     <CheckBox x:Name="ForeignAudioForcedToggle" IsEnabled="False" Content="Search forced subtitles only" IsChecked="True" />
                                                     <CheckBox x:Name="ForeignAudioBurnToggle" IsEnabled="False" Content="Burn the search result into video" />
@@ -279,6 +283,7 @@
                                                     <TextBlock x:Name="SubtitleImportStatus" Text="UTF-8 SRT soft subtitles support MP4 and MKV. At most one internal or imported track may be burned into video." TextWrapping="Wrap" />
                                                     <StackPanel x:Name="ImportedSubtitleList" Spacing="4" />
                                                     <TextBlock Text="Select internal subtitle tracks to include. Soft subtitles require a compatible container. Burn-in is permanent in the output image and cannot be switched off during playback. Foreign-audio search runs during encoding. Re-stage the queue entry after editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                    </StackPanel>
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>

@@ -18,6 +18,10 @@ namespace HandBrake.WinUI;
 /// </summary>
 public sealed class QueueDraft
 {
+    public string? NativePresetJson { get; set; }
+    public bool UsePresetAudio { get; set; }
+    public bool UsePresetSubtitles { get; set; }
+    public bool UsePresetFilters { get; set; }
     public bool ForeignAudioSearch { get; set; }
     public bool ForeignAudioForced { get; set; } = true;
     public bool ForeignAudioBurn { get; set; }
@@ -116,17 +120,21 @@ public sealed partial class MainWindow
 
         // A scanned folder can contain several titles. Preserve the actual
         // selected native title index instead of inventing a title number.
-        draft.ForeignAudioSearch = ForeignAudioSearchToggle.IsChecked == true;
+        draft.NativePresetJson = ActivePresetChoice?.Json;
+        draft.UsePresetAudio = UsePresetAudioToggle.IsChecked == true;
+        draft.UsePresetSubtitles = UsePresetSubtitlesToggle.IsChecked == true;
+        draft.UsePresetFilters = UsePresetFiltersToggle.IsChecked == true;
+        draft.ForeignAudioSearch = !draft.UsePresetSubtitles && ForeignAudioSearchToggle.IsChecked == true;
         draft.ForeignAudioForced = ForeignAudioForcedToggle.IsChecked == true;
         draft.ForeignAudioBurn = draft.ForeignAudioSearch && ForeignAudioBurnToggle.IsChecked == true;
-        draft.SubtitleImports = ReadImportedSubtitles();
+        draft.SubtitleImports = draft.UsePresetSubtitles ? new() : ReadImportedSubtitles();
         BuildImportedSubtitles(draft.SubtitleImports, activePreset?.FileFormat ?? "");
-        draft.Subtitles = ReadSubtitleChoices();
+        draft.Subtitles = draft.UsePresetSubtitles ? new() : ReadSubtitleChoices();
         if (draft.Subtitles.Count(track => track.Burn) + draft.SubtitleImports.Count(track => track.Burn) + (draft.ForeignAudioBurn ? 1 : 0) > 1)
             throw new InvalidOperationException("Select at most one subtitle track for burn-in.");
         BuildSubtitleTracks(draft.Subtitles, title, activePreset?.FileFormat ?? "");
-        draft.AudioTracks = ReadAudioChoices();
-        draft.FilterOverrides = ReadFilterOverrides();
+        draft.AudioTracks = draft.UsePresetAudio ? new() : ReadAudioChoices();
+        draft.FilterOverrides = draft.UsePresetFilters ? new() : ReadFilterOverrides();
         // Validate selected native presets before persisting a configured entry.
         foreach (var filter in BuildFilterOverrides(draft.FilterOverrides))
             filter.Settings?.Dispose();
