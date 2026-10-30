@@ -21,6 +21,7 @@ public sealed partial class MainWindow
     private sealed class NativePresetChoice
     {
         public required string Key { get; init; }
+        public required string Category { get; init; }
         public required string DisplayName { get; init; }
         public required HBPreset Preset { get; init; }
         public required string Json { get; init; }
@@ -32,8 +33,7 @@ public sealed partial class MainWindow
     private readonly List<HBVideoEncoder> nativeVideoEncoders = new();
     private readonly List<NativePresetChoice> nativePresetChoices = new();
 
-    private NativePresetChoice? ActivePresetChoice
-        => (PresetPicker.SelectedItem as ComboBoxItem)?.Tag as NativePresetChoice;
+    private NativePresetChoice? ActivePresetChoice { get; set; }
 
     private HBVideoEncoder? ActiveVideoEncoder
         => (VideoEncoderPicker.SelectedItem as ComboBoxItem)?.Tag as HBVideoEncoder;
@@ -71,6 +71,7 @@ public sealed partial class MainWindow
                     choices.Add(new NativePresetChoice
                     {
                         Key = categoryName + "/" + preset.PresetName,
+                        Category = categoryName,
                         DisplayName = categoryName + " / " + preset.PresetName,
                         Preset = preset,
                         Json = presetJson.GetRawText()
@@ -89,7 +90,6 @@ public sealed partial class MainWindow
                 throw new InvalidOperationException("libhb returned no video encoders.");
 
             updatingVideoEditor = true;
-            PresetPicker.Items.Clear();
             VideoEncoderPicker.Items.Clear();
 
             foreach (var encoder in nativeVideoEncoders)
@@ -101,16 +101,8 @@ public sealed partial class MainWindow
                 });
             }
 
-            foreach (var choice in choices)
-            {
-                PresetPicker.Items.Add(new ComboBoxItem { Content = choice.DisplayName, Tag = choice });
-            }
-
-            string preferred = SettingsPanel.Preferences.PreferredPresetKey;
-            int chosen = choices.FindIndex(x => x.Key == preferred);
-            if (chosen < 0) chosen = choices.FindIndex(x => x.Preset.Default);
-            if (chosen < 0) chosen = choices.FindIndex(x => x.Preset.PresetName == "Fast 1080p30");
-            PresetPicker.SelectedIndex = chosen < 0 ? 0 : chosen;
+            BuildPresetMenu();
+            ActivePresetChoice = GetDefaultPreset();
             PresetPicker.IsEnabled = true;
             updatingVideoEditor = false;
             ApplyNativePreset();
@@ -122,6 +114,9 @@ public sealed partial class MainWindow
         {
             updatingVideoEditor = false;
             activePreset = null;
+            ActivePresetChoice = null;
+            DefaultPresetBadge.Visibility = ModifiedPresetBadge.Visibility = Visibility.Collapsed;
+            PresetSelectionText.Text = "Presets unavailable";
             nativePresetChoices.Clear();
             PresetPicker.IsEnabled = false;
             VideoEncoderPicker.IsEnabled = false;
@@ -133,24 +128,21 @@ public sealed partial class MainWindow
         }
     }
 
-    private void PresetPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (updatingVideoEditor) return;
-        ApplyNativePreset();
-    }
-
     private void ApplyNativePreset()
     {
         var choice = ActivePresetChoice;
         if (choice is null) return;
         activePreset = choice.Preset;
-        UsePresetAudioToggle.IsChecked = UsePresetSubtitlesToggle.IsChecked = UsePresetFiltersToggle.IsChecked = true;
-        foreach (var editor in filterEditors) editor.Enabled.IsChecked = false;
-        ChapterMarkersToggle.IsChecked = activePreset.ChapterMarkers;
-
         updatingVideoEditor = true;
         try
         {
+            UsePresetAudioToggle.IsChecked = UsePresetSubtitlesToggle.IsChecked = UsePresetFiltersToggle.IsChecked = true;
+            CustomGeometryToggle.IsChecked = false;
+            foreach (var editor in filterEditors) editor.Enabled.IsChecked = false;
+            ChapterMarkersToggle.IsChecked = activePreset.ChapterMarkers;
+            MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
+            if (SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: HandBrake.Interop.Interop.Json.Scan.SourceTitle title })
+                DisplayChapterEditor(title);
             PresetDescriptionText.Text = string.IsNullOrWhiteSpace(activePreset.PresetDescription)
                 ? choice.DisplayName
                 : choice.DisplayName + "\n" + activePreset.PresetDescription;
@@ -205,6 +197,7 @@ public sealed partial class MainWindow
 
         UpdateSuggestedDestination();
         RefreshOutputSummary();
+        UpdatePresetPresentation();
 
         var prefs = SettingsPanel.Preferences;
         if (prefs.PreferredPresetKey != choice.Key)
@@ -240,6 +233,8 @@ public sealed partial class MainWindow
             UpdateVideoModeControls();
         }
         finally { updatingVideoEditor = false; }
+        RefreshOutputSummary();
+        UpdatePresetPresentation();
     }
 
     private void ConfigureVideoEncoder()

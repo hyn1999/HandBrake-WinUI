@@ -27,6 +27,7 @@ public sealed partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+        InitializePresetTracking();
         InitializeNativeDiagnostics();
         ExtendsContentIntoTitleBar = true;
         SetTitleBar(AppTitleBar);

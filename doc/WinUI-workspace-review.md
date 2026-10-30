@@ -57,3 +57,25 @@ Visual density and responsive breakpoints require checking in the next batched W
 5. Turn preset rules off individually: confirm custom selection/silent audio, forced/burn limits, imported SRT and selected effect filters.
 6. Check manual geometry and renamed chapters, repeated jobs, cancellation, restart, and an older queue-drafts.json file.
 7. If error 3 remains, inspect last-encode-error.txt plus native.log for the failing thread and its preceding error. Do not infer the cause from the numeric code alone.
+
+
+## Preset picker presentation
+
+- Native cascading menus group presets by their catalog category. Entries show the preset name, a selection checkmark, and the default marker.
+- Each entry and the selected-preset button expose the native description in a wrapped tooltip and accessibility help text.
+- The user-selected default is stored independently of the last-used preset. Startup selects that default; if it is missing, the native default, General/Fast 1080p30, then the first available entry are used in order.
+- Default and Modified badges remain visible next to the selected preset. Choosing a new default stores the preset definition, not the current editor overrides.
+- Modified is recalculated from current effective editor state, rather than latched on the first event. It covers video encoder/rate mode/active quality or bitrate, manual geometry, manual audio/subtitle/filter modes, chapter markers/names and metadata overrides.
+- Inactive bitrate/quality controls, dormant manual editors, opening a source, navigating tabs, destination editing and preview navigation do not dirty the preset.
+- Reload selected preset restores native rule modes and video values, clears manual geometry and metadata overrides, and restores source chapter names.
+- Returning all effective fields to their original settings clears Modified. Applying a preset suppresses intermediate change events.
+
+### Batched UI validation cases
+
+- Open each category with mouse and keyboard; inspect a long-description tooltip, selection checkmark and menu scrolling.
+- Set a different preset as default, choose another preset, restart: the saved default must be selected and marked. Invalid/missing saved keys must fall back to an available default.
+- Change RF, bitrate in bitrate mode, encoder, each native-rule toggle, geometry override, chapter markers/name and metadata. Modified must appear immediately.
+- Restore each change: Modified must clear once all effective changes are restored. Editing inactive fields must not affect it.
+- Reload a modified preset; confirm both the editor fields and staged job are restored to preset rules.
+- Check both themes, compact spacing, a narrow window and screen-reader names/help text.
+- Structural checks pass; Windows compilation and interactive checks remain for the next batched build.

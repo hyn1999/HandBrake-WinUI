@@ -133,13 +133,30 @@
                                         <Grid.ColumnDefinitions>
                                             <ColumnDefinition Width="Auto" />
                                             <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                            <ColumnDefinition Width="Auto" />
                                         </Grid.ColumnDefinitions>
-                                        <TextBlock Text="Preset" VerticalAlignment="Center"
-                                                   FontWeight="SemiBold" />
-                                        <ComboBox x:Name="PresetPicker" Grid.Column="1"
-                                                  IsEnabled="False" HorizontalAlignment="Stretch"
-                                                  SelectionChanged="PresetPicker_SelectionChanged"
-                                                  AutomationProperties.Name="HandBrake encoding preset" />
+                                        <TextBlock Text="Preset" VerticalAlignment="Center" FontWeight="SemiBold" />
+                                        <DropDownButton x:Name="PresetPicker" Grid.Column="1"
+                                                        IsEnabled="False" HorizontalAlignment="Stretch"
+                                                        HorizontalContentAlignment="Left" MinHeight="30" Padding="10,4"
+                                                        AutomationProperties.Name="HandBrake encoding preset">
+                                            <TextBlock x:Name="PresetSelectionText" Text="Choose a preset"
+                                                       TextTrimming="CharacterEllipsis" />
+                                        </DropDownButton>
+                                        <Border x:Name="DefaultPresetBadge" Grid.Column="2" Visibility="Collapsed"
+                                                ToolTipService.ToolTip="This preset is selected when the app starts."
+                                                VerticalAlignment="Center" CornerRadius="4" Padding="8,3"
+                                                Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                                            <TextBlock Text="Default" FontSize="12" />
+                                        </Border>
+                                        <Border x:Name="ModifiedPresetBadge" Grid.Column="3" Visibility="Collapsed"
+                                                ToolTipService.ToolTip="Settings differ from this preset. Use Reload selected preset to restore them."
+                                                VerticalAlignment="Center" CornerRadius="4" Padding="8,3"
+                                                Background="{ThemeResource SubtleFillColorSecondaryBrush}">
+                                            <TextBlock Text="Modified" FontSize="12"
+                                                       Foreground="{ThemeResource AccentTextFillColorPrimaryBrush}" />
+                                        </Border>
                                     </Grid>
 
                                     <TabView Grid.Row="1" SelectionChanged="EditorTabs_SelectionChanged" IsAddTabButtonVisible="False"

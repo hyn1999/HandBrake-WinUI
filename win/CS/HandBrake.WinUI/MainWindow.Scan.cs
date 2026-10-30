@@ -250,6 +250,7 @@ public sealed partial class MainWindow
         ChapterListText.Text = "Waiting for source scan.";
         ChapterEditorPanel.Children.Clear();
         chapterNameEditors.Clear();
+        UpdatePresetPresentation();
     }
 
     private void ScanStartFailed(Exception error)

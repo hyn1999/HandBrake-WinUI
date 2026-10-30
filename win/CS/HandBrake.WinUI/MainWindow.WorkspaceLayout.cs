@@ -57,6 +57,7 @@ public sealed partial class MainWindow
 
     private void RefreshOutputSummary()
     {
+        UpdatePresetPresentation();
         if (ConfiguredOutputText is null || VideoRateModePicker is null || !TryGetVideoDraftSettings(out var settings)) return;
         string rate = settings.RateControl == "ConstantQuality" ? $"Quality {settings.Quality:0.##}" : $"{settings.BitrateKbps} kbps";
         int audio = audioEditors.Count(editor => editor.Selected.IsChecked == true);
@@ -87,6 +88,7 @@ public sealed partial class MainWindow
         foreach (var chapter in title.ChapterList ?? new())
         {
             var name = new TextBox { Text = chapter.Name ?? string.Empty, Header = $"Chapter {chapterNameEditors.Count + 1}" };
+            name.TextChanged += (_, _) => UpdatePresetPresentation();
             chapterNameEditors.Add(name);
             ChapterEditorPanel.Children.Add(name);
         }
