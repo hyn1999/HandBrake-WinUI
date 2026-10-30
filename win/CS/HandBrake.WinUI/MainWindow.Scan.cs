@@ -183,13 +183,8 @@ public sealed partial class MainWindow
             ? $"{(double)rate.Num / rate.Den:0.###} fps"
             : "Unknown frame rate";
         string duration = FormatDuration(title.Duration);
-        int audioCount = title.AudioList?.Count ?? 0;
-        int subtitleCount = title.SubtitleList?.Count ?? 0;
         int chapterCount = title.ChapterList?.Count ?? 0;
 
-        ScanSummaryText.Text = $"Title {title.Index} · {duration}\n" +
-            $"{resolution} · {fps}\n" +
-            $"{audioCount} audio track(s) · {subtitleCount} subtitle track(s) · {chapterCount} chapter(s)";
         SourceDimensionsText.Text = $"Source: {resolution}";
         SourceVideoText.Text = $"Source codec: {title.VideoCodec ?? "Unknown"}\n" +
                                $"Frame rate: {fps}\nContainer: {title.Container ?? "Unknown"}";
@@ -240,7 +235,7 @@ public sealed partial class MainWindow
         scannedTitles.Clear();
         SourceTitlePicker.Items.Clear();
         SourceTitlePicker.Visibility = Visibility.Collapsed;
-        ScanSummaryText.Text = "Scanning has not produced any title information yet.";
+        ClearResolvedSummary();
         SourceDimensionsText.Text = "Source dimensions are not available.";
         SourceVideoText.Text = "Source video properties are not available.";
         PreviewMetadataText.Text = "No decoded preview frame yet.";

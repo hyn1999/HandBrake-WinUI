@@ -40,18 +40,6 @@ public sealed partial class MainWindow
     {
         UpdatePresetPresentation();
         ScheduleResolvedSummary();
-        if (ConfiguredOutputText is null || VideoRateModePicker is null || !TryGetVideoDraftSettings(out var settings)) return;
-        string rate = settings.RateControl == "ConstantQuality" ? $"Quality {settings.Quality:0.##}" : $"{settings.BitrateKbps} kbps";
-        int audio = audioEditors.Count(editor => editor.Selected.IsChecked == true);
-        string geometry = CustomGeometryToggle.IsChecked == true
-            ? $"{OutputWidthBox.Value:0} × {OutputHeightBox.Value:0} (manual dimensions)" : "Dimensions from preset";
-        string audioSummary = UsePresetAudioToggle?.IsChecked == true ? "Audio: native preset rules" : $"{audio} selected audio track(s)";
-        PresetContainerText.Text = CurrentContainer;
-        string frameRate = DisplayPresetFramerate(settings.Framerate);
-        string frameMode = ChoiceValue(frameModePicker).ToUpperInvariant();
-        ConfiguredOutputText.Text = $"{settings.Container} · {settings.VideoEncoder} · {rate} · {frameRate} ({frameMode})\n" +
-            $"{audioSummary} · {geometry}\n" +
-            $"Chapter markers: {(ChapterMarkersToggle.IsChecked == true ? "On" : "Off")}";
     }
 
     private void PreviewViewport_SizeChanged(object sender, SizeChangedEventArgs args) => UpdatePreviewFrameBounds();

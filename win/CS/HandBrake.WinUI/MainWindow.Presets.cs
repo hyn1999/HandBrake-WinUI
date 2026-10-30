@@ -45,7 +45,7 @@ public sealed partial class MainWindow
 
         if (!File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll")))
         {
-            PresetStatusText.Text = "Native presets unavailable: the matching hb.dll is missing. No sample presets are substituted.";
+            SourceStatusText.Text = "Native presets unavailable: the matching hb.dll is missing. No sample presets are substituted.";
             return;
         }
 
@@ -107,7 +107,6 @@ public sealed partial class MainWindow
             updatingVideoEditor = false;
             ApplyNativePreset();
             InitializeFilterEditor();
-            PresetStatusText.Text = $"{choices.Count} real built-in presets and {nativeVideoEncoders.Count} encoder definitions loaded from libhb.";
             UpdateQueueUi();
         }
         catch (Exception ex)
@@ -126,7 +125,7 @@ public sealed partial class MainWindow
             VideoRateModePicker.IsEnabled = false;
             VideoQualitySlider.IsEnabled = false;
             VideoBitrateBox.IsEnabled = false;
-            PresetStatusText.Text = "Could not load presets from the matching native HandBrake engine: " + ex.Message;
+            SourceStatusText.Text = "Could not load presets from the matching native HandBrake engine: " + ex.Message;
             UpdateQueueUi();
         }
     }
@@ -149,10 +148,6 @@ public sealed partial class MainWindow
                 DisplayChapterEditor(title);
                 ResetManualGeometryEditor(title);
             }
-            PresetDescriptionText.Text = string.IsNullOrWhiteSpace(activePreset.PresetDescription)
-                ? choice.DisplayName
-                : choice.DisplayName + "\n" + activePreset.PresetDescription;
-            PresetContainerText.Text = FormatPresetContainer(activePreset.FileFormat);
             PresetVideoDetailsText.Text =
                 $"Frame rate: {DisplayPresetFramerate(activePreset.VideoFramerate)} " +
                 $"({activePreset.VideoFramerateMode ?? "preset default"})\n" +
@@ -213,7 +208,7 @@ public sealed partial class MainWindow
             try { prefs.Save(); }
             catch (Exception ex) when (ex is IOException or UnauthorizedAccessException)
             {
-                PresetStatusText.Text = "Preset selected but could not save preference: " + ex.Message;
+                SourceStatusText.Text = "Preset selected but could not save preference: " + ex.Message;
             }
         }
     }

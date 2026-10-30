@@ -10,7 +10,7 @@ namespace HandBrake.WinUI;
 
 public sealed partial class MainWindow
 {
-    private readonly ComboBox outputFormatPicker = new() { Header = "Format" };
+    private readonly ComboBox outputFormatPicker = new();
     private readonly ComboBox frameRatePicker = new() { Header = "Frame rate" };
     private readonly ComboBox frameModePicker = new() { Header = "Frame-rate mode" };
     private readonly ComboBox speedPicker = new() { Header = "Encoder preset" };
@@ -47,8 +47,12 @@ public sealed partial class MainWindow
         PopulateChoices(outputFormatPicker, new[] { ("MP4", "av_mp4"), ("MKV", "av_mkv"), ("WebM", "av_webm") }, "av_mp4");
         PopulateChoices(frameModePicker, new[] { ("Variable", "vfr"), ("Constant", "cfr"), ("Peak", "pfr") }, "vfr");
         PopulateChoices(colorRangePicker, new[] { ("Limited", "limited"), ("Full", "full") }, "limited");
-        ContainerEditorPanel.Children.Add(CompactRow(outputFormatPicker, webOptimize, alignAv));
-        ContainerEditorPanel.Children.Add(CompactRow(ipodSupport, metadataPassthru));
+        Design.FieldLayout.SetRole(outputFormatPicker, Design.FieldWidthRole.ShortChoice);
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetLabeledBy(outputFormatPicker, FormatSummaryLabel);
+        ContainerEditorPanel.Children.Add(outputFormatPicker);
+        foreach (var option in new[] { webOptimize, alignAv, ipodSupport, metadataPassthru })
+            ContainerEditorPanel.Children.Add(option);
+        InitializeSummaryTooltips();
         AdvancedVideoPanel.Children.Add(CompactRow(frameRatePicker, frameModePicker, colorRangePicker));
         AdvancedVideoPanel.Children.Add(CompactRow(speedPicker, tunePicker, fastDecode));
         AdvancedVideoPanel.Children.Add(CompactRow(profilePicker, levelPicker));

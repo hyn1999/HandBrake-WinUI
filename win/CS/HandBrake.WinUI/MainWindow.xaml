@@ -173,30 +173,25 @@
                                              CanDragTabs="False" CanReorderTabs="False"
                                              TabWidthMode="SizeToContent">
                                         <TabViewItem x:Name="SummaryTab" Header="Summary" IsClosable="False">
-                                            <ScrollViewer VerticalScrollBarVisibility="Auto">
-                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
-                                                    <TextBlock Text="Source" FontSize="{StaticResource HBSectionFontSize}"
-                                                               FontWeight="SemiBold" />
-                                                    <TextBlock x:Name="ScanSummaryText"
-                                                               Text="Scan a source to see actual title, duration and track counts."
-                                                               TextWrapping="Wrap" />
-                                                    <TextBlock Text="Configured output" FontWeight="SemiBold" />
-                                                    <TextBlock x:Name="ConfiguredOutputText" Text="Choose a source and preset." TextWrapping="Wrap" />
-                                                    <TextBlock x:Name="ResolvedOutputDetailsText" TextWrapping="Wrap" />
-                                                    <TextBlock x:Name="PresetStatusText"
-                                                               Text="Built-in presets will load from the matching HandBrake engine."
-                                                               TextWrapping="Wrap"
-                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                    <TextBlock Text="Selected preset" FontWeight="SemiBold" />
-                                                    <TextBlock x:Name="PresetDescriptionText"
-                                                               Text="No native preset loaded." TextWrapping="Wrap" />
-                                                    <TextBlock Text="Output format" FontWeight="SemiBold" />
-                                                    <ContentControl x:Name="ContainerEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="ContainerEditorPanel" Spacing="{StaticResource HBSpaceTight}" /></ContentControl>
-                                                    <TextBlock x:Name="PresetContainerText" Text="Not available" />
-                                                    <TextBlock Text="Preset rules are resolved by the native engine. Manual audio, subtitle and filter editing supports a subset of HandBrake options."
-                                                               TextWrapping="Wrap" FontSize="{StaticResource HBCaptionFontSize}"
-                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                </StackPanel>
+                                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                                <Grid Padding="{StaticResource HBCardPadding}" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                    <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                    <TextBlock x:Name="FormatSummaryLabel" Text="Format:" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="{StaticResource HBBodyFontSize}" VerticalAlignment="Top" />
+                                                    <ContentControl x:Name="ContainerEditorGate" Grid.Column="1" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch">
+                                                        <StackPanel x:Name="ContainerEditorPanel" Spacing="{StaticResource HBSpaceTight}" />
+                                                    </ContentControl>
+                                                    <TextBlock Text="Tracks:" Grid.Row="1" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="{StaticResource HBBodyFontSize}" />
+                                                    <StackPanel Grid.Row="1" Grid.Column="1" Spacing="{StaticResource HBSpaceTight}">
+                                                        <TextBlock x:Name="ConfiguredOutputText" Text="—" TextWrapping="Wrap" />
+                                                        <TextBlock x:Name="ResolvedOutputDetailsText" TextWrapping="Wrap" />
+                                                    </StackPanel>
+                                                    <TextBlock Text="Filters:" Grid.Row="2" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="{StaticResource HBBodyFontSize}" />
+                                                    <TextBlock x:Name="FilterSummaryText" Grid.Row="2" Grid.Column="1" Text="—" TextWrapping="Wrap" />
+                                                    <TextBlock Text="Size:" Grid.Row="3" Style="{StaticResource BodyStrongTextBlockStyle}" FontSize="{StaticResource HBBodyFontSize}" />
+                                                    <TextBlock x:Name="SizeSummaryText" Grid.Row="3" Grid.Column="1" Text="—" TextWrapping="Wrap" />
+                                                    <TextBlock x:Name="SummaryStatusText" Grid.Row="4" Grid.ColumnSpan="2" Visibility="Collapsed" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                </Grid>
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Dimensions" IsClosable="False">

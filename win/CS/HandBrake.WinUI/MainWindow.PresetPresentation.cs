@@ -121,7 +121,7 @@ public sealed partial class MainWindow
         catch (Exception error) when (error is IOException or UnauthorizedAccessException)
         {
             preferences.DefaultPresetKey = previous;
-            PresetStatusText.Text = "Unable to save the default preset: " + error.Message;
+            SourceStatusText.Text = "Unable to save the default preset: " + error.Message;
         }
         UpdatePresetPresentation();
     }
