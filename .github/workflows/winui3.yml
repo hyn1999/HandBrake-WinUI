@@ -31,6 +31,29 @@ jobs:
           dotnet publish win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj --configuration Release --runtime win-x64 --self-contained false -p:Platform=x64 -p:WindowsAppSDKSelfContained=false --output "$env:RUNNER_TEMP/managed-preflight"
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
+      - name: Verify linked WPF resources in the published assembly
+        shell: pwsh
+        run: |
+          $smoke = Join-Path $env:RUNNER_TEMP 'winui-resource-smoke'
+          New-Item -ItemType Directory -Force -Path $smoke | Out-Null
+          @'
+          <Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net10.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings></PropertyGroup></Project>
+          '@ | Set-Content (Join-Path $smoke 'ResourceSmoke.csproj') -Encoding utf8
+          @'
+          using System.Reflection;
+          using System.Resources;
+          var assembly = Assembly.LoadFrom(args[0]);
+          var labels = new ResourceManager("HandBrake.WinUI.Resources.WpfLabels", assembly);
+          var tips = new ResourceManager("HandBrake.WinUI.Resources.WpfTooltips", assembly);
+          foreach (var key in new[] { "MainView_Format", "MainView_AudioTab", "MainView_SummaryTab", "SubtitlesView_Default", "ChaptersView_Import" })
+              if (string.IsNullOrWhiteSpace(labels.GetString(key))) throw new Exception("Missing WPF label: " + key);
+          foreach (var key in new[] { "MainView_Mux", "Video_Quality", "PictureSettingsView_Width", "SubtitlesView_BurnIn" })
+              if (string.IsNullOrWhiteSpace(tips.GetString(key))) throw new Exception("Missing WPF tooltip: " + key);
+          Console.WriteLine("Published original WPF label and tooltip catalogs resolve successfully.");
+          '@ | Set-Content (Join-Path $smoke 'Program.cs') -Encoding utf8
+          dotnet run --project (Join-Path $smoke "ResourceSmoke.csproj") --configuration Release -- "$env:RUNNER_TEMP/managed-preflight/HandBrake.WinUI.dll"
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+
   build-libhb-x64:
     needs: validate-managed
     name: Cross-compile matching libhb x64

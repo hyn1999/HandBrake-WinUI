@@ -207,8 +207,10 @@ public static partial class CompactUi
         for (int i = 0; i < (host.Children.Count + columns - 1) / columns; i++) host.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
         for (int i = 0; i < host.Children.Count; i++)
         {
-            Grid.SetColumn(host.Children[i], i % columns);
-            Grid.SetRow(host.Children[i], i / columns);
+            if (host.Children[i] is not FrameworkElement group)
+                throw new ArgumentException("Settings groups must be framework elements.", nameof(host));
+            Grid.SetColumn(group, i % columns);
+            Grid.SetRow(group, i / columns);
         }
     }
 
