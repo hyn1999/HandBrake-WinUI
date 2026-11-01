@@ -27,6 +27,7 @@ public sealed partial class MainWindow : Window
     {
         InitializeComponent();
         InitializeAdvancedEditors();
+        InitializeDimensionsPresentation();
         InitializeSourceRangeEditor();
         InitializePresetTracking();
         Closed += (_, _) => detachedPreview?.Close();

@@ -109,3 +109,10 @@ Microsoft Compact/style guidance:
 Native implementation evidence: microsoft/microsoft-ui-xaml at 6583084e128aca2ac5aed38bd5521029e803ad66, including Button, TextBlock, ToolTip, TextBox, ComboBox and NumberBox resources. BodyTextBlockFontSize and native body/heading styles are consumed rather than inventing a command-font baseline. The reference source is not a substitute for checking the pinned Windows App SDK 2.5.1 package.
 
 Static XML/resource/handler checks and source review are performed separately from compilation. No Windows build or runtime visual/accessibility verification is claimed. For the next aggregate build, verify input heights/headers/spin buttons, main command isolation, native weight/corners/colours, all range modes, narrow windows, 100/150/200% DPI, enlarged text, focus/tab order, High Contrast, popup scrolling and queue editing. Exact uniformity must be measured on Windows.
+
+
+## Settings groups and original product copy
+
+ReflowSettingsGroups(Grid) lays independent settings groups out in three/two/one columns using the existing wide/two-column form breakpoints. Groups remain top-aligned and use the host's shared row/column gaps. Use AlignedFormRow inside groups for related labelled fields. Dimensions uses this pattern; its crop controls retain spatial top/left/right/bottom placement and native NumberBox templates.
+
+Product copy belongs outside Design. Resources/WpfText.cs reads the original neutral WPF Resources.resx and ResourcesTooltips.resx, linked as embedded string resources by the WinUI project. Summary, Dimensions and source-header help consume shared keys rather than copied wording. This does not compile or load WPF UI code and does not claim satellite-language support. New explanatory copy should first be matched to an existing WPF resource; native preset descriptions and actual diagnostic messages retain their own source.

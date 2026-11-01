@@ -23,6 +23,13 @@
     <PackageReference Include="Microsoft.WindowsAppSDK" Version="2.5.1" />
   </ItemGroup>
 
+  <!-- Reuse original product text without taking a dependency on WPF controls.
+       Neutral catalogs are all strings; no designer or WPF assembly is compiled. -->
+  <ItemGroup>
+    <EmbeddedResource Include="..\HandBrakeWPF\Properties\Resources.resx" Link="Resources\WpfLabels.resx" LogicalName="HandBrake.WinUI.Resources.WpfLabels.resources" />
+    <EmbeddedResource Include="..\HandBrakeWPF\Properties\ResourcesTooltips.resx" Link="Resources\WpfTooltips.resx" LogicalName="HandBrake.WinUI.Resources.WpfTooltips.resources" />
+  </ItemGroup>
+
   <!-- Reuse HandBrake's existing managed core and native interoperability layer.
        No HandBrake encoder or WPF source files are copied into the WinUI app. -->
   <ItemGroup>

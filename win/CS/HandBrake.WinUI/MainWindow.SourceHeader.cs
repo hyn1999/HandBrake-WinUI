@@ -1,4 +1,5 @@
 using System;
+using HandBrake.WinUI.Resources;
 using System.Collections.Generic;
 using System.Linq;
 using Microsoft.UI.Xaml;
@@ -16,19 +17,18 @@ public sealed partial class MainWindow
     private void InitializeSourceHeaderHelp()
     {
         Design.FieldLayout.SetRole(SourceTitlePicker, Design.FieldWidthRole.Name);
-        // Verbatim values from WPF Properties/ResourcesTooltips.resx at
-        // 112b214569449daf810c521bc6a1a415f4cfe09b (MainView_* keys).
-        ToolTipService.SetToolTip(SourceTitlePicker, Design.CompactUi.Help("Title, or video clip, to encode.\nBlu-ray and DVD sources often have multiple titles, the longest of which is typically the main feature"));
-        ToolTipService.SetToolTip(anglePicker, Design.CompactUi.Help("Video angle to encode. Only applicable to multi-angle DVD and Blu-ray."));
-        ToolTipService.SetToolTip(sourceRangePicker, Design.CompactUi.Help("Source range selection. By default, all chapters are selected and the entire source is encoded."));
-        ToolTipService.SetToolTip(rangeStartBox, Design.CompactUi.Help("The start point for this range."));
-        ToolTipService.SetToolTip(rangeEndBox, Design.CompactUi.Help("The end point for this range."));
+        // Read the original WPF catalog rather than maintaining copied help text.
+        ToolTipService.SetToolTip(SourceTitlePicker, Design.CompactUi.Help(WpfText.Tooltip("MainView_Title")));
+        ToolTipService.SetToolTip(anglePicker, Design.CompactUi.Help(WpfText.Tooltip("MainView_Angle")));
+        ToolTipService.SetToolTip(sourceRangePicker, Design.CompactUi.Help(WpfText.Tooltip("MainView_Range")));
+        ToolTipService.SetToolTip(rangeStartBox, Design.CompactUi.Help(WpfText.Tooltip("MainView_StartPoint")));
+        ToolTipService.SetToolTip(rangeEndBox, Design.CompactUi.Help(WpfText.Tooltip("MainView_EndPoint")));
         sourceDurationPanel = new StackPanel { Spacing = Design.CompactUi.LabelGap };
         sourceDurationPanel.Children.Add(new TextBlock { Text = "Duration" });
         rangeDurationText.MinHeight = Design.CompactUi.ControlHeight;
         rangeDurationText.VerticalAlignment = VerticalAlignment.Center;
         sourceDurationPanel.Children.Add(rangeDurationText);
-        ToolTipService.SetToolTip(sourceDurationPanel, Design.CompactUi.Help("Duration of the selected source range in Hours:Minutes:Seconds"));
+        ToolTipService.SetToolTip(sourceDurationPanel, Design.CompactUi.Help(WpfText.Tooltip("MainView_Duration")));
     }
 
     private void SourceHeader_SizeChanged(object sender, SizeChangedEventArgs args) => LayoutSourceHeader();

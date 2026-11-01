@@ -123,7 +123,9 @@ public sealed partial class MainWindow
             // Invalidate stale values rather than leaving another title's crop
             // in an apparently usable manual editor.
             OutputWidthBox.Value = OutputHeightBox.Value = double.NaN;
-            SourceDimensionsText.Text = "Unable to initialize rotated dimensions: " + error.Message;
+            DimensionsStatusText.Text = "Dimensions unavailable. Review picture settings.";
+            DimensionsStatusText.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+            Microsoft.UI.Xaml.Controls.ToolTipService.SetToolTip(DimensionsStatusText, Design.CompactUi.Help(error.Message));
         }
     }
 

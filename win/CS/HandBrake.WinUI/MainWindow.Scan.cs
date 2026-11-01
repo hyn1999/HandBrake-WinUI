@@ -185,7 +185,7 @@ public sealed partial class MainWindow
         string duration = FormatDuration(title.Duration);
         int chapterCount = title.ChapterList?.Count ?? 0;
 
-        SourceDimensionsText.Text = $"Source: {resolution}";
+        RefreshDimensionsPresentation();
         SourceVideoText.Text = $"Source codec: {title.VideoCodec ?? "Unknown"}\n" +
                                $"Frame rate: {fps}\nContainer: {title.Container ?? "Unknown"}";
         PreviewMetadataText.Text = $"{resolution} · {fps}\n" +
@@ -236,7 +236,7 @@ public sealed partial class MainWindow
         SourceTitlePicker.Items.Clear();
         SourceTitlePicker.Visibility = Visibility.Collapsed;
         ClearResolvedSummary();
-        SourceDimensionsText.Text = "Source dimensions are not available.";
+        ClearDimensionsPresentation();
         SourceVideoText.Text = "Source video properties are not available.";
         PreviewMetadataText.Text = "No decoded preview frame yet.";
         ResetPreview();

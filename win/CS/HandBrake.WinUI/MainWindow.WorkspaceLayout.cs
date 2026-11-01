@@ -39,6 +39,7 @@ public sealed partial class MainWindow
     private void RefreshOutputSummary()
     {
         UpdatePresetPresentation();
+        RefreshDimensionsPresentation();
         ScheduleResolvedSummary();
     }
 
@@ -62,6 +63,7 @@ public sealed partial class MainWindow
     {
         foreach (var box in new[] { OutputWidthBox, OutputHeightBox, CropTopBox, CropBottomBox, CropLeftBox, CropRightBox })
             if (box is not null) box.IsEnabled = CustomGeometryToggle.IsChecked == true;
+        if (!updatingVideoEditor) RefreshOutputSummary();
     }
     private void ForeignSearch_Toggled(object sender, RoutedEventArgs args)
     {

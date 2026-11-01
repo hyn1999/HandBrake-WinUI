@@ -195,4 +195,20 @@ public static partial class CompactUi
             host.Children.Add(line);
         }
     }
+    /// <summary>Reflow independent settings groups using the shared form breakpoints.</summary>
+    public static void ReflowSettingsGroups(Grid host)
+    {
+        int columns = host.ActualWidth >= Resource<double>("HBFormWideBreakpoint") ? 3 :
+            host.ActualWidth >= Resource<double>("HBFormTwoColumnBreakpoint") ? 2 : 1;
+        if (host.ColumnDefinitions.Count == columns && host.RowDefinitions.Count == (host.Children.Count + columns - 1) / columns) return;
+        host.ColumnDefinitions.Clear(); host.RowDefinitions.Clear();
+        for (int i = 0; i < columns; i++) host.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });
+        for (int i = 0; i < (host.Children.Count + columns - 1) / columns; i++) host.RowDefinitions.Add(new RowDefinition { Height = GridLength.Auto });
+        for (int i = 0; i < host.Children.Count; i++)
+        {
+            Grid.SetColumn(host.Children[i], i % columns);
+            Grid.SetRow(host.Children[i], i / columns);
+        }
+    }
+
 }

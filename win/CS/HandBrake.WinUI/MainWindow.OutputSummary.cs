@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text.Json;
 using System.Text.Json.Nodes;
+using HandBrake.WinUI.Resources;
 using HandBrake.Interop.Interop;
 using HandBrake.Interop.Interop.HbLib;
 using HandBrake.Interop.Interop.Json.Scan;
@@ -19,8 +20,9 @@ public sealed partial class MainWindow
 
     private void ScheduleResolvedSummary()
     {
-        if (EditorTabs is null || SummaryTab is null || EditorTabs.SelectedItem != SummaryTab) return;
+        if (EditorTabs is null || SummaryTab is null || (EditorTabs.SelectedItem != SummaryTab && EditorTabs.SelectedItem != DimensionsTab)) return;
         ClearResolvedSummary();
+        ClearDimensionsResult();
         summaryTimer ??= CreateSummaryTimer();
         summaryTimer.Stop();
         summaryTimer.Start();
@@ -48,7 +50,8 @@ public sealed partial class MainWindow
     private void ResolveOutputSummary()
     {
         ClearResolvedSummary();
-        if (scanInProgress || scanInstance is null || EditorTabs.SelectedItem != SummaryTab ||
+        ClearDimensionsResult();
+        if (scanInProgress || scanInstance is null || (EditorTabs.SelectedItem != SummaryTab && EditorTabs.SelectedItem != DimensionsTab) ||
             SourceTitlePicker.SelectedItem is not ComboBoxItem { Tag: SourceTitle title } ||
             selectedSourcePaths.Count == 0) return;
         try
@@ -74,7 +77,7 @@ public sealed partial class MainWindow
                 lines.Add(string.Join(", ", new[] { encoder?.DisplayName ?? codec, mixdown, quality }
                     .Where(value => !string.IsNullOrWhiteSpace(value))));
             }
-            if (lines.Count == 0) lines.Add("No audio tracks");
+            if (lines.Count == 0) lines.Add(WpfText.Label("SummaryView_NoAudioTracks"));
             var subtitles = job["Subtitle"]?["SubtitleList"]?.AsArray() ?? new JsonArray();
             foreach (var track in subtitles)
             {
@@ -84,21 +87,21 @@ public sealed partial class MainWindow
                     name = track?["Import"] is { } import ? import["Language"]?.ToString() + " (SRT)"
                         : index >= 0 ? title.SubtitleList?.ElementAtOrDefault(index)?.Language : null;
                 lines.Add((string.IsNullOrWhiteSpace(name) ? "Subtitle" : name) +
-                    (track?["Burn"]?.GetValue<bool>() == true ? ", Burned" : "") +
-                    (track?["Forced"]?.GetValue<bool>() == true ? ", Forced" : "") +
-                    (track?["Default"]?.GetValue<bool>() == true ? ", Default" : ""));
+                    (track?["Burn"]?.GetValue<bool>() == true ? ", " + WpfText.Label("SummaryView_Burned") : "") +
+                    (track?["Forced"]?.GetValue<bool>() == true ? ", " + WpfText.Label("SummaryView_Forced") : "") +
+                    (track?["Default"]?.GetValue<bool>() == true ? ", " + WpfText.Label("SummaryView_Default") : ""));
             }
             var search = job["Subtitle"]?["Search"];
             if (search?["Enable"]?.GetValue<bool>() == true)
-                lines.Add("Foreign Audio Scan" + (search["Burn"]?.GetValue<bool>() == true ? ", Burned" : "") +
-                    (search["Forced"]?.GetValue<bool>() == true ? ", Forced" : ""));
-            if (subtitles.Count == 0 && search?["Enable"]?.GetValue<bool>() != true) lines.Add("No subtitle tracks");
-            if (job["Destination"]?["ChapterMarkers"]?.GetValue<bool>() == true) lines.Add("Chapter Markers");
+                lines.Add(WpfText.Label("Subtitle_ForeignAudioScan") + (search["Burn"]?.GetValue<bool>() == true ? ", " + WpfText.Label("SummaryView_Burned") : "") +
+                    (search["Forced"]?.GetValue<bool>() == true ? ", " + WpfText.Label("SummaryView_Forced") : ""));
+            if (subtitles.Count == 0 && search?["Enable"]?.GetValue<bool>() != true) lines.Add(WpfText.Label("SummaryView_NoSubtitleTracks"));
+            if (job["Destination"]?["ChapterMarkers"]?.GetValue<bool>() == true) lines.Add(WpfText.Label("SummaryView_Chapters"));
 
             string rate = draft.VideoRateControl == "ConstantQuality"
                 ? $"Quality {draft.VideoQuality:0.##}" : $"{draft.VideoBitrateKbps} kbps";
             string fps = draft.VideoFramerate is null or "auto" or "0"
-                ? title.FrameRate is { Den: > 0 } sourceRate ? $"{(double)sourceRate.Num / sourceRate.Den:0.###}" : "Same as source"
+                ? title.FrameRate is { Den: > 0 } sourceRate ? $"{(double)sourceRate.Num / sourceRate.Den:0.###}" : WpfText.Label("SummaryView_SameAsSource")
                 : draft.VideoFramerate;
             string mode = ChoiceValue(frameModePicker).ToUpperInvariant();
             string video = $"{HandBrakeEncoderHelpers.GetVideoEncoder(draft.VideoEncoder)?.DisplayName ?? draft.VideoEncoder}, {fps} FPS {mode}, {rate}";
@@ -109,11 +112,31 @@ public sealed partial class MainWindow
             // Publish together only after the complete output job has resolved.
             ConfiguredOutputText.Text = video;
             ResolvedOutputDetailsText.Text = string.Join("\n", lines);
-            FilterSummaryText.Text = effects.Length == 0 ? "None" : effects;
+            FilterSummaryText.Text = effects.Length == 0 ? WpfText.Label("SummaryView_NoFilters") : effects;
             SizeSummaryText.Text = size;
+            FinalDimensionsText.Text = SummaryDimensions(scale, job["PAR"], filters, includeAspect: true);
+            PixelAspectSummaryText.Text = $"{WpfText.Label("PictureSettingsView_PAR")} {job["PAR"]?["Num"]}:{job["PAR"]?["Den"]}";
+            if (CustomGeometryToggle.IsChecked != true && scale is not null)
+            {
+                bool wasUpdating = updatingVideoEditor;
+                updatingVideoEditor = true;
+                try
+                {
+                    OutputWidthBox.Value = SummaryNumber(scale["width"]);
+                    OutputHeightBox.Value = SummaryNumber(scale["height"]);
+                    CropTopBox.Value = SummaryNumber(scale["crop-top"]);
+                    CropBottomBox.Value = SummaryNumber(scale["crop-bottom"]);
+                    CropLeftBox.Value = SummaryNumber(scale["crop-left"]);
+                    CropRightBox.Value = SummaryNumber(scale["crop-right"]);
+                }
+                finally { updatingVideoEditor = wasUpdating; }
+            }
         }
         catch (Exception error) when (error is InvalidOperationException or ArgumentException or JsonException or OverflowException or System.IO.IOException or UnauthorizedAccessException or DllNotFoundException or EntryPointNotFoundException or BadImageFormatException)
         {
+            DimensionsStatusText.Text = "Dimensions unavailable. Review output settings.";
+            DimensionsStatusText.Visibility = Visibility.Visible;
+            ToolTipService.SetToolTip(DimensionsStatusText, Design.CompactUi.Help(error.Message));
             SummaryStatusText.Text = "Output summary unavailable. Review output settings.";
             SummaryStatusText.Visibility = Visibility.Visible;
             ToolTipService.SetToolTip(SummaryStatusText, Design.CompactUi.Help(error.Message));
@@ -123,7 +146,7 @@ public sealed partial class MainWindow
     private static double SummaryNumber(JsonNode? value)
         => double.TryParse(value?.ToString(), NumberStyles.Float, CultureInfo.InvariantCulture, out double number) ? number : double.NaN;
 
-    private static string SummaryDimensions(JsonNode? scale, JsonNode? par, JsonArray filters)
+    private static string SummaryDimensions(JsonNode? scale, JsonNode? par, JsonArray filters, bool includeAspect = false)
     {
         double width = SummaryNumber(scale?["width"]), height = SummaryNumber(scale?["height"]);
         foreach (var filter in filters)
@@ -137,8 +160,10 @@ public sealed partial class MainWindow
         }
         if (!(width > 0 && height > 0)) return "—";
         double numerator = SummaryNumber(par?["Num"]), denominator = SummaryNumber(par?["Den"]);
-        if (!(numerator > 0 && denominator > 0)) return $"{width:0} × {height:0} storage";
-        return $"{width:0} × {height:0} storage, {width * numerator / denominator:0} × {height:0} display";
+        if (!(numerator > 0 && denominator > 0)) return $"{width:0} × {height:0} {WpfText.Label("SummaryView_storage")}";
+        string dimensions = $"{width:0} × {height:0} {WpfText.Label("SummaryView_storage")}, {width * numerator / denominator:0} × {height:0} {WpfText.Label("SummaryView_display")}";
+        return includeAspect ? dimensions + " · " + string.Format(CultureInfo.CurrentCulture,
+            WpfText.Label("PictureSettingsViewModel_AspectRatioLabel"), DimensionAspect((long)width * (long)numerator, (long)height * (long)denominator)) : dimensions;
     }
 
     private static string SummaryFilterName(int id)
@@ -154,10 +179,14 @@ public sealed partial class MainWindow
 
     private void InitializeSummaryTooltips()
     {
-        // Verbatim help from HandBrakeWPF/Properties/ResourcesTooltips.resx.
-        ToolTipService.SetToolTip(outputFormatPicker, Design.CompactUi.Help("Container format. Video, audio, and other tracks are combined into a single file of this type. Affects compatibility."));
-        ToolTipService.SetToolTip(webOptimize, Design.CompactUi.Help("Optimize MP4 for progressive download. After encoding, data is reorganized and rewritten to allow immediate playback over a network, without needing to download the entire file."));
-        ToolTipService.SetToolTip(alignAv, Design.CompactUi.Help("Aligns the initial timestamps of all audio and video streams by inserting blank frames or dropping frames. May improve audio/video sync for broken players that do not honor MP4 edit lists."));
-        ToolTipService.SetToolTip(ipodSupport, Design.CompactUi.Help("Add a special MP4 marker to allow playback on vintage iPod 5th Generation devices circa 2006. Other settings may affect compatibility."));
+        outputFormatPicker.SetValue(Microsoft.UI.Xaml.Automation.AutomationProperties.NameProperty, WpfText.Format);
+        webOptimize.Content = WpfText.Label("MainView_WebOptimized");
+        alignAv.Content = WpfText.Label("MainView_AlignAVStart");
+        ipodSupport.Content = WpfText.Label("MainView_iPod5G");
+        metadataPassthru.Content = WpfText.Label("SummaryView_MetadataPassthru");
+        ToolTipService.SetToolTip(outputFormatPicker, Design.CompactUi.Help(WpfText.Tooltip("MainView_Mux")));
+        ToolTipService.SetToolTip(webOptimize, Design.CompactUi.Help(WpfText.Tooltip("MainView_Optimise")));
+        ToolTipService.SetToolTip(alignAv, Design.CompactUi.Help(WpfText.Tooltip("MainView_AlignAVStart")));
+        ToolTipService.SetToolTip(ipodSupport, Design.CompactUi.Help(WpfText.Tooltip("MainView_IpodAtom")));
     }
 }
