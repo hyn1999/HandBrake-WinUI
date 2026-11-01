@@ -119,3 +119,6 @@ Product copy belongs outside Design. Resources/WpfText.cs reads the original neu
 
 
 For aligned label/value settings grids, HBCompactFormSideLabelStyle uses native body typography with compact size and shared inset. Labels stay aligned with the first control when dependent fields wrap, rather than moving to the vertical centre of a multi-line row. Filters uses a single shared Auto label column and bounded AlignedFormRow bodies; preset/tune/custom controls have accessible names and WPF help and collapse when not relevant.
+
+
+Video uses the same independent-group reflow for its basic settings and quality areas. ReflowSettingsGroups caps its column count to the number of groups so a two-group section never reserves an empty third column. HBCompactMultilineTextBoxStyle adds a shared minimum size for Advanced Options while preserving the native TextBox template. Encoder tuning and profile/level fields wrap within their own related rows; main commands remain outside this profile.

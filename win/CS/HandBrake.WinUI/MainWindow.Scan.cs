@@ -186,8 +186,6 @@ public sealed partial class MainWindow
         int chapterCount = title.ChapterList?.Count ?? 0;
 
         RefreshDimensionsPresentation();
-        SourceVideoText.Text = $"Source codec: {title.VideoCodec ?? "Unknown"}\n" +
-                               $"Frame rate: {fps}\nContainer: {title.Container ?? "Unknown"}";
         PreviewMetadataText.Text = $"{resolution} · {fps}\n" +
                                    $"{duration} · {title.VideoCodec ?? "Unknown codec"}";
         PreviewSourceText.Text = title.Name ?? Path.GetFileName(title.Path) ?? "Video source";
@@ -237,7 +235,6 @@ public sealed partial class MainWindow
         SourceTitlePicker.Visibility = Visibility.Collapsed;
         ClearResolvedSummary();
         ClearDimensionsPresentation();
-        SourceVideoText.Text = "Source video properties are not available.";
         PreviewMetadataText.Text = "No decoded preview frame yet.";
         ResetPreview();
         AudioTrackList.Children.Clear();

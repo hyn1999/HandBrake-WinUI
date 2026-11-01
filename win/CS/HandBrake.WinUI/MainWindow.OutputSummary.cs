@@ -103,7 +103,7 @@ public sealed partial class MainWindow
             string fps = draft.VideoFramerate is null or "auto" or "0"
                 ? title.FrameRate is { Den: > 0 } sourceRate ? $"{(double)sourceRate.Num / sourceRate.Den:0.###}" : WpfText.Label("SummaryView_SameAsSource")
                 : draft.VideoFramerate;
-            string mode = ChoiceValue(frameModePicker).ToUpperInvariant();
+            string mode = frameMode.ToUpperInvariant();
             string video = $"{HandBrakeEncoderHelpers.GetVideoEncoder(draft.VideoEncoder)?.DisplayName ?? draft.VideoEncoder}, {fps} FPS {mode}, {rate}";
             string effects = string.Join(", ", filters
                 .Where(filter => filter?["ID"]?.GetValue<int>() is int id &&

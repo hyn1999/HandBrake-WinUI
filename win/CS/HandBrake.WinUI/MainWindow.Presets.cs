@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using HandBrake.Interop.Interop;
+using HandBrake.WinUI.Resources;
 using HandBrake.Interop.Interop.Interfaces.Model.Encoders;
 using HandBrake.Interop.Interop.Json.Presets;
 using Microsoft.UI.Xaml;
@@ -96,7 +97,7 @@ public sealed partial class MainWindow
             {
                 VideoEncoderPicker.Items.Add(new ComboBoxItem
                 {
-                    Content = encoder.DisplayName + (encoder.IsHardwareEncoder ? " (hardware — not verified)" : ""),
+                    Content = encoder.DisplayName,
                     Tag = encoder
                 });
             }
@@ -122,7 +123,7 @@ public sealed partial class MainWindow
             nativePresetChoices.Clear();
             PresetPicker.IsEnabled = false;
             VideoEncoderPicker.IsEnabled = false;
-            VideoRateModePicker.IsEnabled = false;
+            ConstantQualityChoice.IsEnabled = averageBitrateChoice.IsEnabled = false;
             VideoQualitySlider.IsEnabled = false;
             VideoBitrateBox.IsEnabled = false;
             SourceStatusText.Text = "Could not load presets from the matching native HandBrake engine: " + ex.Message;
@@ -149,13 +150,6 @@ public sealed partial class MainWindow
                 DisplayChapterEditor(title);
                 ResetManualGeometryEditor(title);
             }
-            PresetVideoDetailsText.Text =
-                $"Frame rate: {DisplayPresetFramerate(activePreset.VideoFramerate)} " +
-                $"({activePreset.VideoFramerateMode ?? "preset default"})\n" +
-                $"Encoder speed: {activePreset.VideoPreset ?? "default"}" +
-                (string.IsNullOrWhiteSpace(activePreset.VideoTune)
-                    ? "" : $" · Tune: {activePreset.VideoTune}");
-
             var index = nativeVideoEncoders.FindIndex(x =>
                 string.Equals(x.ShortName, activePreset.VideoEncoder, StringComparison.OrdinalIgnoreCase));
             VideoEncoderPicker.SelectedIndex = index;
@@ -170,25 +164,17 @@ public sealed partial class MainWindow
                     VideoQualitySlider.Minimum, VideoQualitySlider.Maximum);
                 VideoBitrateBox.Value = Math.Clamp(activePreset.VideoAvgBitrate ?? 2500, 100, 200000);
 
-                VideoRateModePicker.SelectedIndex = activePreset.VideoQualityType switch
-                {
-                    2 => 0, // HandBrake ConstantQuality
-                    1 => 1, // HandBrake AverageBitrate
-                    _ => -1 // TargetSize and unknown modes require explicit user selection.
-                };
-                if (VideoRateModePicker.SelectedIndex == 0 &&
-                    !((ComboBoxItem)VideoRateModePicker.Items[0]).IsEnabled)
-                    VideoRateModePicker.SelectedIndex = 1;
-                if (VideoRateModePicker.SelectedIndex == 1 &&
-                    !((ComboBoxItem)VideoRateModePicker.Items[1]).IsEnabled)
-                    VideoRateModePicker.SelectedIndex = 0;
+                int requestedMode = activePreset.VideoQualityType switch { 2 => 0, 1 => 1, _ => -1 };
+                if (requestedMode == 0 && !ActiveVideoEncoder!.SupportsQuality) requestedMode = ActiveVideoEncoder.SupportsBitrate ? 1 : -1;
+                if (requestedMode == 1 && !ActiveVideoEncoder!.SupportsBitrate) requestedMode = ActiveVideoEncoder.SupportsQuality ? 0 : -1;
+                SetVideoRateMode(requestedMode);
             }
             else
             {
-                VideoRateModePicker.IsEnabled = false;
+                ConstantQualityChoice.IsEnabled = averageBitrateChoice.IsEnabled = false;
                 VideoQualitySlider.IsEnabled = false;
                 VideoBitrateBox.IsEnabled = false;
-                PresetVideoDetailsText.Text += "\nThe preset's encoder is not listed by this native build.";
+                SetVideoRateMode(-1);
             }
             LoadAdvancedPreset();
             UpdateVideoModeControls();
@@ -224,7 +210,7 @@ public sealed partial class MainWindow
     }
 
     private static string DisplayPresetFramerate(string? raw)
-        => string.IsNullOrWhiteSpace(raw) || raw == "auto" ? "Same as source" : raw;
+        => string.IsNullOrWhiteSpace(raw) || raw == "auto" ? WpfText.Label("VideoView_SameAsSource") : raw;
 
     private void VideoEncoderPicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
@@ -244,68 +230,59 @@ public sealed partial class MainWindow
     private void ConfigureVideoEncoder()
     {
         var encoder = ActiveVideoEncoder;
+        qualityAdjustmentAvailable = false;
         if (encoder is null)
         {
-            VideoRateModePicker.IsEnabled = false;
-            VideoQualitySlider.IsEnabled = false;
-            VideoBitrateBox.IsEnabled = false;
+            ConstantQualityChoice.IsEnabled = averageBitrateChoice.IsEnabled = false;
+            VideoQualitySlider.IsEnabled = VideoBitrateBox.IsEnabled = false;
+            SetVideoRateMode(-1);
             return;
         }
-
-        bool supportsQuality = encoder.SupportsQuality;
-        bool supportsBitrate = encoder.SupportsBitrate;
-        ((ComboBoxItem)VideoRateModePicker.Items[0]).IsEnabled = supportsQuality;
-        ((ComboBoxItem)VideoRateModePicker.Items[1]).IsEnabled = supportsBitrate;
-        VideoRateModePicker.IsEnabled = supportsQuality || supportsBitrate;
-
+        bool supportsQuality = encoder.SupportsQuality, supportsBitrate = encoder.SupportsBitrate;
+        ConstantQualityChoice.IsEnabled = supportsQuality;
+        averageBitrateChoice.IsEnabled = supportsBitrate;
         if (supportsQuality)
         {
             var limits = HandBrakeEncoderHelpers.GetVideoQualityLimits(encoder);
-            if (limits is not null && limits.High > limits.Low)
+            if (limits is not null && limits.High >= limits.Low)
             {
                 VideoQualitySlider.Minimum = limits.Low;
                 VideoQualitySlider.Maximum = limits.High;
                 VideoQualitySlider.StepFrequency = limits.Granularity > 0 ? limits.Granularity : 1;
+                VideoQualitySlider.IsDirectionReversed = !limits.Ascending;
+                VideoQualitySlider.Value = Math.Clamp(VideoQualitySlider.Value, limits.Low, limits.High);
+                qualityAdjustmentAvailable = encoder.SupportsQualityAdjustment && limits.High > limits.Low;
             }
         }
-
-        if (VideoRateModePicker.SelectedIndex == 0 && !supportsQuality)
-            VideoRateModePicker.SelectedIndex = supportsBitrate ? 1 : -1;
-        else if (VideoRateModePicker.SelectedIndex == 1 && !supportsBitrate)
-            VideoRateModePicker.SelectedIndex = supportsQuality ? 0 : -1;
-        else if (VideoRateModePicker.SelectedIndex < 0)
-            VideoRateModePicker.SelectedIndex = supportsQuality ? 0 : supportsBitrate ? 1 : -1;
-    }
-
-    private void VideoRateModePicker_SelectionChanged(object sender, SelectionChangedEventArgs e)
-    {
-        if (updatingVideoEditor) return;
-        UpdateVideoModeControls();
-        RefreshOutputSummary();
+        int selected = videoRateMode;
+        if (selected == 0 && !supportsQuality) selected = supportsBitrate ? 1 : -1;
+        else if (selected == 1 && !supportsBitrate) selected = supportsQuality ? 0 : -1;
+        else if (selected < 0) selected = supportsQuality ? 0 : supportsBitrate ? 1 : -1;
+        SetVideoRateMode(selected);
     }
 
     private void UpdateVideoModeControls()
     {
         UpdateAdvancedAvailability();
-        bool hasEncoder = ActiveVideoEncoder is not null;
-        bool quality = VideoRateModePicker.SelectedIndex == 0;
-        bool bitrate = VideoRateModePicker.SelectedIndex == 1;
-        QualityControlPanel.Visibility = quality ? Visibility.Visible : Visibility.Collapsed;
-        VideoBitrateBox.Visibility = bitrate ? Visibility.Visible : Visibility.Collapsed;
-        VideoQualitySlider.IsEnabled = hasEncoder && quality;
-        VideoBitrateBox.IsEnabled = hasEncoder && bitrate;
-        UpdateVideoQualityText();
-        var choice = ActivePresetChoice;
         var encoder = ActiveVideoEncoder;
-        VideoConfigurationStatusText.Text = choice is null
-            ? "Select a native preset to configure the video."
-            : encoder is null
-                ? "This preset's encoder is unavailable in the native build. Select another encoder."
-                : !IsContainerCompatible(CurrentContainer, encoder)
-                    ? "This encoder cannot be used with the preset's output container. Select a compatible encoder."
-                    : VideoRateModePicker.SelectedIndex < 0
-                        ? "Select a supported rate-control mode to configure this draft."
-                        : "Ready to add this native preset and video configuration to the encode queue.";
+        bool quality = videoRateMode == 0, bitrate = videoRateMode == 1;
+        bool supportsQuality = encoder?.SupportsQuality == true, supportsBitrate = encoder?.SupportsBitrate == true;
+        ConstantQualityChoice.IsEnabled = supportsQuality;
+        averageBitrateChoice.IsEnabled = supportsBitrate;
+        QualityControlPanel.Visibility = supportsQuality ? Visibility.Visible : Visibility.Collapsed;
+        VideoBitrateRow.Visibility = supportsBitrate ? Visibility.Visible : Visibility.Collapsed;
+        VideoQualitySlider.Visibility = QualityScaleLabels.Visibility = qualityAdjustmentAvailable ? Visibility.Visible : Visibility.Collapsed;
+        VideoQualitySlider.IsEnabled = supportsQuality && quality && qualityAdjustmentAvailable;
+        VideoBitrateBox.IsEnabled = supportsBitrate && bitrate;
+        VideoHighQualityText.Text = WpfText.Label(encoder?.IsX264 == true ? "Video_PlaceboQuality" : "Video_HigherQuality");
+        UpdateVideoQualityText();
+        VideoConfigurationStatusText.Text = ActivePresetChoice is null ? "" : encoder is null
+            ? "The selected encoder is unavailable. Choose another encoder."
+            : !IsContainerCompatible(CurrentContainer, encoder) ? "Choose an encoder compatible with the output format."
+            : videoRateMode < 0 ? "Choose a supported quality or bitrate mode."
+            : bitrate && (!double.IsFinite(VideoBitrateBox.Value) || VideoBitrateBox.Value < 100 || VideoBitrateBox.Value > 200000)
+                ? "Enter a valid average bitrate." : "";
+        VideoConfigurationStatusText.Visibility = VideoConfigurationStatusText.Text.Length == 0 ? Visibility.Collapsed : Visibility.Visible;
     }
 
     private static bool IsContainerCompatible(string container, HBVideoEncoder encoder)
@@ -324,14 +301,15 @@ public sealed partial class MainWindow
 
     private void VideoBitrateBox_ValueChanged(NumberBox sender, NumberBoxValueChangedEventArgs e)
     {
-        if (!updatingVideoEditor) RefreshOutputSummary();
+        if (!updatingVideoEditor) { UpdateVideoModeControls(); RefreshOutputSummary(); }
     }
 
     private void UpdateVideoQualityText()
     {
-        VideoQualityText.Text = ActiveVideoEncoder is null
-            ? "Quality: no supported encoder"
-            : $"Quality value: {VideoQualitySlider.Value:0.##} (native encoder range)";
+        var encoder = ActiveVideoEncoder;
+        VideoQualityText.Text = encoder is null ? "—" : encoder.IsLossless
+            ? WpfText.Label("VideoView_LosslessEncodeOnly")
+            : $"{VideoQualitySlider.Value:0.##} {HandBrakeEncoderHelpers.GetVideoQualityRateControlName(encoder.ShortName)}";
     }
 
     private bool TryGetVideoDraftSettings(out VideoDraftSettings settings)
@@ -341,8 +319,8 @@ public sealed partial class MainWindow
         var encoder = ActiveVideoEncoder;
         if (preset is null || encoder is null) return false;
 
-        bool quality = VideoRateModePicker.SelectedIndex == 0;
-        bool bitrate = VideoRateModePicker.SelectedIndex == 1;
+        bool quality = videoRateMode == 0;
+        bool bitrate = videoRateMode == 1;
         if (!quality && !bitrate) return false;
         if (quality && !encoder.SupportsQuality) return false;
         if (bitrate && !encoder.SupportsBitrate) return false;

@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text.Json.Nodes;
 using HandBrake.Interop.Interop;
+using HandBrake.WinUI.Resources;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 
@@ -11,13 +13,12 @@ namespace HandBrake.WinUI;
 public sealed partial class MainWindow
 {
     private readonly ComboBox outputFormatPicker = new();
-    private readonly ComboBox frameRatePicker = new() { Header = "Frame rate" };
-    private readonly ComboBox frameModePicker = new() { Header = "Frame-rate mode" };
-    private readonly ComboBox speedPicker = new() { Header = "Encoder preset" };
-    private readonly ComboBox tunePicker = new() { Header = "Tune" };
-    private readonly ComboBox profilePicker = new() { Header = "Profile" };
-    private readonly ComboBox levelPicker = new() { Header = "Level" };
-    private readonly ComboBox colorRangePicker = new() { Header = "Colour range" };
+    private readonly ComboBox frameRatePicker = new();
+    private readonly ComboBox speedPicker = new();
+    private readonly ComboBox tunePicker = new();
+    private readonly ComboBox profilePicker = new();
+    private readonly ComboBox levelPicker = new();
+    private readonly ComboBox colorRangePicker = new();
     private readonly CheckBox webOptimize = new() { Content = "Web optimized" };
     private readonly CheckBox alignAv = new() { Content = "Align A/V start" };
     private readonly CheckBox ipodSupport = new() { Content = "iPod 5G support" };
@@ -25,7 +26,7 @@ public sealed partial class MainWindow
     private readonly CheckBox multiPass = new() { Content = "Multi-pass encoding" };
     private readonly CheckBox turboPass = new() { Content = "Turbo analysis pass" };
     private readonly CheckBox fastDecode = new() { Content = "Fast decode" };
-    private readonly TextBox encoderArguments = new() { Header = "Advanced encoder options", AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
+    private readonly TextBox encoderArguments = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap };
     private bool updatingAdvancedEditor;
     private string? advancedPresetBaseline;
 
@@ -45,20 +46,15 @@ public sealed partial class MainWindow
     {
         updatingAdvancedEditor = true;
         PopulateChoices(outputFormatPicker, new[] { ("MP4", "av_mp4"), ("MKV", "av_mkv"), ("WebM", "av_webm") }, "av_mp4");
-        PopulateChoices(frameModePicker, new[] { ("Variable", "vfr"), ("Constant", "cfr"), ("Peak", "pfr") }, "vfr");
-        PopulateChoices(colorRangePicker, new[] { ("Limited", "limited"), ("Full", "full") }, "limited");
+        PopulateChoices(colorRangePicker, new[] { (WpfText.Label("VideoColourRange_SameAsSource"), "auto"), (WpfText.Label("VideoColourRange_Limited"), "limited"), (WpfText.Label("VideoColourRange_Full"), "full") }, "limited");
         Design.FieldLayout.SetRole(outputFormatPicker, Design.FieldWidthRole.ShortChoice);
         Microsoft.UI.Xaml.Automation.AutomationProperties.SetLabeledBy(outputFormatPicker, FormatSummaryLabel);
         ContainerEditorPanel.Children.Add(outputFormatPicker);
         foreach (var option in new[] { webOptimize, alignAv, ipodSupport, metadataPassthru })
             ContainerEditorPanel.Children.Add(option);
         InitializeSummaryTooltips();
-        AdvancedVideoPanel.Children.Add(CompactRow(frameRatePicker, frameModePicker, colorRangePicker));
-        AdvancedVideoPanel.Children.Add(CompactRow(speedPicker, tunePicker, fastDecode));
-        AdvancedVideoPanel.Children.Add(CompactRow(profilePicker, levelPicker));
-        AdvancedVideoPanel.Children.Add(CompactRow(multiPass, turboPass));
-        AdvancedVideoPanel.Children.Add(encoderArguments);
-        foreach (var picker in new[] { outputFormatPicker, frameRatePicker, frameModePicker, colorRangePicker,
+        InitializeVideoPresentation();
+        foreach (var picker in new[] { outputFormatPicker, frameRatePicker, colorRangePicker,
             speedPicker, tunePicker, profilePicker, levelPicker })
             picker.SelectionChanged += AdvancedOption_Changed;
         foreach (var toggle in new[] { webOptimize, alignAv, ipodSupport, metadataPassthru, multiPass, turboPass, fastDecode })
@@ -80,10 +76,18 @@ public sealed partial class MainWindow
             var preset = choice.Preset;
             var json = JsonNode.Parse(choice.Json)!;
             PopulateChoices(outputFormatPicker, new[] { ("MP4", "av_mp4"), ("MKV", "av_mkv"), ("WebM", "av_webm") }, preset.FileFormat);
-            PopulateChoices(frameRatePicker, new[] { ("Same as source", "auto") }
-                .Concat(HandBrakeEncoderHelpers.VideoFramerates.Select(rate => (rate.Name + " fps", rate.Name))), preset.VideoFramerate);
-            frameModePicker.SelectedIndex = preset.VideoFramerateMode switch { "cfr" => 1, "pfr" => 2, _ => 0 };
-            colorRangePicker.SelectedIndex = preset.VideoColorRange == "full" ? 1 : 0;
+            var rates = new List<(string Label, string Value)> { (WpfText.Label("VideoView_SameAsSource"), "auto") };
+            rates.AddRange(HandBrakeEncoderHelpers.VideoFramerates.Select(rate => (rate.Name, rate.Name)));
+            string rateValue = preset.VideoFramerate is null or "" or "0" ? "auto" : preset.VideoFramerate;
+            if (!rates.Any(rate => rate.Value == rateValue))
+            {
+                if (!double.TryParse(rateValue, NumberStyles.Float, CultureInfo.InvariantCulture, out double savedRate) || !double.IsFinite(savedRate) || savedRate <= 0)
+                    throw new InvalidOperationException("The saved frame rate is invalid.");
+                rates.Add((rateValue, rateValue));
+            }
+            PopulateChoices(frameRatePicker, rates, rateValue);
+            SetFrameMode(preset.VideoFramerateMode);
+            colorRangePicker.SelectedIndex = preset.VideoColorRange switch { "auto" => 0, "full" => 2, _ => 1 };
             webOptimize.IsChecked = preset.Optimize;
             alignAv.IsChecked = preset.AlignAVStart;
             ipodSupport.IsChecked = preset.Mp4iPodCompatible;
@@ -91,7 +95,7 @@ public sealed partial class MainWindow
             multiPass.IsChecked = preset.VideoMultiPass;
             turboPass.IsChecked = preset.VideoTurboMultiPass;
             ConfigureAdvancedEncoder();
-            ContainerEditorGate.IsEnabled = AdvancedVideoGate.IsEnabled = true;
+            ContainerEditorGate.IsEnabled = AdvancedVideoGate.IsEnabled = VideoBasicsPanel.IsEnabled = true;
             UpdateAdvancedAvailability();
             advancedPresetBaseline = AdvancedState();
         }
@@ -102,16 +106,16 @@ public sealed partial class MainWindow
     {
         var encoder = ActiveVideoEncoder;
         bool fromPreset = encoder?.ShortName == activePreset?.VideoEncoder;
-        static IEnumerable<(string, string)> Options(IEnumerable<string>? values, string label = "Default")
+        static IEnumerable<(string, string)> Options(IEnumerable<string>? values, string label)
             => new[] { (label, "") }.Concat((values ?? Array.Empty<string>()).Select(value => (value, value)));
-        PopulateChoices(speedPicker, Options(encoder?.Presets), fromPreset ? activePreset?.VideoPreset : "");
+        PopulateChoices(speedPicker, Options(encoder?.Presets, WpfText.Label("SummaryView_Default")), fromPreset ? activePreset?.VideoPreset : "");
         string[] tunes = (fromPreset ? activePreset?.VideoTune : "")?.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries) ?? Array.Empty<string>();
         string tune = string.Join(",", tunes.Where(value => value != "fastdecode"));
         var availableTunes = (encoder?.Tunes ?? new List<string>()).Where(value => value != "fastdecode").ToList();
         if (tune.Contains(',') && tune.Split(',').All(value => availableTunes.Contains(value))) availableTunes.Add(tune);
-        PopulateChoices(tunePicker, Options(availableTunes, "None"), tune);
-        PopulateChoices(profilePicker, Options(encoder?.Profiles, "Auto"), fromPreset && activePreset?.VideoProfile != "auto" ? activePreset?.VideoProfile : "");
-        PopulateChoices(levelPicker, Options(encoder?.Levels, "Auto"), fromPreset && activePreset?.VideoLevel != "auto" ? activePreset?.VideoLevel : "");
+        PopulateChoices(tunePicker, Options(availableTunes, WpfText.Label("SubtitleBehaviourModes_None")), tune);
+        PopulateChoices(profilePicker, Options(encoder?.Profiles, WpfText.Label("PictureSettingsView_Automatic")), fromPreset && activePreset?.VideoProfile != "auto" ? activePreset?.VideoProfile : "");
+        PopulateChoices(levelPicker, Options(encoder?.Levels, WpfText.Label("PictureSettingsView_Automatic")), fromPreset && activePreset?.VideoLevel != "auto" ? activePreset?.VideoLevel : "");
         fastDecode.IsChecked = tunes.Contains("fastdecode");
         encoderArguments.Text = fromPreset ? activePreset?.VideoOptionExtra ?? "" : "";
         UpdateAdvancedAvailability();
@@ -128,10 +132,12 @@ public sealed partial class MainWindow
         profilePicker.IsEnabled = profilePicker.Items.Count > 1;
         levelPicker.IsEnabled = levelPicker.Items.Count > 1;
         fastDecode.IsEnabled = encoder?.Tunes?.Contains("fastdecode") == true;
-        multiPass.IsEnabled = encoder?.SupportsMultiPass(VideoRateModePicker.SelectedIndex == 0) == true;
-        turboPass.IsEnabled = multiPass.IsEnabled && multiPass.IsChecked == true && (encoder?.IsX264 == true || encoder?.IsX265 == true);
-        if (ChoiceValue(frameRatePicker) == "auto" && ChoiceValue(frameModePicker) == "pfr")
-            frameModePicker.SelectedIndex = 0;
+        multiPass.IsEnabled = encoder?.SupportsMultiPass(videoRateMode == 0) == true;
+        turboPass.IsEnabled = videoRateMode == 1 && multiPass.IsEnabled && multiPass.IsChecked == true && (encoder?.IsX264 == true || encoder?.IsX265 == true);
+        multiPass.Visibility = encoder?.SupportsMultiPass() == true ? Visibility.Visible : Visibility.Collapsed;
+        turboPass.Visibility = (encoder?.IsX264 == true || encoder?.IsX265 == true) && encoder.SupportsMultiPass() ? Visibility.Visible : Visibility.Collapsed;
+        fastDecode.Visibility = fastDecode.IsEnabled ? Visibility.Visible : Visibility.Collapsed;
+        RefreshFrameModeControls();
     }
 
     private JsonObject AdvancedValues() => new()
@@ -139,7 +145,7 @@ public sealed partial class MainWindow
         ["FileFormat"] = CurrentMux, ["Optimize"] = webOptimize.IsEnabled && webOptimize.IsChecked == true,
         ["AlignAVStart"] = alignAv.IsChecked == true, ["Mp4iPodCompatible"] = ipodSupport.IsEnabled && ipodSupport.IsChecked == true,
         ["MetadataPassthru"] = metadataPassthru.IsChecked == true,
-        ["VideoFramerate"] = ChoiceValue(frameRatePicker), ["VideoFramerateMode"] = ChoiceValue(frameModePicker),
+        ["VideoFramerate"] = ChoiceValue(frameRatePicker), ["VideoFramerateMode"] = frameMode,
         ["VideoColorRange"] = ChoiceValue(colorRangePicker), ["VideoPreset"] = ChoiceValue(speedPicker),
         ["VideoTune"] = string.Join(",", new[] { ChoiceValue(tunePicker), fastDecode.IsEnabled && fastDecode.IsChecked == true ? "fastdecode" : "" }.Where(value => value.Length > 0)),
         ["VideoProfile"] = ChoiceValue(profilePicker), ["VideoLevel"] = ChoiceValue(levelPicker),
@@ -168,6 +174,12 @@ public sealed partial class MainWindow
         updatingAdvancedEditor = true;
         try
         {
+            if (sender == frameRatePicker)
+            {
+                bool sourceRate = ChoiceValue(frameRatePicker) is "" or "auto" or "0";
+                if (sourceRate && frameMode == "pfr") SetFrameMode("vfr");
+                else if (!sourceRate && frameMode == "vfr") SetFrameMode("pfr");
+            }
             UpdateAdvancedAvailability();
             if (sender == outputFormatPicker && destinationOverride is not null)
                 destinationOverride = System.IO.Path.ChangeExtension(destinationOverride,

@@ -200,6 +200,7 @@ public static partial class CompactUi
     {
         int columns = host.ActualWidth >= Resource<double>("HBFormWideBreakpoint") ? 3 :
             host.ActualWidth >= Resource<double>("HBFormTwoColumnBreakpoint") ? 2 : 1;
+        columns = Math.Min(columns, Math.Max(1, host.Children.Count));
         if (host.ColumnDefinitions.Count == columns && host.RowDefinitions.Count == (host.Children.Count + columns - 1) / columns) return;
         host.ColumnDefinitions.Clear(); host.RowDefinitions.Clear();
         for (int i = 0; i < columns; i++) host.ColumnDefinitions.Add(new ColumnDefinition { Width = new GridLength(1, GridUnitType.Star) });

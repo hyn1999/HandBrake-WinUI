@@ -28,6 +28,7 @@
     <x:Double x:Key="HBIconSize">16</x:Double>
     <x:Double x:Key="HBIconButtonSize">28</x:Double>
     <x:Double x:Key="HBChoiceRowMinHeight">32</x:Double>
+    <x:Double x:Key="HBMultilineInputMinHeight">72</x:Double>
     <x:Double x:Key="HBMediaSourceMinHeight">68</x:Double>
     <x:Double x:Key="HBMediaSourceIconSize">20</x:Double>
     <x:Double x:Key="HBSpaceTight">4</x:Double>

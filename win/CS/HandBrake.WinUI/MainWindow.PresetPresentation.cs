@@ -139,7 +139,6 @@ public sealed partial class MainWindow
         foreach (var text in new[] { MetadataTitleBox, MetadataArtistBox, MetadataAlbumBox, MetadataCommentBox })
             text.TextChanged += (_, _) => UpdatePresetPresentation();
         VideoEncoderPicker.SelectionChanged += (_, _) => UpdatePresetPresentation();
-        VideoRateModePicker.SelectionChanged += (_, _) => UpdatePresetPresentation();
         VideoQualitySlider.ValueChanged += (_, _) => UpdatePresetPresentation();
         VideoBitrateBox.ValueChanged += (_, _) => UpdatePresetPresentation();
     }
@@ -149,7 +148,7 @@ public sealed partial class MainWindow
         var preset = choice.Preset;
         if (AdvancedPresetModified()) return true;
         int mode = preset.VideoQualityType switch { 2 => 0, 1 => 1, _ => -1 };
-        if (ActiveVideoEncoder?.ShortName != preset.VideoEncoder || VideoRateModePicker.SelectedIndex != mode)
+        if (ActiveVideoEncoder?.ShortName != preset.VideoEncoder || videoRateMode != mode)
             return true;
         if ((mode == 0 && !NearlyEqual(VideoQualitySlider.Value, preset.VideoQualitySlider)) ||
             (mode == 1 && !NearlyEqual(VideoBitrateBox.Value, preset.VideoAvgBitrate ?? 2500)))

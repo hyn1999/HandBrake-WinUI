@@ -249,49 +249,43 @@
                                             </ScrollViewer>
                                         </TabViewItem>
                                         <TabViewItem Header="Video" IsClosable="False">
-                                            <ScrollViewer>
-                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
-                                                    <TextBlock Text="Video encoding" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
-                                                    <TextBlock x:Name="SourceVideoText"
-                                                               Text="Source codec and frame rate will appear after scanning."
-                                                               TextWrapping="Wrap" />
-                                                    <TextBlock Text="Video encoder" FontWeight="SemiBold" />
-                                                    <ComboBox x:Name="VideoEncoderPicker"
-                                                              HorizontalAlignment="Stretch" IsEnabled="False"
-                                                              SelectionChanged="VideoEncoderPicker_SelectionChanged" />
-                                                    <TextBlock Text="Rate control" FontWeight="SemiBold" />
-                                                    <ComboBox x:Name="VideoRateModePicker" IsEnabled="False"
-                                                              HorizontalAlignment="Stretch"
-                                                              SelectionChanged="VideoRateModePicker_SelectionChanged">
-                                                        <ComboBoxItem Content="Constant quality" />
-                                                        <ComboBoxItem Content="Average bitrate" />
-                                                    </ComboBox>
-                                                    <StackPanel x:Name="QualityControlPanel" Spacing="6">
-                                                        <TextBlock x:Name="VideoQualityText"
-                                                                   Text="Quality: not configured" />
-                                                        <Slider x:Name="VideoQualitySlider"
-                                                                Minimum="0" Maximum="51" Value="22"
-                                                                IsEnabled="False"
-                                                                ValueChanged="VideoQualitySlider_ValueChanged" />
-                                                    </StackPanel>
-                                                    <NumberBox x:Name="VideoBitrateBox"
-                                                               Header="Average bitrate (kbps)"
-                                                               Minimum="100" Maximum="200000"
-                                                               Value="2500" SpinButtonPlacementMode="Inline"
-                                                               Visibility="Collapsed" IsEnabled="False"
-                                                               ValueChanged="VideoBitrateBox_ValueChanged" />
-                                                    <ContentControl x:Name="AdvancedVideoGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="AdvancedVideoPanel" Spacing="{StaticResource HBSpaceTight}" /></ContentControl>
-                                                    <TextBlock Text="Preset reference"
-                                                               FontWeight="SemiBold" />
-                                                    <TextBlock x:Name="PresetVideoDetailsText"
-                                                               Text="Not available" TextWrapping="Wrap" />
-                                                    <TextBlock x:Name="VideoConfigurationStatusText"
-                                                               Text="Select a native preset and encoder to configure a queue draft."
-                                                               FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap"
-                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                    <TextBlock Text="Changing the encoder or rate control updates a draft configuration only. It does not start encoding or modify HandBrake's built-in preset."
-                                                               FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap"
-                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                                <StackPanel Padding="{StaticResource HBCardPadding}" Spacing="{StaticResource HBSpaceGroup}">
+                                                    <Grid x:Name="VideoMainGroups" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}" SizeChanged="VideoMainGroups_SizeChanged">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
+                                                        <StackPanel Spacing="{StaticResource HBSpaceRow}">
+                                                            <TextBlock Text="{x:Bind copy:WpfText.Video, Mode=OneTime}" Style="{StaticResource HBCompactSectionTitleStyle}" />
+                                                            <Grid x:Name="VideoBasicsPanel" IsEnabled="False" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
+                                                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                            </Grid>
+                                                        </StackPanel>
+                                                        <StackPanel Grid.Row="1" Spacing="{StaticResource HBSpaceRow}">
+                                                            <TextBlock Text="{x:Bind copy:WpfText.VideoQuality, Mode=OneTime}" Style="{StaticResource HBCompactSectionTitleStyle}" />
+                                                            <StackPanel x:Name="QualityControlPanel" Spacing="{StaticResource HBSpaceTight}">
+                                                                <Grid ColumnSpacing="{StaticResource HBSpaceRow}">
+                                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                                    <RadioButton x:Name="ConstantQualityChoice" GroupName="VideoRateControl" Content="{x:Bind copy:WpfText.ConstantQuality, Mode=OneTime}" IsEnabled="False" Checked="VideoRateControl_Checked" />
+                                                                    <TextBlock x:Name="VideoQualityText" Grid.Column="1" Text="—" VerticalAlignment="Center" TextWrapping="Wrap" />
+                                                                </Grid>
+                                                                <Slider x:Name="VideoQualitySlider" Minimum="0" Maximum="51" Value="22" IsEnabled="False" ValueChanged="VideoQualitySlider_ValueChanged" />
+                                                                <Grid x:Name="QualityScaleLabels">
+                                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                                    <TextBlock Text="{x:Bind copy:WpfText.LowerQuality, Mode=OneTime}" TextWrapping="Wrap" FontSize="{StaticResource HBCaptionFontSize}" />
+                                                                    <TextBlock x:Name="VideoHighQualityText" Grid.Column="1" HorizontalAlignment="Right" TextWrapping="Wrap" FontSize="{StaticResource HBCaptionFontSize}" />
+                                                                </Grid>
+                                                            </StackPanel>
+                                                            <ContentControl x:Name="VideoBitrateRow" IsTabStop="False" HorizontalContentAlignment="Stretch" />
+                                                            <StackPanel x:Name="VideoPassOptions" Spacing="{StaticResource HBSpaceTight}" />
+                                                        </StackPanel>
+                                                    </Grid>
+                                                    <TextBlock Text="{x:Bind copy:WpfText.VideoEncoderOptions, Mode=OneTime}" Style="{StaticResource HBCompactSectionTitleStyle}" />
+                                                    <ContentControl x:Name="AdvancedVideoGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch">
+                                                        <Grid x:Name="AdvancedVideoPanel" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
+                                                            <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                        </Grid>
+                                                    </ContentControl>
+                                                    <TextBlock x:Name="VideoConfigurationStatusText" Visibility="Collapsed" FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
                                         </TabViewItem>

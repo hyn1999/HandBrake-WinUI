@@ -124,4 +124,8 @@
         <Setter Property="MaxWidth" Value="{StaticResource HBShortChoiceWidth}"/>
         <Setter Property="Margin" Value="{StaticResource HBFormSideLabelMargin}"/>
     </Style>
+    <Style x:Key="HBCompactMultilineTextBoxStyle" TargetType="TextBox" BasedOn="{StaticResource HBCompactTextBoxStyle}">
+        <Setter Property="MinHeight" Value="{StaticResource HBMultilineInputMinHeight}"/>
+        <Setter Property="VerticalContentAlignment" Value="Top"/>
+    </Style>
 </ResourceDictionary>
