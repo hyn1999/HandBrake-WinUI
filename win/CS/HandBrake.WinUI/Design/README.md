@@ -62,7 +62,7 @@ Width roles cap fields without forcing minimum widths that break narrow layouts.
 
 These are initial preferences within the agreed ranges, not minimums or a guarantee that every field is always that width. Values remain unchanged when names/paths are visually truncated; expose full values through approved tooltips where needed.
 
-For the main Workspace command strip, use StandardCommands.xaml in the strip's resources and HBMainCommandAccentButtonStyle for its primary action. This also prevents the application's implicit compact TextBlock style leaking into command labels. Existing Queue CommandBars use the same scoped dictionary and retain native overflow behavior.
+For the main Workspace command strip, use a native CommandBar with DefaultLabelPosition="Right", native AppBarButton icons/labels and StandardCommands.xaml in its resources. Do not apply a Button style or a handcrafted icon/text StackPanel to AppBarButton. Native layout owns alignment, states and overflow. This also prevents the application's implicit compact TextBlock style leaking into command labels. Existing Queue CommandBars use the same scoped dictionary and retain native overflow behavior.
 
 ## Authoring C#
 

@@ -31,6 +31,7 @@ public sealed partial class MainWindow : Window
         InitializeSourceRangeEditor();
         InitializePresetTracking();
         InitializeRemainingSettingsPresentation();
+        InitializeSourcePresentation();
         Closed += (_, _) => detachedPreview?.Close();
         InitializeNativeDiagnostics();
         ExtendsContentIntoTitleBar = true;
@@ -392,7 +393,7 @@ public sealed partial class MainWindow : Window
             queueEditSnapshot = System.Text.Json.JsonSerializer.Deserialize<QueueDraft>(
                 System.Text.Json.JsonSerializer.Serialize(editJob));
             CancelQueueEditButton.Visibility = Visibility.Visible;
-            StageQueueLabel.Text = "Loading job…";
+            StageQueueButton.Label = "Loading job…";
         }
         MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
         destinationOverride = null;
@@ -407,10 +408,10 @@ public sealed partial class MainWindow : Window
         SelectedFileText.Text = paths.Count == 1
             ? firstName
             : $"{firstName} + {paths.Count - 1} more source(s)";
-        SelectedPathText.Text = paths.Count == 1
+        SetSourceLocationDetails(paths.Count == 1
             ? (isFolder ? first : $"{new FileInfo(first).Length / 1024d / 1024d:N1} MiB · {first}")
-            : $"{paths.Count} selected files/folders · {first}";
-        PreviewSourceText.Text = SelectedFileText.Text;
+            : string.Join(Environment.NewLine, paths));
+        SourceFactsText.Text = "";
         UpdateSuggestedDestination();
 
         SourceStatusText.Text = paths.Count == 1

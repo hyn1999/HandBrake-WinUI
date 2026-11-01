@@ -39,7 +39,7 @@ public sealed partial class MainWindow
     {
         queueEditSnapshot = null;
         queueEditReady = false;
-        StageQueueLabel.Text = "Add to Queue";
+        StageQueueButton.Label = "Add to Queue";
         StageQueueIcon.Symbol = Symbol.Add;
         ToolTipService.SetToolTip(StageQueueButton, "Add to Queue (Alt+A)");
         CancelQueueEditButton.Visibility = Visibility.Collapsed;
@@ -176,7 +176,7 @@ public sealed partial class MainWindow
                 throw new InvalidOperationException("This editor cannot restore every saved setting without changes.");
             queueEditReady = true;
             SourceStatusText.Text = $"Editing: {saved.OutputName}";
-            StageQueueLabel.Text = "Save changes";
+            StageQueueButton.Label = "Save changes";
             StageQueueIcon.Symbol = Symbol.Save;
             ToolTipService.SetToolTip(StageQueueButton, "Save changes (Alt+A)");
             UpdatePresetPresentation(); RefreshOutputSummary(); UpdateEncodeControls();

@@ -60,7 +60,7 @@ public sealed partial class MainWindow
             sourceRangePicker.SelectedIndex = 0;
             ((ComboBoxItem)sourceRangePicker.Items[1]).IsEnabled = title.ChapterList?.Count > 0;
             SourceRangeGate.IsEnabled = true;
-            SourceRangePanel.Visibility = Visibility.Visible;
+            SetSourceRangeVisible(true);
         }
         finally { updatingSourceSelection = false; }
         ResetRangeBounds(title);

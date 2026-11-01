@@ -54,7 +54,7 @@ public sealed partial class MainWindow
 
     private async void StartEncode_Click(object sender, RoutedEventArgs e)
     {
-        if (encodeRunning || preparingEncodeQueue || queueEditSnapshot is not null) return;
+        if (encodeRunning || preparingEncodeQueue || queueEditSnapshot is not null || (!draftQueue.Any(item => item.IsPending) && !CanCaptureCurrentTask())) return;
         preparingEncodeQueue = true;
         UpdateEncodeControls();
         try
@@ -548,14 +548,33 @@ public sealed partial class MainWindow
     }
 
     private bool CanCaptureCurrentTask()
-        => selectedSourcePaths.Count == 1 && !scanInProgress &&
-           SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: SourceTitle };
+    {
+        if (selectedSourcePaths.Count != 1 || scanInProgress || scannedTitles.Count == 0 ||
+            SourceRangeGate.Visibility != Visibility.Visible || !SourceRangeGate.IsEnabled ||
+            SourceTitlePicker.SelectedItem is not ComboBoxItem { Tag: SourceTitle } || !TryGetVideoDraftSettings(out _)) return false;
+        string source = selectedSourcePaths[0];
+        if (!File.Exists(source) && !Directory.Exists(source)) return false;
+        try
+        {
+            string? output = GetSuggestedOutputPath() ?? GetAutomaticOutputPath();
+            return !string.IsNullOrWhiteSpace(output) && Path.IsPathFullyQualified(output) &&
+                !Directory.Exists(output) && Directory.Exists(Path.GetDirectoryName(output));
+        }
+        catch (Exception error) when (error is ArgumentException or IOException or NotSupportedException) { return false; }
+    }
 
     private void UpdateEncodeControls()
     {
         bool nativeReady = File.Exists(Path.Combine(AppContext.BaseDirectory, "hb.dll")) &&
             nativePresetChoices.Count > 0;
-        bool hasRunnableJobs = draftQueue.Any(item => item.IsPending);
+        int readyCount = draftQueue.Count(item => item.IsPending);
+        bool hasRunnableJobs = readyCount > 0;
+        StartEncodeButton.Label = hasRunnableJobs ? "Start Queue" : "Start Encode";
+        ToolTipService.SetToolTip(StartEncodeButton, hasRunnableJobs ? $"Start Queue ({readyCount}) · Ctrl+E" : "Start Encode (Ctrl+E)");
+        ReadyQueueBadge.Value = NavigationQueueBadge.Value = readyCount;
+        QueueBadgeContainer.Visibility = NavigationQueueBadge.Visibility = hasRunnableJobs ? Visibility.Visible : Visibility.Collapsed;
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(ReadyQueueBadge, $"{readyCount} jobs ready in queue");
+        Microsoft.UI.Xaml.Automation.AutomationProperties.SetName(NavigationQueueBadge, $"{readyCount} jobs ready in queue");
         StartEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady &&
             queueEditSnapshot is null && (hasRunnableJobs || CanCaptureCurrentTask());
         StartQueueEncodeButton.IsEnabled = !encodeRunning && !preparingEncodeQueue && nativeReady && hasRunnableJobs && queueEditSnapshot is null;

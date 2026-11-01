@@ -27,7 +27,11 @@ public sealed partial class MainWindow
     private string? GetSuggestedOutputPath() => destinationOverride ?? GetAutomaticOutputPath();
     private void Destination_Changed(object sender, Microsoft.UI.Xaml.Controls.TextChangedEventArgs args)
     {
-        if (!updatingDestination) destinationOverride = DestinationText.Text.Trim();
+        if (!updatingDestination)
+        {
+            destinationOverride = DestinationText.Text.Trim();
+            UpdateEncodeControls();
+        }
     }
     private string? GetAutomaticOutputPath()
     {

@@ -39,6 +39,7 @@
                     <NavigationViewItem.Icon><SymbolIcon Symbol="Home" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Queue" Tag="queue">
+                    <NavigationViewItem.InfoBadge><InfoBadge x:Name="NavigationQueueBadge" Visibility="Collapsed" /></NavigationViewItem.InfoBadge>
                     <NavigationViewItem.Icon><SymbolIcon Symbol="List" /></NavigationViewItem.Icon>
                 </NavigationViewItem>
                 <NavigationViewItem Content="Preferences" Tag="settings">
@@ -50,84 +51,51 @@
                     <Grid x:Name="HomePanel" RowSpacing="{StaticResource HBSpaceRow}">
                         <Grid.RowDefinitions>
                             <RowDefinition Height="Auto" />
-                            <RowDefinition Height="Auto" />
                             <RowDefinition Height="*" />
                             <RowDefinition Height="Auto" />
                         </Grid.RowDefinitions>
 
-                        <!-- Source header: commands, source identity, then one bounded selection group. -->
-                        <Grid x:Name="SourceHeader" RowSpacing="{StaticResource HBSpaceGroup}" SizeChanged="SourceHeader_SizeChanged">
-                            <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                            <StackPanel x:Name="WorkspaceCommands" Spacing="{StaticResource HBMainCommandGap}" HorizontalAlignment="Stretch">
-                                <StackPanel.Resources>
-                                    <ResourceDictionary Source="ms-appx:///Design/StandardCommands.xaml"/>
-                                </StackPanel.Resources>
-                                <Button Click="ShowSourcePicker_Click" ToolTipService.ToolTip="Open Source (Alt+O)">
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
-                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="OpenFile"/></Viewbox>
-                                        <TextBlock Text="Open Source" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="StageQueueButton" Click="StageQueue_Click" IsEnabled="False"
-                                        ToolTipService.ToolTip="Add to Queue (Alt+A)">
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
-                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon x:Name="StageQueueIcon" Symbol="Add"/></Viewbox>
-                                        <TextBlock x:Name="StageQueueLabel" Text="Add to Queue" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="CancelQueueEditButton" Click="CancelQueueEdit_Click" Visibility="Collapsed" ToolTipService.ToolTip="Cancel edit">
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
-                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="Cancel"/></Viewbox>
-                                        <TextBlock Text="Cancel edit" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                                <Button x:Name="StartEncodeButton" Click="StartEncode_Click" IsEnabled="False"
-                                        Style="{StaticResource HBMainCommandAccentButtonStyle}" ToolTipService.ToolTip="Start Encode (Ctrl+E)">
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBMainCommandIconTextGap}">
-                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}"><SymbolIcon Symbol="Play"/></Viewbox>
-                                        <TextBlock Text="Start Encode" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </StackPanel>
-                            <StackPanel Grid.Row="1" Spacing="2">
-                                <TextBlock x:Name="SelectedFileText" Text="No source selected" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"/>
-                                <TextBlock x:Name="SelectedPathText" Text="Choose a video to begin"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" FontSize="{StaticResource HBCaptionFontSize}"
-                                           ToolTipService.ToolTip="{Binding Text, ElementName=SelectedPathText}"/>
-                            </StackPanel>
-                            <ContentControl x:Name="SourceRangeGate" Grid.Row="2" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch">
-                                <StackPanel x:Name="SourceRangePanel" Spacing="{StaticResource HBSpaceRow}" Visibility="Collapsed">
-                                    <ComboBox x:Name="SourceTitlePicker" Header="Title" Visibility="Collapsed"
-                                              MinWidth="0" HorizontalAlignment="Left" SelectionChanged="SourceTitlePicker_SelectionChanged"/>
+                        <StackPanel x:Name="SourceHeader" Spacing="{StaticResource HBSpaceGroup}" SizeChanged="SourceHeader_SizeChanged">
+                            <CommandBar x:Name="WorkspaceCommands" DefaultLabelPosition="Right" HorizontalAlignment="Left" Background="Transparent" IsDynamicOverflowEnabled="True">
+                                <CommandBar.Resources><ResourceDictionary Source="ms-appx:///Design/StandardCommands.xaml"/></CommandBar.Resources>
+                                <AppBarButton Icon="OpenFile" Label="Open Source" Click="ShowSourcePicker_Click" ToolTipService.ToolTip="Open Source (Alt+O)" />
+                                <AppBarButton x:Name="StageQueueButton" Label="Add to Queue" Click="StageQueue_Click" IsEnabled="False" ToolTipService.ToolTip="Add to Queue (Alt+A)">
+                                    <AppBarButton.Icon><SymbolIcon x:Name="StageQueueIcon" Symbol="Add"/></AppBarButton.Icon>
+                                </AppBarButton>
+                                <AppBarButton x:Name="CancelQueueEditButton" Icon="Cancel" Label="Cancel edit" Click="CancelQueueEdit_Click" Visibility="Collapsed" />
+                                <AppBarButton x:Name="StartEncodeButton" Icon="Play" Label="Start Encode" Click="StartEncode_Click" IsEnabled="False" ToolTipService.ToolTip="Start Encode (Ctrl+E)" />
+                                <AppBarElementContainer x:Name="QueueBadgeContainer" Visibility="Collapsed">
+                                    <InfoBadge x:Name="ReadyQueueBadge" VerticalAlignment="Center" />
+                                </AppBarElementContainer>
+                            </CommandBar>
+                            <Grid ColumnSpacing="{StaticResource HBSpaceGroup}">
+                                <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                <TextBlock x:Name="SelectedFileText" Text="No source selected" FontWeight="SemiBold" TextTrimming="CharacterEllipsis" VerticalAlignment="Center">
+                                    <TextBlock.ContextFlyout><MenuFlyout>
+                                        <MenuFlyoutItem x:Name="CopySourcePathItem" Text="Copy path" Click="CopySourcePath_Click" IsEnabled="False" />
+                                        <MenuFlyoutItem x:Name="OpenSourceFolderItem" Text="Open source folder" Click="OpenSourceFolder_Click" IsEnabled="False" />
+                                    </MenuFlyout></TextBlock.ContextFlyout>
+                                </TextBlock>
+                                <TextBlock x:Name="SourceFactsText" Grid.Column="1" Foreground="{ThemeResource TextFillColorSecondaryBrush}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                            </Grid>
+                            <ContentControl x:Name="SourceRangeGate" IsEnabled="False" Visibility="Collapsed" IsTabStop="False" HorizontalContentAlignment="Stretch">
+                                <StackPanel x:Name="SourceRangePanel" Spacing="{StaticResource HBSpaceRow}">
+                                    <ComboBox x:Name="SourceTitlePicker" Header="Title" Visibility="Collapsed" MinWidth="0" HorizontalAlignment="Left" SelectionChanged="SourceTitlePicker_SelectionChanged" />
                                 </StackPanel>
                             </ContentControl>
-                        </Grid>
-
-                        <StackPanel Grid.Row="1" Spacing="6">
-                            <Grid ColumnSpacing="{StaticResource HBSpaceGroup}">
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="*" />
-                                    <ColumnDefinition Width="Auto" />
-                                </Grid.ColumnDefinitions>
-                                <TextBlock x:Name="SourceStatusText"
-                                           Text=""
-                                           FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap"
-                                           Foreground="{ThemeResource TextFillColorSecondaryBrush}"
-                                           VerticalAlignment="Center" />
-                                <Button x:Name="CancelScanButton" Grid.Column="1"
-                                        Visibility="Collapsed" Click="CancelScan_Click">
-                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBSpaceRow}">
-                                        <Viewbox Width="{StaticResource HBIconSize}" Height="{StaticResource HBIconSize}" HorizontalAlignment="Center" VerticalAlignment="Center"><SymbolIcon Symbol="Cancel"/></Viewbox><TextBlock Text="Cancel scan" VerticalAlignment="Center"/>
-                                    </StackPanel>
-                                </Button>
-                            </Grid>
-                            <ProgressBar x:Name="SourceScanProgress"
-                                         Visibility="Collapsed" Minimum="0" Maximum="100"
-                                         Value="0" Height="4" />
+                            <StackPanel x:Name="SourceActivityPanel" Visibility="Collapsed" Spacing="{StaticResource HBSpaceTight}">
+                                <Grid ColumnSpacing="{StaticResource HBSpaceGroup}">
+                                    <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
+                                    <TextBlock x:Name="SourceStatusText" FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" VerticalAlignment="Center" />
+                                    <Button x:Name="CancelScanButton" Grid.Column="1" Content="Cancel scan" Visibility="Collapsed" Click="CancelScan_Click" />
+                                </Grid>
+                                <ProgressBar x:Name="SourceScanProgress" Visibility="Collapsed" Minimum="0" Maximum="100" Value="0" Height="4" />
+                            </StackPanel>
                         </StackPanel>
 
-                        <Grid x:Name="WorkspaceGrid" Grid.Row="2" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}"
+                        <Grid x:Name="WorkspaceGrid" Grid.Row="1" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}"
                               SizeChanged="WorkspaceGrid_SizeChanged">
+                            <Grid.Transitions><TransitionCollection><RepositionThemeTransition /></TransitionCollection></Grid.Transitions>
                             <Grid.RowDefinitions>
                                 <RowDefinition x:Name="WorkspaceEditorRow" Height="*"/>
                                 <RowDefinition x:Name="WorkspacePreviewRow" Height="0"/>
@@ -354,7 +322,6 @@
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
                                         <RowDefinition Height="*" />
-                                        <RowDefinition Height="Auto" />
                                     </Grid.RowDefinitions>
                                     <Grid ColumnSpacing="{StaticResource HBSpaceRow}">
                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="Auto"/></Grid.ColumnDefinitions>
@@ -384,11 +351,9 @@
                                                             Spacing="{StaticResource HBSpaceRow}" Margin="16">
                                                     <SymbolIcon Symbol="Pictures" />
                                                     <TextBlock x:Name="PreviewPlaceholderText"
-                                                               Text="Choose a source to decode a real frame"
+                                                               Text="No preview"
                                                                TextWrapping="Wrap" TextAlignment="Center" />
-                                                    <TextBlock Text="Decoded by the native HandBrake engine"
-                                                               TextWrapping="Wrap" TextAlignment="Center"
-                                                               Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+
                                                 </StackPanel>
                                             </Grid>
                                         </Border>
@@ -414,22 +379,13 @@
                                             </Button>
                                         </Grid>
                                     </Grid>
-                                    <ScrollViewer Grid.Row="2" MaxHeight="100" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
-                                    <StackPanel Spacing="{StaticResource HBSpaceTight}">
-                                        <TextBlock Text="Source details" FontWeight="SemiBold" />
-                                        <TextBlock x:Name="PreviewSourceText" Text="No source selected"
-                                                   TextWrapping="Wrap" />
-                                        <TextBlock x:Name="PreviewMetadataText"
-                                                   Text="Scan a video to display its properties."
-                                                   TextWrapping="Wrap" />
-                                    </StackPanel>
-                                    </ScrollViewer>
+
                                 </Grid>
                             </Border>
                         </Grid>
 
                         <!-- Destination stays editable; encode commands have one home in the toolbar. -->
-                        <Border Grid.Row="3" CornerRadius="10" Padding="10"
+                        <Border Grid.Row="2" CornerRadius="10" Padding="10"
                                 BorderThickness="1"
                                 BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}"
                                 Background="{ThemeResource CardBackgroundFillColorDefaultBrush}">

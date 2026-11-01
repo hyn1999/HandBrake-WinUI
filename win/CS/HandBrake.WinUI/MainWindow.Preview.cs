@@ -50,7 +50,7 @@ public sealed partial class MainWindow
         PreviewFrame.Source = null;
         PreviewFrame.Visibility = Visibility.Collapsed;
         PreviewPlaceholder.Visibility = Visibility.Visible;
-        PreviewPlaceholderText.Text = "Decoding a frame with HandBrake…";
+        PreviewPlaceholderText.Text = "Loading preview…";
         PreviewFrameCounterText.Text = "Loading preview…";
         PreviousPreviewButton.IsEnabled = false;
         NextPreviewButton.IsEnabled = false;
@@ -58,7 +58,8 @@ public sealed partial class MainWindow
 
         if (title is null || instance is null || scanInProgress)
         {
-            PreviewPlaceholderText.Text = "Scan a source to decode a real frame.";
+            ToolTipService.SetToolTip(PreviewPlaceholderText, null);
+        PreviewPlaceholderText.Text = "No preview";
             PreviewFrameCounterText.Text = "No frame";
             SyncDetachedPreview();
             return;
@@ -106,7 +107,7 @@ public sealed partial class MainWindow
             PreviewPlaceholder.Visibility = Visibility.Visible;
             PreviewPlaceholderText.Text = "HandBrake could not decode this preview frame.";
             PreviewFrameCounterText.Text = "Preview unavailable";
-            PreviewMetadataText.Text += Environment.NewLine + ex.Message;
+            ToolTipService.SetToolTip(PreviewPlaceholderText, Design.CompactUi.Help(ex.Message));
         }
         finally
         {
@@ -193,7 +194,8 @@ public sealed partial class MainWindow
         PreviewFrame.Source = null;
         PreviewFrame.Visibility = Visibility.Collapsed;
         PreviewPlaceholder.Visibility = Visibility.Visible;
-        PreviewPlaceholderText.Text = "Choose a source to decode a real frame.";
+        ToolTipService.SetToolTip(PreviewPlaceholderText, null);
+        PreviewPlaceholderText.Text = "No preview";
         PreviewFrameCounterText.Text = "No frame";
         PreviousPreviewButton.IsEnabled = false;
         NextPreviewButton.IsEnabled = false;

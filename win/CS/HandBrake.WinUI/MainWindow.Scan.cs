@@ -137,11 +137,13 @@ public sealed partial class MainWindow
             foreach (var title in scannedTitles)
             {
                 var duration = FormatDuration(title.Duration);
-                SourceTitlePicker.Items.Add(new ComboBoxItem
+                var item = new ComboBoxItem
                 {
-                    Content = $"{title.Index}: {title.Name ?? Path.GetFileName(title.Path)} · {duration}",
+                    Content = $"{title.Index} · {duration}",
                     Tag = title
-                });
+                };
+                ToolTipService.SetToolTip(item, Design.CompactUi.Help(title.Name ?? ""));
+                SourceTitlePicker.Items.Add(item);
             }
 
             SourceTitlePicker.Visibility = scannedTitles.Count > 0
@@ -176,18 +178,8 @@ public sealed partial class MainWindow
         ResetManualGeometryEditor(title);
         selectedScannedTitleName = title.Name;
         UpdateSuggestedDestination();
-        string resolution = title.Geometry is null
-            ? "Unknown resolution"
-            : $"{title.Geometry.Width} × {title.Geometry.Height}";
-        string fps = title.FrameRate is { Den: > 0 } rate
-            ? $"{(double)rate.Num / rate.Den:0.###} fps"
-            : "Unknown frame rate";
-        string duration = FormatDuration(title.Duration);
-
         RefreshDimensionsPresentation();
-        PreviewMetadataText.Text = $"{resolution} · {fps}\n" +
-                                   $"{duration} · {title.VideoCodec ?? "Unknown codec"}";
-        PreviewSourceText.Text = title.Name ?? Path.GetFileName(title.Path) ?? "Video source";
+        UpdateSourceFacts(title);
 
 
         DisplayChapterEditor(title);
@@ -215,7 +207,7 @@ public sealed partial class MainWindow
     private void ResetScanDetails()
     {
         SourceRangeGate.IsEnabled = false;
-        SourceRangePanel.Visibility = Visibility.Collapsed;
+        SetSourceRangeVisible(sourceRangeHasBeenShown && selectedSourcePaths.Count > 0);
         ForeignAudioSearchToggle.IsChecked = false;
         ForeignAudioForcedToggle.IsChecked = true;
         ForeignAudioBurnToggle.IsChecked = false;
@@ -227,11 +219,11 @@ public sealed partial class MainWindow
         audioEditors.Clear();
         scannedTitles.Clear();
         SourceTitlePicker.Items.Clear();
-        SourceTitlePicker.Visibility = Visibility.Collapsed;
+        SourceTitlePicker.Visibility = sourceRangeHasBeenShown ? Visibility.Visible : Visibility.Collapsed;
         ClearResolvedSummary();
         ClearDimensionsPresentation();
         RefreshMetadataPlaceholders();
-        PreviewMetadataText.Text = "No decoded preview frame yet.";
+        SourceFactsText.Text = "";
         ResetPreview();
         AudioTrackList.Children.Clear();
         SubtitleTrackList.Children.Clear();
@@ -243,6 +235,7 @@ public sealed partial class MainWindow
         ImportChaptersButton.IsEnabled = ExportChaptersButton.IsEnabled = ResetChaptersButton.IsEnabled = false;
         chapterNameEditors.Clear();
         UpdatePresetPresentation();
+        UpdateEncodeControls();
     }
 
     private void ScanStartFailed(Exception error)
