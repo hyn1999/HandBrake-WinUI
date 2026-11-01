@@ -117,4 +117,11 @@
     <Style x:Key="HBCompactPageTitleStyle" TargetType="TextBlock" BasedOn="{StaticResource TitleTextBlockStyle}">
         <Setter Property="FontSize" Value="{StaticResource HBPageTitleFontSize}"/>
     </Style>
+    <Style x:Key="HBCompactFormSideLabelStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyTextBlockStyle}">
+        <Setter Property="FontSize" Value="{StaticResource HBBodyFontSize}"/>
+        <Setter Property="TextWrapping" Value="Wrap"/>
+        <Setter Property="VerticalAlignment" Value="Top"/>
+        <Setter Property="MaxWidth" Value="{StaticResource HBShortChoiceWidth}"/>
+        <Setter Property="Margin" Value="{StaticResource HBFormSideLabelMargin}"/>
+    </Style>
 </ResourceDictionary>

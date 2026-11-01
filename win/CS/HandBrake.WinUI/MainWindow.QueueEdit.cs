@@ -149,15 +149,7 @@ public sealed partial class MainWindow
             importedSubtitleEditors.Clear(); ImportedSubtitleList.Children.Clear();
             foreach (var import in saved.SubtitleImports ?? new()) AddImportedSubtitleEditor(import);
 
-            UsePresetFiltersToggle.IsChecked = saved.UsePresetFilters;
-            foreach (var filter in saved.FilterOverrides ?? new())
-            {
-                var editor = filterEditors.FirstOrDefault(editor => editor.Id == filter.Id)
-                    ?? throw new InvalidOperationException("A saved filter is unavailable in this editor.");
-                SelectSavedChoice(editor.Preset, filter.Preset);
-                SelectSavedChoice(editor.Tune, filter.Tune);
-                editor.Enabled.IsChecked = true;
-            }
+            if (!saved.UsePresetFilters) RestoreLegacyFilterOverrides(saved.FilterOverrides);
             ChapterMarkersToggle.IsChecked = saved.ChapterMarkers ?? preset.ChapterMarkers;
             if (saved.ChapterNames is { } names)
             {

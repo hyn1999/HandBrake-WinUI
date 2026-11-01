@@ -157,6 +157,8 @@ public sealed partial class MainWindow
         foreach (var value in AdvancedValues()) json[value.Key] = value.Value?.DeepClone();
         json["VideoEncoder"] = ActiveVideoEncoder?.ShortName;
         json["x264UseAdvancedOptions"] = false;
+        ApplyFilterPresetEdits(json);
+        ValidateEditedFilters();
         return json.ToJsonString();
     }
 

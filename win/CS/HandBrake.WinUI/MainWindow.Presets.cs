@@ -138,9 +138,10 @@ public sealed partial class MainWindow
         updatingVideoEditor = true;
         try
         {
-            UsePresetAudioToggle.IsChecked = UsePresetSubtitlesToggle.IsChecked = UsePresetFiltersToggle.IsChecked = true;
+            UsePresetAudioToggle.IsChecked = UsePresetSubtitlesToggle.IsChecked = true;
             CustomGeometryToggle.IsChecked = false;
-            foreach (var editor in filterEditors) editor.Enabled.IsChecked = false;
+            InitializeFilterEditor();
+            LoadFilterPreset();
             ChapterMarkersToggle.IsChecked = activePreset.ChapterMarkers;
             MetadataTitleBox.Text = MetadataArtistBox.Text = MetadataAlbumBox.Text = MetadataCommentBox.Text = string.Empty;
             if (SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: HandBrake.Interop.Interop.Json.Scan.SourceTitle title })

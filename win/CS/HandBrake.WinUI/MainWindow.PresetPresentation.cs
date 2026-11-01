@@ -130,7 +130,7 @@ public sealed partial class MainWindow
     {
         // These controls affect the job. Source/title, preview and destination
         // changes deliberately do not mark the encoding preset as modified.
-        foreach (var toggle in new[] { UsePresetAudioToggle, UsePresetSubtitlesToggle, UsePresetFiltersToggle,
+        foreach (var toggle in new[] { UsePresetAudioToggle, UsePresetSubtitlesToggle,
             CustomGeometryToggle, ChapterMarkersToggle })
         {
             toggle.Checked += (_, _) => UpdatePresetPresentation();
@@ -155,7 +155,7 @@ public sealed partial class MainWindow
             (mode == 1 && !NearlyEqual(VideoBitrateBox.Value, preset.VideoAvgBitrate ?? 2500)))
             return true;
         if (UsePresetAudioToggle.IsChecked != true || UsePresetSubtitlesToggle.IsChecked != true ||
-            UsePresetFiltersToggle.IsChecked != true || CustomGeometryToggle.IsChecked == true ||
+            FilterSettingsModified(choice) || CustomGeometryToggle.IsChecked == true ||
             ChapterMarkersToggle.IsChecked != preset.ChapterMarkers)
             return true;
         if (new[] { MetadataTitleBox, MetadataArtistBox, MetadataAlbumBox, MetadataCommentBox }

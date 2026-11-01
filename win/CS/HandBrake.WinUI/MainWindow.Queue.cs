@@ -174,7 +174,7 @@ public sealed partial class MainWindow
         draft.NativePresetJson = GetEditorPresetJson();
         draft.UsePresetAudio = UsePresetAudioToggle.IsChecked == true;
         draft.UsePresetSubtitles = UsePresetSubtitlesToggle.IsChecked == true;
-        draft.UsePresetFilters = UsePresetFiltersToggle.IsChecked == true;
+        draft.UsePresetFilters = true; // Edited filter values are in the complete native preset snapshot.
         draft.ForeignAudioSearch = !draft.UsePresetSubtitles && ForeignAudioSearchToggle.IsChecked == true;
         draft.ForeignAudioForced = ForeignAudioForcedToggle.IsChecked == true;
         draft.ForeignAudioBurn = draft.ForeignAudioSearch && ForeignAudioBurnToggle.IsChecked == true;
@@ -185,10 +185,9 @@ public sealed partial class MainWindow
             throw new InvalidOperationException("Select at most one subtitle track for burn-in.");
         BuildSubtitleTracks(draft.Subtitles, title, CurrentMux);
         draft.AudioTracks = draft.UsePresetAudio ? new() : ReadAudioChoices();
-        draft.FilterOverrides = draft.UsePresetFilters ? new() : ReadFilterOverrides();
-        // Validate selected native presets before persisting a configured entry.
-        foreach (var filter in BuildFilterOverrides(draft.FilterOverrides))
-            filter.Settings?.Dispose();
+        draft.FilterOverrides = new();
+        // Native filter parameters were validated while capturing the full
+        // editor preset above. FilterOverrides is retained for legacy drafts.
         draft.Geometry = ReadGeometryOverride(title);
         draft.ChapterMarkers = ChapterMarkersToggle.IsChecked == true;
         draft.ChapterNames = chapterNameEditors.Select(editor => editor.Text.Trim()).ToList();

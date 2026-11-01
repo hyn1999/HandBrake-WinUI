@@ -124,11 +124,11 @@ public sealed partial class MainWindow
             VideoEncoder = settings.VideoEncoder, VideoRateControl = settings.RateControl,
             VideoQuality = settings.Quality, VideoBitrateKbps = settings.BitrateKbps,
             VideoFramerate = settings.Framerate, VideoEncoderSpeed = settings.EncoderSpeed,
-            UsePresetAudio = true, UsePresetFilters = UsePresetFiltersToggle.IsChecked == true,
+            UsePresetAudio = true, UsePresetFilters = true,
             UsePresetSubtitles = UsePresetSubtitlesToggle.IsChecked == true,
             Subtitles = UsePresetSubtitlesToggle.IsChecked == true ? new() : ReadSubtitleChoices(),
             SubtitleImports = UsePresetSubtitlesToggle.IsChecked == true ? new() : ReadImportedSubtitles(),
-            FilterOverrides = UsePresetFiltersToggle.IsChecked == true ? new() : ReadFilterOverrides(),
+            FilterOverrides = new(),
             Geometry = ReadGeometryOverride(title)
         };
         return BuildNativeJob(draft, title, scanInstance, preview: true);
@@ -200,3 +200,5 @@ public sealed partial class MainWindow
         SyncDetachedPreview();
     }
 }
+
+

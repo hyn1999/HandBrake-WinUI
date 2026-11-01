@@ -31,8 +31,6 @@ public sealed partial class MainWindow
             AudioEditorGate.IsEnabled = UsePresetAudioToggle.IsChecked != true;
         if (SubtitleEditorGate is not null && UsePresetSubtitlesToggle is not null)
             SubtitleEditorGate.IsEnabled = UsePresetSubtitlesToggle.IsChecked != true;
-        if (FilterEditorGate is not null && UsePresetFiltersToggle is not null)
-            FilterEditorGate.IsEnabled = UsePresetFiltersToggle.IsChecked != true;
         RefreshOutputSummary();
     }
 
