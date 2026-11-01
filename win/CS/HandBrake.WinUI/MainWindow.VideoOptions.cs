@@ -95,7 +95,7 @@ public sealed partial class MainWindow
             multiPass.IsChecked = preset.VideoMultiPass;
             turboPass.IsChecked = preset.VideoTurboMultiPass;
             ConfigureAdvancedEncoder();
-            ContainerEditorGate.IsEnabled = AdvancedVideoGate.IsEnabled = VideoBasicsPanel.IsEnabled = true;
+            ContainerEditorGate.IsEnabled = AdvancedVideoGate.IsEnabled = VideoBasicsGate.IsEnabled = true;
             UpdateAdvancedAvailability();
             advancedPresetBaseline = AdvancedState();
         }
