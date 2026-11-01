@@ -1,9 +1,11 @@
 name: WinUI 3 Preview
 
-# Expensive native cross-compilation is manual-only.
+# This isolated branch runs the user-authorized aggregate settings build.
 # The native binary is cached by native build inputs; managed edits reuse it.
 on:
   workflow_dispatch:
+  push:
+    branches: ['build/aggregate-settings-20261101']
 
 permissions:
   contents: write
@@ -256,4 +258,4 @@ jobs:
           name: HandBrake-WinUI3-FrameworkDependent-x64
           path: ${{ runner.temp }}/HandBrake-WinUI3/
           if-no-files-found: error
-          retention-days: 2
+          retention-days: 7
