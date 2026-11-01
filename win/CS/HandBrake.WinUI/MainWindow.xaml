@@ -248,9 +248,9 @@
 <ScrollViewer x:Name="FiltersPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                                 <StackPanel Padding="{StaticResource HBCardPadding}" Spacing="{StaticResource HBSpaceRow}">
                                                     <TextBlock x:Name="FilterEditorStatus" Visibility="Collapsed" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                    <Grid x:Name="FilterEditorPanel" IsEnabled="False" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
+                                                    <ContentControl x:Name="FilterControlsGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><Grid x:Name="FilterEditorPanel" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
                                                         <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                                    </Grid>
+                                                    </Grid></ContentControl>
                                                 </StackPanel>
                                             </ScrollViewer>
 <ScrollViewer x:Name="VideoPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
@@ -260,9 +260,9 @@
                                                         <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
                                                         <StackPanel Spacing="{StaticResource HBSpaceRow}">
                                                             <TextBlock Text="{x:Bind copy:WpfText.Video, Mode=OneTime}" Style="{StaticResource HBCompactSectionTitleStyle}" />
-                                                            <Grid x:Name="VideoBasicsPanel" IsEnabled="False" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
+                                                            <ContentControl x:Name="VideoBasicsGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><Grid x:Name="VideoBasicsPanel" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
                                                                 <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                                            </Grid>
+                                                            </Grid></ContentControl>
                                                         </StackPanel>
                                                         <StackPanel Grid.Row="1" Spacing="{StaticResource HBSpaceRow}">
                                                             <TextBlock Text="{x:Bind copy:WpfText.VideoQuality, Mode=OneTime}" Style="{StaticResource HBCompactSectionTitleStyle}" />

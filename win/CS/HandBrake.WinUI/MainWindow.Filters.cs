@@ -114,12 +114,12 @@ public sealed partial class MainWindow
             AddFilterRow(new TextBlock(), grayscaleChoice);
             grayscaleChoice.Checked += GrayscaleChanged;
             grayscaleChoice.Unchecked += GrayscaleChanged;
-            FilterEditorPanel.IsEnabled = true;
+            FilterControlsGate.IsEnabled = true;
         }
         catch (Exception error)
         {
             filterEditors.Clear(); FilterEditorPanel.Children.Clear(); FilterEditorPanel.RowDefinitions.Clear();
-            FilterEditorPanel.IsEnabled = false;
+            FilterControlsGate.IsEnabled = false;
             ShowFilterError(error);
         }
         finally { loadingFilters = false; }
