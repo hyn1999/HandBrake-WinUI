@@ -122,3 +122,6 @@ For aligned label/value settings grids, HBCompactFormSideLabelStyle uses native 
 
 
 Video uses the same independent-group reflow for its basic settings and quality areas. ReflowSettingsGroups caps its column count to the number of groups so a two-group section never reserves an empty third column. HBCompactMultilineTextBoxStyle adds a shared minimum size for Advanced Options while preserving the native TextBox template. Encoder tuning and profile/level fields wrap within their own related rows; main commands remain outside this profile.
+
+
+Audio/subtitle/import rows reuse HBCompactTrackRowStyle: shared padding and a native theme separator, without per-row hard-coded card geometry. All editable fields use AlignedFormRow and semantic widths. Settings sections now use native SelectorBar items inside bounded horizontal scrolling; page instances live in EditorPages and are only collapsed/shown, preserving state. This section selector does not replace the separate Queue detail TabView.

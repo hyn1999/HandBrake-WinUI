@@ -145,6 +145,7 @@
                                 <Grid RowSpacing="{StaticResource HBSpaceRow}" Padding="12">
                                     <Grid.RowDefinitions>
                                         <RowDefinition Height="Auto" />
+                                        <RowDefinition Height="Auto" />
                                         <RowDefinition Height="*" />
                                     </Grid.RowDefinitions>
                                     <Grid x:Name="PresetSelectorRow" ColumnSpacing="{StaticResource HBControlGap}" SizeChanged="PresetSelectorRow_SizeChanged">
@@ -170,11 +171,20 @@
                                         </Button>
                                     </Grid>
 
-                                    <TabView x:Name="EditorTabs" Grid.Row="1" SelectionChanged="EditorTabs_SelectionChanged" IsAddTabButtonVisible="False"
-                                             CanDragTabs="False" CanReorderTabs="False"
-                                             TabWidthMode="SizeToContent">
-                                        <TabViewItem x:Name="SummaryTab" Header="Summary" IsClosable="False">
-                                            <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+                                    <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled" HorizontalScrollMode="Enabled" VerticalScrollMode="Disabled" IsTabStop="False">
+                                        <SelectorBar x:Name="EditorTabs" SelectionChanged="EditorTabs_SelectionChanged">
+                                            <SelectorBarItem x:Name="SummaryTab" Text="{x:Bind copy:WpfText.SummarySection, Mode=OneTime}" />
+                                            <SelectorBarItem x:Name="DimensionsTab" Text="{x:Bind copy:WpfText.DimensionsSection, Mode=OneTime}" />
+                                            <SelectorBarItem x:Name="FiltersTab" Text="{x:Bind copy:WpfText.FiltersSection, Mode=OneTime}" />
+                                            <SelectorBarItem x:Name="VideoTab" Text="{x:Bind copy:WpfText.VideoSection, Mode=OneTime}" />
+                                            <SelectorBarItem x:Name="AudioTab" Text="{x:Bind copy:WpfText.AudioSection, Mode=OneTime}" />
+                                            <SelectorBarItem x:Name="SubtitlesTab" Text="{x:Bind copy:WpfText.SubtitlesSection, Mode=OneTime}" />
+                                            <SelectorBarItem x:Name="ChaptersTab" Text="{x:Bind copy:WpfText.ChaptersSection, Mode=OneTime}" />
+                                            <SelectorBarItem x:Name="MetadataTab" Text="{x:Bind copy:WpfText.MetadataSection, Mode=OneTime}" />
+                                        </SelectorBar>
+                                    </ScrollViewer>
+                                    <Grid x:Name="EditorPages" Grid.Row="2">
+<ScrollViewer x:Name="SummaryPage" Visibility="Visible" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                                                 <Grid Padding="{StaticResource HBCardPadding}" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}">
                                                     <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                     <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
@@ -194,9 +204,7 @@
                                                     <TextBlock x:Name="SummaryStatusText" Grid.Row="4" Grid.ColumnSpan="2" Visibility="Collapsed" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </Grid>
                                             </ScrollViewer>
-                                        </TabViewItem>
-                                        <TabViewItem x:Name="DimensionsTab" Header="Dimensions" IsClosable="False">
-                                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+<ScrollViewer x:Name="DimensionsPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                                 <StackPanel Padding="{StaticResource HBCardPadding}" Spacing="{StaticResource HBSpaceGroup}">
                                                     <StackPanel Spacing="{StaticResource HBSpaceTight}">
                                                         <TextBlock Text="{x:Bind copy:WpfText.SourceDimensions, Mode=OneTime}" Style="{StaticResource HBCompactSectionTitleStyle}" />
@@ -237,9 +245,7 @@
                                                     </StackPanel>
                                                 </StackPanel>
                                             </ScrollViewer>
-                                        </TabViewItem>
-                                        <TabViewItem Header="Filters" IsClosable="False">
-                                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+<ScrollViewer x:Name="FiltersPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                                 <StackPanel Padding="{StaticResource HBCardPadding}" Spacing="{StaticResource HBSpaceRow}">
                                                     <TextBlock x:Name="FilterEditorStatus" Visibility="Collapsed" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                     <Grid x:Name="FilterEditorPanel" IsEnabled="False" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
@@ -247,9 +253,7 @@
                                                     </Grid>
                                                 </StackPanel>
                                             </ScrollViewer>
-                                        </TabViewItem>
-                                        <TabViewItem Header="Video" IsClosable="False">
-                                            <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+<ScrollViewer x:Name="VideoPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
                                                 <StackPanel Padding="{StaticResource HBCardPadding}" Spacing="{StaticResource HBSpaceGroup}">
                                                     <Grid x:Name="VideoMainGroups" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceGroup}" SizeChanged="VideoMainGroups_SizeChanged">
                                                         <Grid.ColumnDefinitions><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
@@ -288,73 +292,56 @@
                                                     <TextBlock x:Name="VideoConfigurationStatusText" Visibility="Collapsed" FontSize="{StaticResource HBCaptionFontSize}" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
-                                        </TabViewItem>
-                                        <TabViewItem Header="Audio" IsClosable="False">
-                                            <ScrollViewer>
-                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
-                                                    <TextBlock Text="Audio tracks" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
-                                                    <CheckBox x:Name="UsePresetAudioToggle" Content="Use preset audio selection and encoding rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
-                                                    <ContentControl x:Name="AudioEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="AudioTrackList" Spacing="{StaticResource HBSpaceRow}">
-                                                        <TextBlock Text="Tracks will appear after scanning a source."
-                                                                   TextWrapping="Wrap" />
-                                                    </StackPanel></ContentControl>
-                                                    <TextBlock Text="Checked tracks are included in newly staged jobs, one output per source track. Uncheck all tracks for silent output. Choose a per-track encoder and bitrate, or retain the preset audio rule. Custom encoding uses the native default mixdown and source-compatible sample rate. Passthrough, lossless and multiple outputs per track still require full rule editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                </StackPanel>
-                                            </ScrollViewer>
-                                        </TabViewItem>
-                                        <TabViewItem Header="Subtitles" IsClosable="False">
-                                            <ScrollViewer>
-                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
-                                                    <TextBlock Text="Subtitles" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
-                                                    <CheckBox x:Name="UsePresetSubtitlesToggle" Content="Use preset subtitle selection and search rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
-                                                    <ContentControl x:Name="SubtitleEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch"><StackPanel x:Name="SubtitleManualPanel" Spacing="{StaticResource HBSpaceRow}">
-                                                    <CheckBox x:Name="ForeignAudioSearchToggle" Content="Foreign Audio Search" Checked="ForeignSearch_Toggled" Unchecked="ForeignSearch_Toggled" />
-                                                    <CheckBox x:Name="ForeignAudioForcedToggle" IsEnabled="False" Content="Search forced subtitles only" IsChecked="True" />
-                                                    <CheckBox x:Name="ForeignAudioBurnToggle" IsEnabled="False" Content="Burn the search result into video" />
-                                                    <TextBlock Text="Search runs during encoding. A still preview cannot show its result. Burn-in shares the single-track limit with other subtitles." TextWrapping="Wrap" />
-                                                    <StackPanel x:Name="SubtitleTrackList" Spacing="{StaticResource HBSpaceRow}">
-                                                        <TextBlock Text="Subtitle tracks will appear after scanning."
-                                                                   TextWrapping="Wrap" />
+<ScrollViewer x:Name="AudioPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                                <StackPanel Padding="{StaticResource HBCardPadding}" Spacing="{StaticResource HBSpaceRow}">
+                                                    <CheckBox x:Name="UsePresetAudioToggle" Content="Use preset audio rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBControlGap}">
+                                                        <Button Content="{x:Bind copy:WpfText.Reload, Mode=OneTime}" Click="ReloadAudio_Click" />
+                                                        <Button Content="{x:Bind copy:WpfText.Clear, Mode=OneTime}" Click="ClearAudio_Click" />
                                                     </StackPanel>
-                                                    <Button Content="Import SRT files" Click="ImportSubtitle_Click" HorizontalAlignment="Left" />
-                                                    <TextBlock x:Name="SubtitleImportStatus" Text="UTF-8 SRT soft subtitles support MP4 and MKV. At most one internal or imported track may be burned into video." TextWrapping="Wrap" />
-                                                    <StackPanel x:Name="ImportedSubtitleList" Spacing="{StaticResource HBSpaceTight}" />
-                                                    <TextBlock Text="Select internal subtitle tracks to include. Soft subtitles require a compatible container. Burn-in is permanent in the output image and cannot be switched off during playback. Foreign-audio search runs during encoding. Re-stage the queue entry after editing." TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
-                                                    </StackPanel></ContentControl>
+                                                    <ContentControl x:Name="AudioEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch">
+                                                        <StackPanel x:Name="AudioTrackList" Spacing="{StaticResource HBSpaceRow}" />
+                                                    </ContentControl>
                                                 </StackPanel>
                                             </ScrollViewer>
-                                        </TabViewItem>
-                                        <TabViewItem Header="Chapters" IsClosable="False">
-                                            <ScrollViewer>
-                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
-                                                    <TextBlock Text="Chapters" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
-                                                    <CheckBox x:Name="ChapterMarkersToggle" Content="Create chapter markers" IsChecked="True" />
-                                                    <StackPanel x:Name="ChapterEditorPanel" Spacing="{StaticResource HBSpaceTight}" />
-                                                    <TextBlock x:Name="ChapterListText"
-                                                               Text="Chapter titles will appear here after source scanning."
-                                                               TextWrapping="Wrap" />
+<ScrollViewer x:Name="SubtitlesPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                                <StackPanel Padding="{StaticResource HBCardPadding}" Spacing="{StaticResource HBSpaceRow}">
+                                                    <CheckBox x:Name="UsePresetSubtitlesToggle" Content="Use preset subtitle rules" IsChecked="True" Checked="PresetRules_Toggled" Unchecked="PresetRules_Toggled" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBControlGap}">
+                                                        <Button Content="{x:Bind copy:WpfText.Reload, Mode=OneTime}" Click="ReloadSubtitles_Click" />
+                                                        <Button Content="{x:Bind copy:WpfText.Clear, Mode=OneTime}" Click="ClearSubtitles_Click" />
+                                                    </StackPanel>
+                                                    <ContentControl x:Name="SubtitleEditorGate" IsEnabled="False" IsTabStop="False" HorizontalContentAlignment="Stretch">
+                                                        <StackPanel x:Name="SubtitleManualPanel" Spacing="{StaticResource HBSpaceRow}">
+                                                            <ContentControl x:Name="ForeignSearchFields" IsTabStop="False" HorizontalContentAlignment="Stretch" />
+                                                            <StackPanel x:Name="SubtitleTrackList" Spacing="{StaticResource HBSpaceRow}" />
+                                                            <Button Content="{x:Bind copy:WpfText.ImportSubtitle, Mode=OneTime}" Click="ImportSubtitle_Click" HorizontalAlignment="Left" />
+                                                            <TextBlock x:Name="SubtitleImportStatus" Visibility="Collapsed" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
+                                                            <StackPanel x:Name="ImportedSubtitleList" Spacing="{StaticResource HBSpaceRow}" />
+                                                        </StackPanel>
+                                                    </ContentControl>
                                                 </StackPanel>
                                             </ScrollViewer>
-                                        </TabViewItem>
-                                        <TabViewItem Header="Metadata" IsClosable="False">
-                                            <ScrollViewer>
-                                                <StackPanel Padding="12" Spacing="{StaticResource HBSpaceRow}">
-                                                    <TextBlock Text="Metadata" FontSize="{StaticResource HBSectionFontSize}" FontWeight="SemiBold" />
-                                                    <TextBlock Text="Overrides apply to newly staged jobs. Leave a field empty to retain source metadata." TextWrapping="Wrap" />
-                                                    <Grid ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
-                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="*"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
-                                                        <Grid.RowDefinitions><RowDefinition Height="Auto"/><RowDefinition Height="Auto"/></Grid.RowDefinitions>
-                                                        <TextBox x:Name="MetadataTitleBox" Header="Title" />
-                                                        <TextBox x:Name="MetadataArtistBox" Header="Artist" Grid.Column="1" />
-                                                        <TextBox x:Name="MetadataAlbumBox" Header="Album" Grid.Row="1" />
+<ScrollViewer x:Name="ChaptersPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                                <StackPanel Padding="{StaticResource HBCardPadding}" Spacing="{StaticResource HBSpaceRow}">
+                                                    <CheckBox x:Name="ChapterMarkersToggle" Content="{x:Bind copy:WpfText.CreateChapters, Mode=OneTime}" IsChecked="True" />
+                                                    <StackPanel Orientation="Horizontal" Spacing="{StaticResource HBControlGap}">
+                                                        <Button x:Name="ImportChaptersButton" Content="{x:Bind copy:WpfText.ImportChapters, Mode=OneTime}" Click="ImportChapters_Click" IsEnabled="False" />
+                                                        <Button x:Name="ExportChaptersButton" Content="{x:Bind copy:WpfText.ExportChapters, Mode=OneTime}" Click="ExportChapters_Click" IsEnabled="False" />
+                                                        <Button x:Name="ResetChaptersButton" Content="{x:Bind copy:WpfText.ResetChapters, Mode=OneTime}" Click="ResetChapters_Click" IsEnabled="False" />
+                                                    </StackPanel>
+                                                    <Grid x:Name="ChapterEditorPanel" ColumnSpacing="{StaticResource HBControlGap}" RowSpacing="{StaticResource HBSpaceRow}">
+                                                        <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
                                                     </Grid>
-                                                    <TextBox x:Name="MetadataCommentBox" Header="Comment" AcceptsReturn="True" TextWrapping="Wrap" />
-                                                    <TextBlock Text="Metadata overrides are saved with each queued job."
-                                                               TextWrapping="Wrap" />
+                                                    <TextBlock x:Name="ChapterListText" Text="—" TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" />
                                                 </StackPanel>
                                             </ScrollViewer>
-                                        </TabViewItem>
-                                    </TabView>
+<ScrollViewer x:Name="MetadataPage" Visibility="Collapsed" HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                                                <Grid x:Name="MetadataFields" Padding="{StaticResource HBCardPadding}" ColumnSpacing="{StaticResource HBSpaceGroup}" RowSpacing="{StaticResource HBSpaceRow}">
+                                                    <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+                                                </Grid>
+                                            </ScrollViewer>
+                                    </Grid>
                                 </Grid>
                             </Border>
 

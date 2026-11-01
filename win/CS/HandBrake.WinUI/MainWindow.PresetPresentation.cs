@@ -162,7 +162,7 @@ public sealed partial class MainWindow
             return true;
         if (SourceTitlePicker.SelectedItem is ComboBoxItem { Tag: SourceTitle title } && title.ChapterList is { } chapters)
             return chapterNameEditors.Count != chapters.Count || chapterNameEditors
-                .Where((editor, index) => editor.Text.Trim() != (chapters[index].Name ?? string.Empty).Trim()).Any();
+                .Where((editor, index) => editor.Text.Trim() != ChapterSourceName(chapters[index], index).Trim()).Any();
         return false;
     }
 

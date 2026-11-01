@@ -98,6 +98,7 @@ public sealed partial class MainWindow
             job["Audio"]!["AudioList"] = JsonSerializer.SerializeToNode(BuildManualAudio(draft, title, originalPreset), JsonSettings.Options);
         if (!draft.UsePresetSubtitles)
         {
+            ValidateSubtitleDefaults(draft.Subtitles, draft.SubtitleImports);
             if ((draft.Subtitles?.Count(track => track.Burn) ?? 0) + (draft.SubtitleImports?.Count(track => track.Burn) ?? 0) +
                 (draft.ForeignAudioSearch && draft.ForeignAudioBurn ? 1 : 0) > 1)
                 throw new InvalidOperationException("Only one subtitle track can be burned into the video.");

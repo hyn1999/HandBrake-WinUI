@@ -183,24 +183,17 @@ public sealed partial class MainWindow
             ? $"{(double)rate.Num / rate.Den:0.###} fps"
             : "Unknown frame rate";
         string duration = FormatDuration(title.Duration);
-        int chapterCount = title.ChapterList?.Count ?? 0;
 
         RefreshDimensionsPresentation();
         PreviewMetadataText.Text = $"{resolution} · {fps}\n" +
                                    $"{duration} · {title.VideoCodec ?? "Unknown codec"}";
         PreviewSourceText.Text = title.Name ?? Path.GetFileName(title.Path) ?? "Video source";
-        ChapterListText.Text = chapterCount > 0
-            ? $"{chapterCount} chapter(s) detected in the source."
-            : "No chapters detected.";
+
 
         DisplayChapterEditor(title);
         DisplayAudioEditor(title);
 
         DisplaySubtitleEditor(title);
-        MetadataTitleBox.PlaceholderText = title.MetaData?.GetValueOrDefault("Name") ?? "Keep source title";
-        MetadataArtistBox.PlaceholderText = title.MetaData?.GetValueOrDefault("Artist") ?? "Keep source artist";
-        MetadataAlbumBox.PlaceholderText = title.MetaData?.GetValueOrDefault("Album") ?? "Keep source album";
-        MetadataCommentBox.PlaceholderText = title.MetaData?.GetValueOrDefault("Comment") ?? "Keep source comment";
         RefreshOutputSummary();
 
         // Queue restoration changes title, preset and overlays together. Decode
@@ -228,6 +221,8 @@ public sealed partial class MainWindow
         ForeignAudioBurnToggle.IsChecked = false;
         importedSubtitleEditors.Clear();
         ImportedSubtitleList.Children.Clear();
+        SubtitleImportStatus.Text = string.Empty;
+        SubtitleImportStatus.Visibility = Visibility.Collapsed;
         subtitleEditors.Clear();
         audioEditors.Clear();
         scannedTitles.Clear();
@@ -235,6 +230,7 @@ public sealed partial class MainWindow
         SourceTitlePicker.Visibility = Visibility.Collapsed;
         ClearResolvedSummary();
         ClearDimensionsPresentation();
+        RefreshMetadataPlaceholders();
         PreviewMetadataText.Text = "No decoded preview frame yet.";
         ResetPreview();
         AudioTrackList.Children.Clear();
@@ -243,6 +239,8 @@ public sealed partial class MainWindow
         AddDetailLine(SubtitleTrackList, "Waiting for source scan.");
         ChapterListText.Text = "Waiting for source scan.";
         ChapterEditorPanel.Children.Clear();
+        ChapterEditorPanel.RowDefinitions.Clear();
+        ImportChaptersButton.IsEnabled = ExportChaptersButton.IsEnabled = ResetChaptersButton.IsEnabled = false;
         chapterNameEditors.Clear();
         UpdatePresetPresentation();
     }

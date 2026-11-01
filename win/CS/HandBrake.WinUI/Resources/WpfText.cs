@@ -21,6 +21,21 @@ public static class WpfText
         => resources.GetString(key, CultureInfo.CurrentUICulture)
            ?? throw new InvalidOperationException($"Missing original HandBrake text: {key}");
 
+    public static string SummarySection => Label("MainView_SummaryTab");
+    public static string DimensionsSection => Label("MainView_PictureTab");
+    public static string FiltersSection => Label("MainView_FiltersTab");
+    public static string VideoSection => Label("MainView_VideoTab");
+    public static string AudioSection => Label("MainView_AudioTab");
+    public static string SubtitlesSection => Label("MainView_SubtitlesTab");
+    public static string ChaptersSection => Label("MainView_ChaptersTab");
+    public static string MetadataSection => Label("MainView_MetaDataTab");
+    public static string Reload => Label("Shared_ReloadDefaults");
+    public static string Clear => Label("Generic_Clear");
+    public static string ImportSubtitle => Label("SubtitlesView_ImportSubtitle");
+    public static string CreateChapters => Label("ChaptersView_CreateChapterMarkers");
+    public static string ImportChapters => Label("ChaptersView_Import");
+    public static string ExportChapters => Label("ChaptersView_Export");
+    public static string ResetChapters => Label("ChapterView_ResetChapterNames");
     public static string Video => Label("VideoView_Video");
     public static string VideoQuality => Label("VideoView_Quality");
     public static string ConstantQuality => Label("VideoView_ConstantQuality");

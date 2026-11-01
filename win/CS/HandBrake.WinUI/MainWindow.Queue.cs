@@ -184,6 +184,7 @@ public sealed partial class MainWindow
         if (draft.Subtitles.Count(track => track.Burn) + draft.SubtitleImports.Count(track => track.Burn) + (draft.ForeignAudioBurn ? 1 : 0) > 1)
             throw new InvalidOperationException("Select at most one subtitle track for burn-in.");
         BuildSubtitleTracks(draft.Subtitles, title, CurrentMux);
+        ValidateSubtitleDefaults(draft.Subtitles, draft.SubtitleImports);
         draft.AudioTracks = draft.UsePresetAudio ? new() : ReadAudioChoices();
         draft.FilterOverrides = new();
         // Native filter parameters were validated while capturing the full

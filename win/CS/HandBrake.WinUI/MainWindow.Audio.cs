@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HandBrake.Interop.Interop;
+using HandBrake.WinUI.Design;
+using HandBrake.WinUI.Resources;
 using HandBrake.Interop.Interop.Interfaces.Model.Encoders;
 using HandBrake.Interop.Interop.Json.Scan;
 using Microsoft.UI.Xaml;
@@ -29,29 +31,35 @@ public sealed partial class MainWindow
             var selected = new CheckBox
             {
                 IsChecked = true,
-                Content = $"{track.TrackNumber}. {track.Language ?? "Unknown language"} · {track.CodecName ?? track.Description ?? "Unknown codec"} · {track.ChannelCount} channels"
+                Content = new TextBlock { Text = $"{track.TrackNumber}. {track.Description ?? track.Language ?? "und"} · {track.CodecName} · {track.ChannelCount}", TextWrapping = TextWrapping.Wrap }
             };
-            var name = new TextBox { Header = "Output track name", Text = track.Name ?? string.Empty };
+            var name = new TextBox { Text = track.Name ?? string.Empty };
             selected.Checked += (_, _) => name.IsEnabled = true;
             selected.Unchecked += (_, _) => name.IsEnabled = false;
-            var encoder = new ComboBox { Header = "Output encoder", HorizontalAlignment = HorizontalAlignment.Stretch };
-            encoder.Items.Add(new ComboBoxItem { Content = "Use selected preset audio rule" });
+            var encoder = new ComboBox();
+            encoder.Items.Add(new ComboBoxItem { Content = WpfText.Label("SummaryView_Default") });
             foreach (var codec in HandBrakeEncoderHelpers.AudioEncoders.Where(codec => !codec.IsPassthru && !codec.IsLosslessEncoder && codec.ShortName != "none"))
                 encoder.Items.Add(new ComboBoxItem { Content = codec.DisplayName, Tag = codec.ShortName });
             encoder.SelectedIndex = 0;
-            var bitrate = new NumberBox { Header = "Bitrate (kbps)", Minimum = 6, Maximum = 1536, Value = 160, IsEnabled = false, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
+            var bitrate = new NumberBox { Minimum = 6, Maximum = 1536, Value = 160, IsEnabled = false, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
             encoder.SelectionChanged += (_, _) => bitrate.IsEnabled = selected.IsChecked == true && encoder.SelectedIndex > 0;
             selected.Checked += (_, _) => { encoder.IsEnabled = true; bitrate.IsEnabled = encoder.SelectedIndex > 0; };
             selected.Unchecked += (_, _) => { encoder.IsEnabled = false; bitrate.IsEnabled = false; };
-            var row = CompactRow(selected, encoder, bitrate, name);
-            AudioTrackList.Children.Add(new Border
-            {
-                Padding = new Thickness(4), CornerRadius = new CornerRadius(8),
-                Child = row
-            });
+            var row = new StackPanel { Spacing = CompactUi.RowGap };
+            row.Children.Add(selected);
+            row.Children.Add(CompactUi.AlignedFormRow(
+                new CompactFormField(WpfText.Label("AudioView_Codec"), encoder, FieldWidthRole.ShortChoice),
+                new CompactFormField(WpfText.Label("AudioView_Bitrate"), bitrate, FieldWidthRole.Number),
+                new CompactFormField(WpfText.Label("AudioView_TrackName"), name, FieldWidthRole.NamedChoice)));
+            AudioTrackList.Children.Add(new Border { Style = CompactUi.Resource<Style>("HBCompactTrackRowStyle"), Child = row });
+            selected.Checked += (_, _) => RefreshTrackPresentation();
+            selected.Unchecked += (_, _) => RefreshTrackPresentation();
+            encoder.SelectionChanged += (_, _) => RefreshTrackPresentation();
+            bitrate.ValueChanged += (_, _) => RefreshTrackPresentation();
+            name.TextChanged += (_, _) => RefreshTrackPresentation();
             audioEditors.Add(new AudioEditor(track.TrackNumber, selected, name, encoder, bitrate));
         }
-        if (audioEditors.Count == 0) AddDetailLine(AudioTrackList, "No audio tracks detected. Output will have no audio.");
+        if (audioEditors.Count == 0) AddDetailLine(AudioTrackList, WpfText.Label("SummaryView_NoAudioTracks"));
     }
 
     private List<AudioTrackChoice> ReadAudioChoices()
@@ -90,3 +98,4 @@ public sealed partial class MainWindow
         return selected;
     }
 }
+

@@ -30,6 +30,7 @@ public sealed partial class MainWindow : Window
         InitializeDimensionsPresentation();
         InitializeSourceRangeEditor();
         InitializePresetTracking();
+        InitializeRemainingSettingsPresentation();
         Closed += (_, _) => detachedPreview?.Close();
         InitializeNativeDiagnostics();
         ExtendsContentIntoTitleBar = true;
@@ -218,11 +219,11 @@ public sealed partial class MainWindow : Window
         storyboard.Begin();
     }
 
-    private void EditorTabs_SelectionChanged(object sender, SelectionChangedEventArgs args)
+    private void EditorTabs_SelectionChanged(SelectorBar sender, SelectorBarSelectionChangedEventArgs args)
     {
+        if (!settingsPresentationReady) return;
+        ShowSettingsPage();
         RefreshOutputSummary();
-        if (sender is TabView tabs && tabs.SelectedItem is TabViewItem item && item.Content is UIElement content)
-            AnimateOpacity(content, 0, 1, 140);
     }
 
     private void OpenSource_AcceleratorInvoked(KeyboardAccelerator sender, KeyboardAcceleratorInvokedEventArgs args)

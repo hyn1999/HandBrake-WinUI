@@ -36,6 +36,7 @@ public sealed partial class MainWindow
 
     private void RefreshOutputSummary()
     {
+        RefreshMetadataPlaceholders();
         UpdatePresetPresentation();
         RefreshDimensionsPresentation();
         ScheduleResolvedSummary();
@@ -67,17 +68,5 @@ public sealed partial class MainWindow
     {
         if (ForeignAudioForcedToggle is not null) ForeignAudioForcedToggle.IsEnabled = ForeignAudioSearchToggle.IsChecked == true;
         if (ForeignAudioBurnToggle is not null) ForeignAudioBurnToggle.IsEnabled = ForeignAudioSearchToggle.IsChecked == true;
-    }
-    private void DisplayChapterEditor(HandBrake.Interop.Interop.Json.Scan.SourceTitle title)
-    {
-        ChapterEditorPanel.Children.Clear();
-        chapterNameEditors.Clear();
-        foreach (var chapter in title.ChapterList ?? new())
-        {
-            var name = new TextBox { Text = chapter.Name ?? string.Empty, Header = $"Chapter {chapterNameEditors.Count + 1}" };
-            name.TextChanged += (_, _) => UpdatePresetPresentation();
-            chapterNameEditors.Add(name);
-            ChapterEditorPanel.Children.Add(name);
-        }
     }
 }

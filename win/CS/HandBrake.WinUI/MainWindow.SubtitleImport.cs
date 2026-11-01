@@ -4,6 +4,8 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using HandBrake.Interop.Interop;
+using HandBrake.WinUI.Design;
+using HandBrake.WinUI.Resources;
 using HandBrake.Interop.Interop.Json.Encode;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -14,11 +16,12 @@ namespace HandBrake.WinUI;
 public sealed record ImportedSubtitle(string Path, string Language, string Name, int Offset)
 {
     public bool Burn { get; init; }
+    public bool Default { get; init; }
 }
 
 public sealed partial class MainWindow
 {
-    private sealed record ImportEditor(string Path, TextBox Language, TextBox Name, NumberBox Offset, CheckBox Burn, Border Card);
+    private sealed record ImportEditor(string Path, TextBox Language, TextBox Name, NumberBox Offset, CheckBox Burn, CheckBox Default, Border Card);
     private readonly List<ImportEditor> importedSubtitleEditors = new();
 
     private async void ImportSubtitle_Click(object sender, RoutedEventArgs args)
@@ -33,26 +36,47 @@ public sealed partial class MainWindow
                 if (importedSubtitleEditors.Any(editor => string.Equals(editor.Path, file.Path, StringComparison.OrdinalIgnoreCase))) continue;
                 AddImportedSubtitleEditor(new ImportedSubtitle(file.Path, "und", Path.GetFileNameWithoutExtension(file.Path), 0));
             }
-            SubtitleImportStatus.Text = "Imported SRT tracks will be captured when you stage the selected title. Files remain at their original paths.";
+            SubtitleImportStatus.Visibility = Visibility.Collapsed;
+            RefreshTrackPresentation();
         }
-        catch (Exception error) { SubtitleImportStatus.Text = "Unable to import subtitles: " + error.Message; }
+        catch (Exception error) { SubtitleImportStatus.Text = "Unable to import subtitles: " + error.Message; SubtitleImportStatus.Visibility = Visibility.Visible; }
     }
 
     private void AddImportedSubtitleEditor(ImportedSubtitle import)
     {
-        var language = new TextBox { Header = "Language (3-letter ISO code)", Text = import.Language, MaxLength = 3 };
-        var name = new TextBox { Header = "Output track name", Text = import.Name };
-        var offset = new NumberBox { Header = "Offset (milliseconds)", Value = import.Offset, Minimum = -3600000, Maximum = 3600000, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
-        var burn = new CheckBox { Content = "Burn into video", IsChecked = import.Burn };
-        var remove = new Button { Content = "Remove" };
-        var row = new StackPanel { Spacing = 4 };
-        row.Children.Add(new TextBlock { Text = import.Path, TextTrimming = TextTrimming.CharacterEllipsis });
-        row.Children.Add(CompactRow(language, name, offset, burn, remove));
-        var card = new Border { Padding = new Thickness(4), Child = row };
-        var editor = new ImportEditor(import.Path, language, name, offset, burn, card);
-        remove.Click += (_, _) => { importedSubtitleEditors.Remove(editor); ImportedSubtitleList.Children.Remove(card); };
+        var language = new TextBox { Text = import.Language, MaxLength = 3 };
+        var name = new TextBox { Text = import.Name };
+        var offset = new NumberBox { Value = import.Offset, Minimum = -3600000, Maximum = 3600000, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
+        var burn = new CheckBox { Content = WpfText.Label("SubtitlesView_BurnIn"), IsChecked = import.Burn };
+        var defaultTrack = new CheckBox { Content = WpfText.Label("SubtitlesView_Default"), IsChecked = import.Default, IsEnabled = !import.Burn };
+        var remove = CompactUi.IconCommand(Symbol.Delete, WpfText.Label("QueueView_Delete"));
+        var row = new StackPanel { Spacing = CompactUi.RowGap };
+        var source = new TextBlock { Text = import.Path, TextTrimming = TextTrimming.CharacterEllipsis };
+        ToolTipService.SetToolTip(source, CompactUi.Help(import.Path));
+        row.Children.Add(source);
+        row.Children.Add(CompactUi.AlignedFormRow(
+            new CompactFormField(WpfText.Label("OptionsView_Language"), language, FieldWidthRole.ShortNumber),
+            new CompactFormField(WpfText.Label("AudioView_TrackName"), name, FieldWidthRole.NamedChoice),
+            new CompactFormField("Offset (ms)", offset, FieldWidthRole.Number)));
+        row.Children.Add(CompactUi.AlignedFormRow(
+            new CompactFormField("", burn, FieldWidthRole.ShortChoice),
+            new CompactFormField("", defaultTrack, FieldWidthRole.ShortChoice),
+            new CompactFormField("", remove, FieldWidthRole.ShortNumber)));
+        ToolTipService.SetToolTip(burn, CompactUi.Help(WpfText.Tooltip("SubtitlesView_BurnIn")));
+        burn.Checked += (_, _) => { SelectSubtitleBurnTarget(burn); defaultTrack.IsChecked = false; defaultTrack.IsEnabled = false; RefreshTrackPresentation(); };
+        burn.Unchecked += (_, _) => { defaultTrack.IsEnabled = true; RefreshTrackPresentation(); };
+        defaultTrack.Checked += (_, _) => { SelectSubtitleDefaultTarget(defaultTrack); RefreshTrackPresentation(); };
+        defaultTrack.Unchecked += (_, _) => RefreshTrackPresentation();
+        language.TextChanged += (_, _) => RefreshTrackPresentation();
+        name.TextChanged += (_, _) => RefreshTrackPresentation();
+        offset.ValueChanged += (_, _) => RefreshTrackPresentation();
+        var card = new Border { Style = CompactUi.Resource<Style>("HBCompactTrackRowStyle"), Child = row };
+        var editor = new ImportEditor(import.Path, language, name, offset, burn, defaultTrack, card);
+        remove.Click += (_, _) => { importedSubtitleEditors.Remove(editor); ImportedSubtitleList.Children.Remove(card); RefreshTrackPresentation(); };
         importedSubtitleEditors.Add(editor);
         ImportedSubtitleList.Children.Add(card);
+        if (burn.IsChecked == true) SelectSubtitleBurnTarget(burn);
+        if (defaultTrack.IsChecked == true) SelectSubtitleDefaultTarget(defaultTrack);
     }
 
     private static void ValidateSubtitleFile(string path)
@@ -76,7 +100,7 @@ public sealed partial class MainWindow
                 !double.IsFinite(offset) || offset != Math.Truncate(offset) || Math.Abs(offset) > 3600000)
                 throw new InvalidOperationException("Use a 3-letter subtitle language code and a whole offset within one hour.");
             ValidateSubtitleFile(editor.Path);
-            result.Add(new ImportedSubtitle(editor.Path, language, editor.Name.Text.Trim(), (int)offset) { Burn = editor.Burn.IsChecked == true });
+            result.Add(new ImportedSubtitle(editor.Path, language, editor.Name.Text.Trim(), (int)offset) { Burn = editor.Burn.IsChecked == true, Default = editor.Default.IsChecked == true });
         }
         return result;
     }
@@ -92,7 +116,8 @@ public sealed partial class MainWindow
             ValidateSubtitleFile(import.Path);
             if (import.Language.Length != 3 || import.Language.Any(character => character < 'a' || character > 'z') || Math.Abs((long)import.Offset) > 3600000)
                 throw new InvalidOperationException("Saved subtitle import settings are invalid. Re-stage this job.");
-            result.Add(new SubtitleTrack { Track = -1, Burn = import.Burn, Default = false, Forced = false,
+            if (import.Burn && import.Default) throw new InvalidOperationException("A burned subtitle cannot also be the default track.");
+            result.Add(new SubtitleTrack { Track = -1, Burn = import.Burn, Default = import.Default, Forced = false,
                 Offset = import.Offset, Name = import.Name,
                 Import = new SubImport { Filename = import.Path, Format = "SRT", Codeset = "UTF-8", Language = import.Language } });
         }

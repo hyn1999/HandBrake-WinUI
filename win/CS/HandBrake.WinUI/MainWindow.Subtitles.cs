@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using HandBrake.Interop.Interop;
+using HandBrake.WinUI.Design;
+using HandBrake.WinUI.Resources;
 using HandBrake.Interop.Interop.HbLib;
 using HandBrake.Interop.Interop.Json.Scan;
 using Microsoft.UI.Xaml;
@@ -27,27 +29,43 @@ public sealed partial class MainWindow
         SubtitleTrackList.Children.Clear();
         foreach (var track in title.SubtitleList ?? new List<SourceSubtitleTrack>())
         {
-            var selected = new CheckBox { Content = $"{track.TrackNumber}. {track.Language ?? "Unknown language"} · {track.SourceName ?? track.Format}" };
-            var defaultTrack = new CheckBox { Content = "Default", IsEnabled = false };
-            var forced = new CheckBox { Content = "Forced only", IsEnabled = false };
-            var burn = new CheckBox { Content = "Burn into video", IsEnabled = false };
+            var selected = new CheckBox { Content = new TextBlock { Text = $"{track.TrackNumber}. {track.Language ?? "und"} · {track.SourceName ?? track.Format}", TextWrapping = TextWrapping.Wrap } };
+            var defaultTrack = new CheckBox { Content = WpfText.Label("SubtitlesView_Default"), IsEnabled = false };
+            var forced = new CheckBox { Content = WpfText.Label("SubtitlesView_ForcedOnly"), IsEnabled = false };
+            var burn = new CheckBox { Content = WpfText.Label("SubtitlesView_BurnIn"), IsEnabled = false };
             bool canBurn = HandBrakeSubtitleHelpers.CheckCanBurnSubtitle(track.Source) != 0;
             bool canForce = HandBrakeSubtitleHelpers.CheckCanForceSubtitle(track.Source) != 0;
-            var offset = new NumberBox { Header = "Offset (milliseconds)", Value = 0, Minimum = -3600000, Maximum = 3600000, IsEnabled = false, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
-            var name = new TextBox { Header = "Output track name", Text = track.Name ?? string.Empty, IsEnabled = false };
+            var offset = new NumberBox { Value = 0, Minimum = -3600000, Maximum = 3600000, IsEnabled = false, SpinButtonPlacementMode = NumberBoxSpinButtonPlacementMode.Inline };
+            var name = new TextBox { Text = track.Name ?? string.Empty, IsEnabled = false };
             selected.Checked += (_, _) => { defaultTrack.IsEnabled = burn.IsChecked != true; burn.IsEnabled = canBurn; forced.IsEnabled = canForce; offset.IsEnabled = true; name.IsEnabled = true; };
             selected.Unchecked += (_, _) => { defaultTrack.IsEnabled = forced.IsEnabled = burn.IsEnabled = offset.IsEnabled = name.IsEnabled = false; };
             defaultTrack.Checked += (_, _) =>
             {
-                foreach (var other in subtitleEditors.Where(other => other.Default != defaultTrack)) other.Default.IsChecked = false;
+                SelectSubtitleDefaultTarget(defaultTrack);
             };
-            burn.Checked += (_, _) => { defaultTrack.IsChecked = false; defaultTrack.IsEnabled = false; };
+            burn.Checked += (_, _) => { SelectSubtitleBurnTarget(burn); defaultTrack.IsChecked = false; defaultTrack.IsEnabled = false; };
             burn.Unchecked += (_, _) => defaultTrack.IsEnabled = selected.IsChecked == true;
-            var row = CompactRow(selected, forced, burn, defaultTrack, offset, name);
-            SubtitleTrackList.Children.Add(new Border { Padding = new Thickness(4), CornerRadius = new CornerRadius(8), Child = row });
+            ToolTipService.SetToolTip(burn, CompactUi.Help(WpfText.Tooltip("SubtitlesView_BurnIn")));
+            var row = new StackPanel { Spacing = CompactUi.RowGap };
+            row.Children.Add(selected);
+            row.Children.Add(CompactUi.AlignedFormRow(
+                new CompactFormField("", forced, FieldWidthRole.ShortChoice),
+                new CompactFormField("", burn, FieldWidthRole.ShortChoice),
+                new CompactFormField("", defaultTrack, FieldWidthRole.ShortChoice)));
+            row.Children.Add(CompactUi.AlignedFormRow(
+                new CompactFormField("Offset (ms)", offset, FieldWidthRole.Number),
+                new CompactFormField(WpfText.Label("AudioView_TrackName"), name, FieldWidthRole.NamedChoice)));
+            SubtitleTrackList.Children.Add(new Border { Style = CompactUi.Resource<Style>("HBCompactTrackRowStyle"), Child = row });
+            foreach (var toggle in new[] { selected, forced, burn, defaultTrack })
+            {
+                toggle.Checked += (_, _) => RefreshTrackPresentation();
+                toggle.Unchecked += (_, _) => RefreshTrackPresentation();
+            }
+            offset.ValueChanged += (_, _) => RefreshTrackPresentation();
+            name.TextChanged += (_, _) => RefreshTrackPresentation();
             subtitleEditors.Add(new SubtitleEditor(track.TrackNumber, selected, defaultTrack, forced, burn, offset, name));
         }
-        if (subtitleEditors.Count == 0) AddDetailLine(SubtitleTrackList, "No internal subtitle tracks detected.");
+        if (subtitleEditors.Count == 0) AddDetailLine(SubtitleTrackList, WpfText.Label("SummaryView_NoSubtitleTracks"));
     }
 
     private List<SubtitleChoice> ReadSubtitleChoices()
@@ -88,3 +106,4 @@ public sealed partial class MainWindow
         return result;
     }
 }
+
