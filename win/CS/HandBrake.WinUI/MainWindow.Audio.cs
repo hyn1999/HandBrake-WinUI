@@ -28,10 +28,12 @@ public sealed partial class MainWindow
         AudioTrackList.Children.Clear();
         foreach (var track in title.AudioList ?? new List<SourceAudioTrack>())
         {
+            string sourceDescription = !string.IsNullOrWhiteSpace(track.Description) ? track.Description
+                : $"{track.Language ?? "und"} · {track.CodecName} · {track.ChannelCount}";
             var selected = new CheckBox
             {
                 IsChecked = true,
-                Content = new TextBlock { Text = $"{track.TrackNumber}. {track.Description ?? track.Language ?? "und"} · {track.CodecName} · {track.ChannelCount}", TextWrapping = TextWrapping.Wrap }
+                Content = new TextBlock { Text = $"{track.TrackNumber}. {sourceDescription}", TextWrapping = TextWrapping.Wrap }
             };
             var name = new TextBox { Text = track.Name ?? string.Empty };
             selected.Checked += (_, _) => name.IsEnabled = true;
