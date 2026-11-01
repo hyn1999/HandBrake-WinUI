@@ -13,6 +13,11 @@ namespace HandBrake.Interop.Interop
 
     public class HandBrakeSubtitleHelpers
     {
+        public static int CheckCanPassSubtitle(int source, int mux)
+        {
+            return HBFunctions.hb_subtitle_can_pass(source, mux);
+        }
+
         public static int CheckCanForceSubtitle(int source)
         {
             return HBFunctions.hb_subtitle_can_force(source);

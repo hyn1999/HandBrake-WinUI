@@ -223,7 +223,13 @@ namespace HandBrake.Interop.Interop
         {
             // Fetch the image data from LibHb
             string taskJson = JsonSerializer.Serialize(settings, JsonSettings.Options);
+            return this.GetPreview(taskJson, previewNumber);
+        }
+
+        public RawPreviewData GetPreview(string taskJson, int previewNumber)
+        {
             IntPtr resultingImageStruct = HBFunctions.hb_get_preview3_json(this.Handle, previewNumber, taskJson);
+            if (resultingImageStruct == IntPtr.Zero) throw new InvalidOperationException("HandBrake could not decode the preview frame.");
             hb_image_s image = InteropUtilities.ToStructureFromPtr<hb_image_s>(resultingImageStruct);
 
             // Copy the filled image buffer to a managed array.
@@ -267,12 +273,14 @@ namespace HandBrake.Interop.Interop
             return null;
         }
 
-        /// <summary>
-        /// Starts an encode with the given job.
-        /// </summary>
-        /// <param name="encodeObject">
-        /// The encode Object.
-        /// </param>
+        /// <summary>Resolve a complete native preset for a title scanned on this instance.</summary>
+        public string CreatePresetJob(int titleIndex, string presetJson)
+        {
+            if (this.disposed) throw new ObjectDisposedException(nameof(HandBrakeInstance));
+            return HandBrakePresetJob.Create(this.Handle, titleIndex, presetJson);
+        }
+
+        /// <summary>Starts an encode with the given job.</summary>
         public void StartEncode(JsonEncodeObject encodeObject)
         {
             string encode = JsonSerializer.Serialize(encodeObject, JsonSettings.Options);
@@ -285,7 +293,15 @@ namespace HandBrake.Interop.Interop
         /// <param name="encodeJson">The JSON for the job to start.</param>
         public void StartEncode(string encodeJson)
         {
-            HBFunctions.hb_add_json(this.Handle, InteropUtilities.ToUtf8PtrFromString(encodeJson));
+            if (this.Handle == IntPtr.Zero || this.disposed) throw new InvalidOperationException("The HandBrake instance is unavailable.");
+            using (JsonDocument.Parse(encodeJson)) { }
+            IntPtr json = InteropUtilities.ToUtf8PtrFromString(encodeJson);
+            try
+            {
+                if (HBFunctions.hb_add_json(this.Handle, json) <= 0)
+                    throw new InvalidOperationException("HandBrake could not queue the encode job.");
+            }
+            finally { Marshal.FreeHGlobal(json); }
             HBFunctions.hb_start(this.Handle);
 
             this.encodePollTimer = new Timer();

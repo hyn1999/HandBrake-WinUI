@@ -1,0 +1,686 @@
+{
+  "schema_version": 1,
+  "audit_date": "2026-10-30",
+  "repository": "hyn1999/HandBrake-WinUI",
+  "source_commit": "467c0754ffc00a591fccefb3736b808a798b4534",
+  "scope": "Static source comparison of Workspace and Queue, with supporting models and services. Preferences and runtime parity are outside this audit.",
+  "runtime_tests": "Not run. No Windows execution, native encode verification or build.",
+  "status_legend": {
+    "partial": "Some implementation exists; important behavior is incomplete.",
+    "missing": "Audited WinUI flow lacks the reference behavior.",
+    "different": "Behavior differs; choose policy deliberately.",
+    "reference_only": "Reference code is inactive or unwired; not proof of shipped behavior.",
+    "reuse_candidate": "Portable extraction candidate; dependencies must be traced."
+  },
+  "priority_legend": {
+    "P0": "Task correctness and lossless edit/encode flow.",
+    "P1": "Complete user-facing controls and validation.",
+    "P2": "Later capability or deliberate UX policy."
+  },
+  "reviewed_files": [
+    "win/CS/HandBrakeWPF/ViewModels/MainViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/SummaryViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/PictureSettingsViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/FiltersViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/VideoViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/AudioViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/SubtitlesViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/ChaptersViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/QueueViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/StaticPreviewViewModel.cs",
+    "win/CS/HandBrakeWPF/Services/Queue/QueueService.cs",
+    "win/CS/HandBrakeWPF/Services/Queue/ActiveJob.cs",
+    "win/CS/HandBrakeWPF/Services/Queue/QueueResourceService.cs",
+    "win/CS/HandBrakeWPF/Services/Queue/Model/QueueTask.cs",
+    "win/CS/HandBrakeWPF/Services/Queue/Model/QueueStats.cs",
+    "win/CS/HandBrakeWPF/Services/Queue/Interfaces/IQueueService.cs",
+    "win/CS/HandBrakeWPF/Services/Encode/Factories/EncodeTaskFactory.cs",
+    "win/CS/HandBrakeWPF/Services/Encode/Model/EncodeTask.cs",
+    "win/CS/HandBrakeWPF/Services/Encode/LibEncode.cs",
+    "win/CS/HandBrakeWPF/Services/Presets/Factories/JsonPresetFactory.cs",
+    "win/CS/HandBrakeWPF/Services/Presets/PresetService.cs",
+    "win/CS/HandBrakeWPF/HandBrakeWPF.csproj",
+    "win/CS/HandBrake.App.Core/HandBrake.App.Core.csproj",
+    "win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj",
+    "win/CS/HandBrakeWPF/Instance/HandBrakeInstanceManager.cs",
+    "win/CS/HandBrakeWPF/ViewModels/ViewModelBase.cs",
+    "win/CS/HandBrakeWPF/ViewModels/MetaDataViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/AudioDefaultsViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/AudioAdvancedViewModel.cs",
+    "win/CS/HandBrakeWPF/ViewModels/SubtitlesDefaultsViewModel.cs",
+    "win/CS/HandBrakeWPF/Services/Encode/Model/Models/AudioTrack.cs",
+    "win/CS/HandBrakeWPF/Services/Encode/Model/Models/SubtitleTrack.cs",
+    "win/CS/HandBrakeWPF/Services/Encode/Model/Models/Filters/AudioVideoFilter.cs",
+    "win/CS/HandBrakeWPF/Model/Filters/PaddingFilter.cs",
+    "win/CS/HandBrakeWPF/ViewModelItems/Filters/RotateFlipFilter.cs",
+    "win/CS/HandBrakeWPF/Services/PrePostActionService.cs",
+    "win/CS/HandBrakeWPF/Views/MainView.xaml",
+    "win/CS/HandBrakeWPF/Views/QueueView.xaml",
+    "win/CS/HandBrake.App.Core/Utilities/CsvHelper.cs",
+    "win/CS/HandBrake.App.Core/Utilities/DirectoryUtilities.cs",
+    "win/CS/HandBrake.App.Core/Utilities/FileHelper.cs",
+    "win/CS/HandBrake.Interop/Interop/HandBrakePictureHelpers.cs",
+    "win/CS/HandBrakeWPF/ViewModels/PropertyChangedBase.cs",
+    "win/CS/HandBrakeWPF/Services/Encode/Model/Models/MetaDataValue.cs",
+    "win/CS/HandBrake.WinUI/PreferencesView.xaml",
+    "win/CS/HandBrake.WinUI/MainWindow.Presets.cs",
+    "win/CS/HandBrake.WinUI/App.xaml",
+    "win/CS/HandBrake.WinUI/MainWindow.SourceRange.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Diagnostics.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Dimensions.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Encode.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.NativeJob.cs",
+    "win/CS/HandBrake.WinUI/PreviewWindow.xaml",
+    "win/CS/HandBrake.WinUI/PreferencesView.xaml.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.WorkspaceLayout.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.PresetPresentation.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.DetachedPreview.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Preview.cs",
+    "win/CS/HandBrake.WinUI/App.xaml.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Audio.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.SourcePresentation.cs",
+    "win/CS/HandBrake.WinUI/AppPreferences.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.OutputSummary.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.SubtitleImport.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.xaml.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Queue.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.VideoOptions.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Preferences.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Filters.cs",
+    "win/CS/HandBrake.WinUI/PreviewWindow.xaml.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Subtitles.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.Scan.cs",
+    "win/CS/HandBrake.WinUI/MainWindow.xaml",
+    "win/CS/HandBrake.WinUI/MainWindow.QueueDetails.cs"
+  ],
+  "items": [
+    {
+      "id": "ARC-01",
+      "area": "Shared application logic",
+      "status": "partial",
+      "priority": "P0",
+      "finding": "Core/Interop references do not provide the WPF task model, factory and queue service. WinUI builds native jobs with separate overlays.",
+      "next": "Extract a portable task model with dependency closure; do not reference the WPF executable.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Encode/Model/EncodeTask.cs",
+          "anchor": "class EncodeTask",
+          "line": 36
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/HandBrake.WinUI.csproj",
+          "anchor": "ProjectReference",
+          "line": 29
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "ARC-02",
+      "area": "Portable notification model",
+      "status": "reuse_candidate",
+      "priority": "P1",
+      "finding": "PropertyChangedBase is a custom notification implementation. ViewModelBase also carries presentation/window dependencies.",
+      "next": "Move portable models and notifications independently; adapt dialogs, dispatcher, settings and windows.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/PropertyChangedBase.cs",
+          "anchor": "class PropertyChangedBase",
+          "line": 18
+        },
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/ViewModelBase.cs",
+          "anchor": "class ViewModelBase",
+          "line": 21
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "SRC-01",
+      "area": "Start current task",
+      "status": "different",
+      "priority": "P0",
+      "finding": "WPF can validate and enqueue the current task before starting when its queue is empty. WinUI starts pending queued entries.",
+      "next": "Provide one canonical validated snapshot for Add to queue and Start current task.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/MainViewModel.cs",
+          "anchor": "public void StartEncode(",
+          "line": 1370
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Encode.cs",
+          "anchor": "Start",
+          "line": 55
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "DST-01",
+      "area": "Destination validation",
+      "status": "partial",
+      "priority": "P0",
+      "finding": "WPF validates overwrite, writable directory, disk space, duplicate paths and subtitle constraints before cloning the task; WinUI validation is narrower.",
+      "next": "Share validation rules and field errors.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/MainViewModel.cs",
+          "anchor": "AddQueueError AddToQueue",
+          "line": 1060
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Encode.cs",
+          "anchor": "Destination",
+          "line": 90
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "DST-02",
+      "area": "Missing output directory",
+      "status": "different",
+      "priority": "P1",
+      "finding": "WPF creates missing destination directories; WinUI rejects a nonexistent parent.",
+      "next": "Document and test directory creation policy.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Encode/LibEncode.cs",
+          "anchor": "VerifyEncodeDestinationPath",
+          "line": 136
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Encode.cs",
+          "anchor": "Directory.Exists",
+          "line": 84
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "SUM-01",
+      "area": "Output formats",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "WPF source offers MP4, MOV, MKV and WebM. WinUI omits MOV.",
+      "next": "Validate MOV mux options and compatibility before adding it.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/SummaryViewModel.cs",
+          "anchor": "OutputFormats",
+          "line": 125
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.xaml",
+          "anchor": "MP4",
+          "line": 318
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "PIC-01",
+      "area": "Picture geometry",
+      "status": "partial",
+      "priority": "P0",
+      "finding": "Manual width/crop editing lacks full anamorphic/PAR, scaling, rotation/flip and padding controls. Applying manual geometry removes preset rotation and padding.",
+      "next": "Reuse native geometry helpers; preserve independent operations.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/PictureSettingsViewModel.cs",
+          "anchor": "GetPictureSettings",
+          "line": 740
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.NativeJob.cs",
+          "anchor": "ROTATE",
+          "line": 122
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "FIL-01",
+      "area": "Filter catalog",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "WPF enumerates native filters with category rules; WinUI manual editor uses a whitelist and excludes custom settings. Inherited native presets cover more.",
+      "next": "Share native capability and category validation.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/FiltersViewModel.cs",
+          "anchor": "GetHandBrakeFilters",
+          "line": 42
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Filters.cs",
+          "anchor": "custom",
+          "line": 40
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "VID-01",
+      "area": "Quality slider",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "WPF transforms slider direction and configured steps. WinUI raw encoder limits do not establish equivalent slider behavior.",
+      "next": "Share quality conversions; check endpoints and value round trips.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/VideoViewModel.cs",
+          "anchor": "CalculateQualityValue",
+          "line": 214
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.VideoOptions.cs",
+          "anchor": "partial class MainWindow",
+          "line": 11
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "VID-02",
+      "area": "Tune combinations",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "Single-tune plus fast-decode editing is narrower than WPF tune combinations.",
+      "next": "Preserve compound preset values and use native capabilities.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Encode/Factories/EncodeTaskFactory.cs",
+          "anchor": "VideoTunes",
+          "line": 272
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.VideoOptions.cs",
+          "anchor": "partial class MainWindow",
+          "line": 11
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "AUD-01",
+      "area": "Audio output model",
+      "status": "partial",
+      "priority": "P0",
+      "finding": "WinUI manual editing permits one output per source with encoder/name/bitrate. WPF supports multiple outputs, quality, mixdown, sample rate, gain, DRC, passthrough/fallback and filters. Native preset rules cover more than the manual editor.",
+      "next": "Represent ordered output tracks independently from source tracks.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Encode/Factories/EncodeTaskFactory.cs",
+          "anchor": "CreateAudio",
+          "line": 62
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Audio.cs",
+          "anchor": "partial class MainWindow",
+          "line": 18
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "AUD-02",
+      "area": "Audio defaults",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "Preset audio rules are inherited, but full editable language/selection/output defaults are absent.",
+      "next": "Extract selection policies before their UI.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/AudioDefaultsViewModel.cs",
+          "anchor": "class AudioDefaultsViewModel",
+          "line": 39
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Audio.cs",
+          "anchor": "partial class MainWindow",
+          "line": 18
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "SUB-01",
+      "area": "Subtitle import",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "WPF supports SRT/SSA/ASS; WinUI imports strict UTF-8 SRT.",
+      "next": "Preserve language, encoding, name, offset and compatibility.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/SubtitlesViewModel.cs",
+          "anchor": "ImportSubtitle",
+          "line": 254
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.SubtitleImport.cs",
+          "anchor": "partial class MainWindow",
+          "line": 19
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "SUB-02",
+      "area": "Subtitle defaults",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "Basic tracks/foreign search exist; complete selection defaults and foreign-search default editing remain incomplete.",
+      "next": "Share language and burn/default/forced validation.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/SubtitlesDefaultsViewModel.cs",
+          "anchor": "class SubtitlesDefaultsViewModel",
+          "line": 33
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Subtitles.cs",
+          "anchor": "partial class MainWindow",
+          "line": 18
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "CH-01",
+      "area": "Chapters",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "WinUI has marker/name editing; WPF also has duration and chapter import/export.",
+      "next": "Reuse CSV helpers and validate chapter count/timing.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/ChaptersViewModel.cs",
+          "anchor": "class ChaptersViewModel",
+          "line": 34
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.xaml.cs",
+          "anchor": "partial class MainWindow",
+          "line": 20
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "META-01",
+      "area": "Metadata",
+      "status": "reference_only",
+      "priority": "P2",
+      "finding": "WPF metadata tab is commented out. Its metadata/artwork model is reference-only for visible parity; WinUI exposes four fields.",
+      "next": "Keep the useful extra tab; separate source values and overrides.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Views/MainView.xaml",
+          "anchor": "metaTab",
+          "line": 703
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.xaml.cs",
+          "anchor": "partial class MainWindow",
+          "line": 20
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "PV-01",
+      "area": "Preview",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "WinUI expanded preview navigates still frames. WPF additionally encodes preview clips with duration/crop/player controls.",
+      "next": "Keep the command inside the preview card; add full-task clip encoding.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/StaticPreviewViewModel.cs",
+          "anchor": "EncodeFile",
+          "line": 443
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.DetachedPreview.cs",
+          "anchor": "partial class MainWindow",
+          "line": 5
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-01",
+      "area": "Queue editing",
+      "status": "missing",
+      "priority": "P0",
+      "finding": "WPF Edit rescans and restores the complete cloned task across tabs, range and destination. WinUI Open source does not restore the queued configuration.",
+      "next": "Implement full snapshot round-trip before labelling an action Edit.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/MainViewModel.cs",
+          "anchor": "QueueEditAction",
+          "line": 1422
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Queue.cs",
+          "anchor": "partial class MainWindow",
+          "line": 102
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-02",
+      "area": "Queue lifecycle",
+      "status": "partial",
+      "priority": "P0",
+      "finding": "WinUI has persistent IDs, pending-only execution, pause/resume, retry/reset/reorder and interrupted recovery. This is meaningful coverage, not runtime-proven parity.",
+      "next": "Test state transitions and recovery with a native CPU encode.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Queue/QueueService.cs",
+          "anchor": "class QueueService",
+          "line": 47
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Queue.cs",
+          "anchor": "partial class MainWindow",
+          "line": 102
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-03",
+      "area": "Statistics",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "WinUI reports progress/FPS/ETA and attempt data; elapsed wall time includes pauses and is narrower than WPF paused-duration/source-output accounting.",
+      "next": "Use a clock and explicit active/paused durations.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Queue/Model/QueueStats.cs",
+          "anchor": "class QueueStats",
+          "line": 20
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.QueueDetails.cs",
+          "anchor": "partial class MainWindow",
+          "line": 11
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-04",
+      "area": "Worker isolation",
+      "status": "missing",
+      "priority": "P1",
+      "finding": "WPF can select isolated workers and configurable hardware policy. WinUI creates local instances and initializes noHardware=true while hardware choices require verification.",
+      "next": "Separate CPU correctness from hardware/worker support; gate unsupported capabilities.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Instance/HandBrakeInstanceManager.cs",
+          "anchor": "GetEncodeInstance",
+          "line": 56
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Encode.cs",
+          "anchor": "partial class MainWindow",
+          "line": 27
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-05",
+      "area": "Concurrency",
+      "status": "missing",
+      "priority": "P2",
+      "finding": "WPF resource scheduling supports configured concurrency and hardware tokens. WinUI is sequential.",
+      "next": "Keep sequential mode until task correctness and cancellation are reliable.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Queue/QueueResourceService.cs",
+          "anchor": "class QueueResourceService",
+          "line": 21
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Encode.cs",
+          "anchor": "partial class MainWindow",
+          "line": 27
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-06",
+      "area": "Stop after current",
+      "status": "missing",
+      "priority": "P1",
+      "finding": "WPF distinguishes immediate stop and finishing current work; WinUI provides immediate stop.",
+      "next": "Add explicit Stop now and Stop after current commands.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/QueueViewModel.cs",
+          "anchor": "StopQueue",
+          "line": 325
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Encode.cs",
+          "anchor": "partial class MainWindow",
+          "line": 27
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-07",
+      "area": "Queue bulk operations",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "WinUI selected-item operations are narrower than WPF multi-select, bulk retry/clear, queue import/export, CLI export and scheduling.",
+      "next": "Implement bulk operations on the shared queue model.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/ViewModels/QueueViewModel.cs",
+          "anchor": "class QueueViewModel",
+          "line": 40
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Queue.cs",
+          "anchor": "partial class MainWindow",
+          "line": 102
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-08",
+      "area": "Completion actions",
+      "status": "missing",
+      "priority": "P1",
+      "finding": "When Done actions, notifications/sounds, sleep prevention and post-process hooks are absent in WinUI.",
+      "next": "Use Windows adapters; guard completion after manual stop.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/PrePostActionService.cs",
+          "anchor": "class PrePostActionService",
+          "line": 34
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Queue.cs",
+          "anchor": "partial class MainWindow",
+          "line": 102
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-09",
+      "area": "History policy",
+      "status": "different",
+      "priority": "P2",
+      "finding": "WPF start can clear canceled/error jobs after its prompt. WinUI retains history and only starts Waiting entries.",
+      "next": "Keep deliberate history retention; do not copy deletion behavior blindly.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Queue/QueueService.cs",
+          "anchor": "ClearCancelledAndErrorJobs",
+          "line": 575
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Queue.cs",
+          "anchor": "partial class MainWindow",
+          "line": 102
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "Q-10",
+      "area": "Disk-space callsites",
+      "status": "reference_only",
+      "priority": "P1",
+      "finding": "CheckDiskSpace is defined without a callsite in the audited QueueService. WPF enqueue/start checks exist, but this method does not prove continuous protection.",
+      "next": "Trace event/call wiring; implement explicit preflight and runtime policy.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Queue/QueueService.cs",
+          "anchor": "CheckDiskSpace",
+          "line": 873
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.Encode.cs",
+          "anchor": "partial class MainWindow",
+          "line": 27
+        }
+      ],
+      "runtime_verified": false
+    },
+    {
+      "id": "PRE-01",
+      "area": "Preset presentation",
+      "status": "partial",
+      "priority": "P1",
+      "finding": "WinUI now has categories, descriptions, default presentation and modified state. Modified comparisons use its own controls/modes, not complete WPF task equality.",
+      "next": "Compare canonical normalized task values; verify reload/save/default round trips.",
+      "refs": [
+        {
+          "path": "win/CS/HandBrakeWPF/Services/Presets/PresetService.cs",
+          "anchor": "class PresetService",
+          "line": 37
+        },
+        {
+          "path": "win/CS/HandBrake.WinUI/MainWindow.PresetPresentation.cs",
+          "anchor": "partial class MainWindow",
+          "line": 12
+        }
+      ],
+      "runtime_verified": false
+    }
+  ]
+}

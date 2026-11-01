@@ -34,6 +34,8 @@ namespace HandBrake.Interop.Interop
         /// <returns>
         /// The <see cref="string"/>.
         /// </returns>
+        public static string GetBuiltInPresetsJson() => HandBrakePresetJob.BuiltInPresets();
+
         public static IList<HBPresetCategory> GetBuiltInPresets()
         {
             IntPtr presets = HBFunctions.hb_presets_builtin_get_json();
